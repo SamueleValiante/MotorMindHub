@@ -1,0 +1,11 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: motormindhub
+      POSTGRES_USER: mmh
+      POSTGRES_PASSWORD: mmh
+    ports: ["5432:5432"]
+  mailpit:
+    image: axllent/mailpit
+    ports: ["8025:8025", "1025:1025"]
