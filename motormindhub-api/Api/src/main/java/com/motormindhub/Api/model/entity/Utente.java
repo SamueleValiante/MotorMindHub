@@ -241,7 +241,7 @@ public class Utente {
         this.passwordHash = "";
         this.fotoProfilo = null;
         this.biografia = null;
-        this.stato = StatoUtente.IN_CANCELLAZIONE;
+        this.stato = StatoUtente.CANCELLATO;
     }
 
     @Override

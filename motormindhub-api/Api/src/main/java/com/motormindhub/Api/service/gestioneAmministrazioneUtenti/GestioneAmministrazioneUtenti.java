@@ -235,7 +235,9 @@ public class GestioneAmministrazioneUtenti {
     /** RF4.1, UC_22 - mockup 38_gestore_dashboard.png. */
     @Transactional(readOnly = true)
     public UserManagementDashboardDTO getUserManagementDashboard() {
-        long utentiRegistrati = utenteRepository.count();
+        // Esclude i tombstone CANCELLATO (StatoUtente): un account anonimizzato non e' piu' un
+        // "utente registrato" ai fini di RF4.1 (cfr. UtenteRepository.search per lo stesso criterio).
+        long utentiRegistrati = utenteRepository.countByStatoNot(StatoUtente.CANCELLATO);
         long segnalazioniAperte = segnalazioneRepository.countByStato(StatoSegnalazione.APERTA);
         long richiesteInCoda = richiestaCancellazioneRepository.countByStato(StatoRichiestaCancellazione.IN_CODA);
         return new UserManagementDashboardDTO(utentiRegistrati, segnalazioniAperte, richiesteInCoda);

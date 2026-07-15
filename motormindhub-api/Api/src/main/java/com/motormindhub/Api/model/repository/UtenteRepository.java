@@ -24,15 +24,22 @@ public interface UtenteRepository extends JpaRepository<Utente, Long> {
 
     long countByRuoloAndStato(Ruolo ruolo, StatoUtente stato);
 
+    /** RF4.1 - "numero di utenti registrati" della dashboard: esclude i tombstone CANCELLATO (StatoUtente). */
+    long countByStatoNot(StatoUtente stato);
+
     /**
      * Ricerca per la "Gestione Account" del Gestore Utenti (RF4.2, UC_22, mockup
      * 39_gestore_gestione_account.png). Nessun filtro sul ruolo: RF4.2 richiede la lista completa
      * "degli utenti registrati", senza escludere Autori/Manager/Gestori (a differenza del Guest, mai
-     * persistito - cfr. Ruolo).
+     * persistito - cfr. Ruolo). L'esclusione di CANCELLATO e' incondizionata (non solo quando :stato
+     * e' null): un account anonimizzato da processAccountDeletion (ODD 2.5) non e' piu' un "utente
+     * registrato" nel senso di RF4.2 - RF4.2 stessa elenca solo tre stati visualizzabili (attivo,
+     * sospeso, in cancellazione), CANCELLATO non compare tra questi.
      */
     @Query("""
             SELECT u FROM Utente u
-            WHERE (:query IS NULL
+            WHERE u.stato <> com.motormindhub.Api.model.entity.StatoUtente.CANCELLATO
+              AND (:query IS NULL
                     OR LOWER(u.nome) LIKE LOWER(CONCAT('%', :query, '%'))
                     OR LOWER(u.cognome) LIKE LOWER(CONCAT('%', :query, '%'))
                     OR LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%')))

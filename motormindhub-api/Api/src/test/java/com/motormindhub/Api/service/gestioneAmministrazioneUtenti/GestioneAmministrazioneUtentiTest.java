@@ -253,7 +253,7 @@ class GestioneAmministrazioneUtentiTest {
 
         assertThat(richiesta.getStato()).isEqualTo(StatoRichiestaCancellazione.COMPLETATA);
         assertThat(utente.getEmail()).isNotEqualTo("paolo@provider.it");
-        assertThat(utente.getStato()).isEqualTo(StatoUtente.IN_CANCELLAZIONE);
+        assertThat(utente.getStato()).isEqualTo(StatoUtente.CANCELLATO);
         ArgumentCaptor<LogAzioneAmministrativa> logCaptor = ArgumentCaptor.forClass(LogAzioneAmministrativa.class);
         verify(logAzioneAmministrativaRepository).save(logCaptor.capture());
         assertThat(logCaptor.getValue().getTipoAzione()).isEqualTo(TipoAzioneAmministrativa.CANCELLAZIONE);
@@ -317,7 +317,7 @@ class GestioneAmministrazioneUtentiTest {
 
     @Test
     void getUserManagementDashboard_restituisceIContatoriAggregati() {
-        when(utenteRepository.count()).thenReturn(42L);
+        when(utenteRepository.countByStatoNot(StatoUtente.CANCELLATO)).thenReturn(42L);
         when(segnalazioneRepository.countByStato(StatoSegnalazione.APERTA)).thenReturn(3L);
         when(richiestaCancellazioneRepository.countByStato(StatoRichiestaCancellazione.IN_CODA)).thenReturn(2L);
 
