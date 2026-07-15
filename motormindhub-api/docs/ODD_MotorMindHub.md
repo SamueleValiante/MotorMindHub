@@ -690,7 +690,11 @@ Nota di collaborazione tra sottosistemi: acceptInvite crea un nuovo record Utent
 >
 > post: RichiestaCancellazione.allInstances()-\>select(r \| r.id = requestId).stato = StatoRichiestaCancellazione::COMPLETATA
 >
-> and not Utente.allInstances()-\>exists(u \| u = self.richiesta(requestId)@pre.utente)
+> and self.richiesta(requestId)@pre.utente.stato = StatoUtente::CANCELLATO
+>
+> and LogAzioneAmministrativa.allInstances()-\>exists(l \| l.utenteTarget.id = self.richiesta(requestId)@pre.utente.id and l.tipoAzione = TipoAzioneAmministrativa::CANCELLAZIONE)
+
+**Nota** A differenza di una precedente versione di questo contratto, la post-condizione non afferma più `not Utente.allInstances()->exists(...)`: l'implementazione (Utente.anonimizza()) non rimuove la riga, la anonimizza (nome, cognome, email, passwordHash, fotoProfilo, biografia sovrascritti; stato → CANCELLATO), perché segnalazioni, richieste di cancellazione e cronologia amministrativa (RF4.8) referenziano utenti.id con FK non nullable e nessun ON DELETE CASCADE in nessuna migrazione esistente — un hard delete violerebbe l'integrità referenziale e distruggerebbe proprio la cronologia che RF4.8 richiede di conservare. RNF5.5 ammette esplicitamente sia l'eliminazione sia l'anonimizzazione irreversibile come modi per soddisfare il diritto all'oblio; qui è stata scelta la seconda. Stessa logica pragmatica di GestioneAutori.removeAuthor (§2.4), la cui post-condizione resta invece corretta così com'è perché qualificata sul ruolo (`u.ruolo = Ruolo::AUTORE`), non sull'identità dell'oggetto.
 
 **Nome metodo exportUserDataAssisted(userId: Long)**
 

@@ -161,18 +161,22 @@ public class GestioneAmministrazioneUtenti {
      * pre: RichiestaCancellazione.allInstances()-&gt;exists(r | r.id = requestId and r.stato = StatoRichiestaCancellazione::IN_CODA)
      * and not Articolo.allInstances()-&gt;exists(a | a.autore = self.richiesta(requestId).utente and a.stato = StatoArticolo::IN_ATTESA_APPROVAZIONE)
      * post: RichiestaCancellazione.allInstances()-&gt;select(r | r.id = requestId).stato = StatoRichiestaCancellazione::COMPLETATA
-     * and not Utente.allInstances()-&gt;exists(u | u = self.richiesta(requestId)@pre.utente)
+     * and self.richiesta(requestId)@pre.utente.stato = StatoUtente::CANCELLATO
+     * and LogAzioneAmministrativa.allInstances()-&gt;exists(l | l.utenteTarget.id = self.richiesta(requestId)@pre.utente.id and l.tipoAzione = TipoAzioneAmministrativa::CANCELLAZIONE)
      * (ODD 2.5, RF4.6, UC_25)
      *
      * L'anonimizzazione (Utente.anonimizza(), non l'hard delete) e' la strategia scelta per
-     * soddisfare "not exists u | ...": RNF5.5 ammette esplicitamente entrambe le opzioni
+     * soddisfare il diritto all'oblio: RNF5.5 ammette esplicitamente entrambe le opzioni
      * ("eliminare O anonimizzare irreversibilmente"), e segnalazioni/richieste_cancellazione/
      * log_azioni_amministrative referenziano utenti.id con FK non nullable (nessun ON DELETE
      * CASCADE in nessuna migrazione esistente): un hard delete violerebbe l'integrita' referenziale
-     * e distruggerebbe proprio la cronologia amministrativa che RF4.8 richiede di conservare. Dopo
-     * l'anonimizzazione l'utente "cessa di esistere come soggetto identificabile" pur restando la
-     * riga per l'integrita' referenziale - stessa logica pragmatica gia' applicata da
-     * GestioneAutori.removeAuthor (ODD 2.4) per un vincolo analogo.
+     * e distruggerebbe proprio la cronologia amministrativa che RF4.8 richiede di conservare. La riga
+     * Utente resta quindi in Utente.allInstances() (a differenza di una precedente versione di questo
+     * contratto, che affermava erroneamente "not exists u | u = ...@pre.utente" - falso, dato che
+     * l'id non cambia): l'osservabile corretto e' stato = CANCELLATO, non l'assenza dell'istanza.
+     * Diverso da GestioneAutori.removeAuthor (ODD 2.4), la cui post-condizione "not exists" resta
+     * invece valida perche' qualificata sul ruolo (u.ruolo = Ruolo::AUTORE), non sull'identita'
+     * dell'oggetto.
      */
     @Transactional
     public void processAccountDeletion(Long requestId) {
