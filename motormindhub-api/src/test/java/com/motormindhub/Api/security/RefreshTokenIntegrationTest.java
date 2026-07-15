@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.motormindhub.Api.model.entity.StatoUtente;
 import com.motormindhub.Api.model.entity.Utente;
 import com.motormindhub.Api.model.repository.UtenteRepository;
+import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.GestioneAmministrazioneUtenti;
+import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.MotivazioneSospensione;
+import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.SuspensionDTO;
 import com.motormindhub.Api.web.auth.LoginRequestDTO;
 import com.motormindhub.Api.web.auth.RefreshTokenRequestDTO;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +37,7 @@ class RefreshTokenIntegrationTest {
 
     private static final String EMAIL = "refresh-test@provider.it";
     private static final String PASSWORD = "PasswordCorretta78!";
+    private static final int MAX_TENTATIVI_LOGIN_FALLITI = 5; // deve rimanere allineato a GestioneUtenti
 
     @Autowired
     private MockMvc mockMvc;
@@ -41,6 +45,8 @@ class RefreshTokenIntegrationTest {
     private UtenteRepository utenteRepository;
     @Autowired
     private PasswordEncoder passwordEncoder;
+    @Autowired
+    private GestioneAmministrazioneUtenti gestioneAmministrazioneUtenti;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
@@ -180,5 +186,49 @@ class RefreshTokenIntegrationTest {
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(new RefreshTokenRequestDTO("token-mai-esistito"))))
                 .andExpect(status().isOk());
+    }
+
+    /**
+     * RefreshTokenService.rotate gia' controlla stato/blocco dell'utente (vedi javadoc del metodo):
+     * questo test end-to-end lo verifica passando dall'endpoint HTTP reale e da una sospensione
+     * innescata dal vero GestioneAmministrazioneUtenti.suspendAccount, non da un mock - stesso motivo
+     * per cui esiste AccountSospesoOBloccatoConTokenGiaEmessoIntegrationTest per l'access token JWT.
+     */
+    @Test
+    void refresh_fallisce_seAccountVieneSospesoDopoLEmissioneDelRefreshToken() throws Exception {
+        MvcResult loginResult = login();
+        String refreshToken = campoJson(loginResult, "refreshToken");
+
+        Long userId = utenteRepository.findByEmail(EMAIL).orElseThrow().getId();
+        gestioneAmministrazioneUtenti.suspendAccount(userId,
+                new SuspensionDTO(MotivazioneSospensione.ALTRO, "sospeso durante il test", null));
+
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new RefreshTokenRequestDTO(refreshToken))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.accessToken").doesNotExist())
+                .andExpect(jsonPath("$.refreshToken").doesNotExist());
+    }
+
+    @Test
+    void refresh_fallisce_seAccountVieneBloccatoPerTentativiFalliti_dopoLEmissioneDelRefreshToken() throws Exception {
+        MvcResult loginResult = login();
+        String refreshToken = campoJson(loginResult, "refreshToken");
+
+        for (int i = 0; i < MAX_TENTATIVI_LOGIN_FALLITI; i++) {
+            mockMvc.perform(post("/api/v1/auth/login")
+                            .contentType("application/json")
+                            .content(objectMapper.writeValueAsString(new LoginRequestDTO(EMAIL, "password-sbagliata"))))
+                    .andExpect(status().isUnauthorized());
+        }
+        assertThat(utenteRepository.findByEmail(EMAIL).orElseThrow().isBloccato()).isTrue();
+
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new RefreshTokenRequestDTO(refreshToken))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.accessToken").doesNotExist())
+                .andExpect(jsonPath("$.refreshToken").doesNotExist());
     }
 }
