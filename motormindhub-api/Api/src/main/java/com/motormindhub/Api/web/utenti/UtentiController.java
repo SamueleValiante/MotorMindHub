@@ -12,6 +12,7 @@ import com.motormindhub.Api.web.MessageResponseDTO;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -64,6 +65,7 @@ public class UtentiController {
     }
 
     @PutMapping("/me")
+    @PreAuthorize("hasAnyRole('ISCRITTO', 'AUTORE', 'MANAGER_AUTORI')")
     public ResponseEntity<MessageResponseDTO> updateProfile(@AuthenticationPrincipal UserPrincipal principal,
                                                               @Valid @RequestBody UpdateProfileDTO dto) {
         gestioneUtenti.updateProfile(principal.getId(), dto);
@@ -76,6 +78,7 @@ public class UtentiController {
     }
 
     @PostMapping("/me/esportazione-dati")
+    @PreAuthorize("hasAnyRole('ISCRITTO', 'AUTORE', 'MANAGER_AUTORI')")
     public ResponseEntity<MessageResponseDTO> requestAccountDataExport(@AuthenticationPrincipal UserPrincipal principal) {
         gestioneUtenti.requestAccountDataExport(principal.getId());
         return ResponseEntity.accepted()
@@ -83,6 +86,7 @@ public class UtentiController {
     }
 
     @PostMapping("/me/cancellazione")
+    @PreAuthorize("hasAnyRole('ISCRITTO', 'AUTORE', 'MANAGER_AUTORI')")
     public ResponseEntity<MessageResponseDTO> requestAccountDeletion(@AuthenticationPrincipal UserPrincipal principal) {
         gestioneUtenti.requestAccountDeletion(principal.getId());
         return ResponseEntity.accepted()
@@ -96,6 +100,7 @@ public class UtentiController {
     }
 
     @PostMapping("/segnalazioni")
+    @PreAuthorize("hasAnyRole('ISCRITTO', 'AUTORE', 'MANAGER_AUTORI')")
     public ResponseEntity<MessageResponseDTO> reportUser(@AuthenticationPrincipal UserPrincipal principal,
                                                            @Valid @RequestBody ReportUserDTO dto) {
         gestioneUtenti.reportUser(principal.getId(), dto);

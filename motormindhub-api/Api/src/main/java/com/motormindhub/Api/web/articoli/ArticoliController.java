@@ -67,6 +67,7 @@ public class ArticoliController {
     }
 
     @GetMapping("/salvataggi")
+    @PreAuthorize("hasAnyRole('ISCRITTO', 'AUTORE', 'MANAGER_AUTORI')")
     public ResponseEntity<List<SavedArticleDTO>> getSavedArticles(@AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(gestioneArticoli.getSavedArticles(principal.getId()));
     }
@@ -122,6 +123,7 @@ public class ArticoliController {
     }
 
     @PostMapping("/{articleId}/salvataggi")
+    @PreAuthorize("hasAnyRole('ISCRITTO', 'AUTORE', 'MANAGER_AUTORI')")
     public ResponseEntity<MessageResponseDTO> saveArticleToList(@AuthenticationPrincipal UserPrincipal principal,
                                                                   @PathVariable Long articleId,
                                                                   @Valid @RequestBody SaveArticleDTO dto) {
@@ -130,6 +132,7 @@ public class ArticoliController {
     }
 
     @DeleteMapping("/{articleId}/salvataggi/{tipoLista}")
+    @PreAuthorize("hasAnyRole('ISCRITTO', 'AUTORE', 'MANAGER_AUTORI')")
     public ResponseEntity<MessageResponseDTO> removeArticleFromList(@AuthenticationPrincipal UserPrincipal principal,
                                                                       @PathVariable Long articleId,
                                                                       @PathVariable TipoLista tipoLista) {
