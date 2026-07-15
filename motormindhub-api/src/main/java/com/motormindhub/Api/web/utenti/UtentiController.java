@@ -2,6 +2,7 @@ package com.motormindhub.Api.web.utenti;
 
 import com.motormindhub.Api.security.UserPrincipal;
 import com.motormindhub.Api.service.gestioneUtenti.GestioneUtenti;
+import com.motormindhub.Api.service.gestioneUtenti.dto.CurrentUserDTO;
 import com.motormindhub.Api.service.gestioneUtenti.dto.NewPasswordDTO;
 import com.motormindhub.Api.service.gestioneUtenti.dto.PasswordResetRequestDTO;
 import com.motormindhub.Api.service.gestioneUtenti.dto.PublicProfileDTO;
@@ -62,6 +63,12 @@ public class UtentiController {
                                                               @Valid @RequestBody NewPasswordDTO dto) {
         gestioneUtenti.resetPassword(token, dto);
         return ResponseEntity.ok(new MessageResponseDTO("Password reimpostata con successo."));
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("hasAnyRole('ISCRITTO', 'AUTORE', 'MANAGER_AUTORI')")
+    public ResponseEntity<CurrentUserDTO> getCurrentUser(@AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(gestioneUtenti.getCurrentUser(principal.getId()));
     }
 
     @PutMapping("/me")

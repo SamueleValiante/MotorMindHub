@@ -14,6 +14,7 @@ import com.motormindhub.Api.model.repository.RichiestaCancellazioneRepository;
 import com.motormindhub.Api.model.repository.SegnalazioneRepository;
 import com.motormindhub.Api.model.repository.TokenRecuperoPasswordRepository;
 import com.motormindhub.Api.model.repository.UtenteRepository;
+import com.motormindhub.Api.service.gestioneUtenti.dto.CurrentUserDTO;
 import com.motormindhub.Api.service.gestioneUtenti.dto.NewPasswordDTO;
 import com.motormindhub.Api.service.gestioneUtenti.dto.PublicProfileDTO;
 import com.motormindhub.Api.service.gestioneUtenti.dto.RegisterUserDTO;
@@ -182,6 +183,22 @@ public class GestioneUtenti {
                 .orElseThrow(() -> new UtenteNonTrovatoException("Utente non trovato."));
 
         return new PublicProfileDTO(utente.getId(), utente.getNome(), utente.getCognome(),
+                utente.getFotoProfilo(), utente.getBiografia());
+    }
+
+    /**
+     * Query di sola lettura (self-service) - nessun contratto OCL formale. userId proviene sempre
+     * dal principal autenticato in SecurityContext (UtentiController), mai da un parametro esterno:
+     * per costruzione un utente non puo' richiedere il profilo di qualcun altro tramite questo
+     * metodo.
+     */
+    @Transactional(readOnly = true)
+    public CurrentUserDTO getCurrentUser(Long userId) {
+        Utente utente = utenteRepository.findById(userId)
+                .orElseThrow(() -> new UtenteNonTrovatoException("Utente non trovato."));
+
+        return new CurrentUserDTO(utente.getEmail(), utente.getRuolo(), utente.getStato(),
+                utente.getDataRegistrazione(), utente.getNome(), utente.getCognome(),
                 utente.getFotoProfilo(), utente.getBiografia());
     }
 

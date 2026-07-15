@@ -5,6 +5,7 @@ import com.motormindhub.Api.events.DataExportReadyEvent;
 import com.motormindhub.Api.events.PasswordResetRequestedEvent;
 import com.motormindhub.Api.events.UtenteRegistratoEvent;
 import com.motormindhub.Api.model.entity.RichiestaCancellazione;
+import com.motormindhub.Api.model.entity.Ruolo;
 import com.motormindhub.Api.model.entity.Segnalazione;
 import com.motormindhub.Api.model.entity.StatoRichiestaCancellazione;
 import com.motormindhub.Api.model.entity.StatoUtente;
@@ -14,6 +15,7 @@ import com.motormindhub.Api.model.repository.RichiestaCancellazioneRepository;
 import com.motormindhub.Api.model.repository.SegnalazioneRepository;
 import com.motormindhub.Api.model.repository.TokenRecuperoPasswordRepository;
 import com.motormindhub.Api.model.repository.UtenteRepository;
+import com.motormindhub.Api.service.gestioneUtenti.dto.CurrentUserDTO;
 import com.motormindhub.Api.service.gestioneUtenti.dto.NewPasswordDTO;
 import com.motormindhub.Api.service.gestioneUtenti.dto.PublicProfileDTO;
 import com.motormindhub.Api.service.gestioneUtenti.dto.RegisterUserDTO;
@@ -294,6 +296,33 @@ class GestioneUtentiTest {
         when(utenteRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(UtenteNonTrovatoException.class, () -> gestioneUtenti.getPublicProfile(99L));
+    }
+
+    // --- getCurrentUser (query) -------------------------------------------
+
+    @Test
+    void getCurrentUser_restituisceProfiloCompleto_quandoUtenteEsiste() {
+        Utente utente = utenteAttivo(1L, "marco@provider.it");
+        utente.setRuolo(Ruolo.AUTORE);
+        utente.setBiografia("Appassionato di motori");
+        when(utenteRepository.findById(1L)).thenReturn(Optional.of(utente));
+
+        CurrentUserDTO corrente = gestioneUtenti.getCurrentUser(1L);
+
+        assertThat(corrente.email()).isEqualTo("marco@provider.it");
+        assertThat(corrente.ruolo()).isEqualTo(Ruolo.AUTORE);
+        assertThat(corrente.stato()).isEqualTo(StatoUtente.ATTIVO);
+        assertThat(corrente.dataRegistrazione()).isEqualTo(utente.getDataRegistrazione());
+        assertThat(corrente.nome()).isEqualTo("Marco");
+        assertThat(corrente.cognome()).isEqualTo("Verdi");
+        assertThat(corrente.biografia()).isEqualTo("Appassionato di motori");
+    }
+
+    @Test
+    void getCurrentUser_lanciaEccezione_quandoUtenteInesistente() {
+        when(utenteRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(UtenteNonTrovatoException.class, () -> gestioneUtenti.getCurrentUser(99L));
     }
 
     // --- requestAccountDataExport --------------------------------------------

@@ -5,6 +5,7 @@ import com.motormindhub.Api.model.entity.StatoUtente;
 import com.motormindhub.Api.model.entity.Utente;
 import com.motormindhub.Api.security.UserPrincipal;
 import com.motormindhub.Api.service.gestioneUtenti.GestioneUtenti;
+import com.motormindhub.Api.service.gestioneUtenti.dto.CurrentUserDTO;
 import com.motormindhub.Api.service.gestioneUtenti.dto.PublicProfileDTO;
 import com.motormindhub.Api.service.gestioneUtenti.dto.RegisterUserDTO;
 import com.motormindhub.Api.service.gestioneUtenti.dto.UpdateProfileDTO;
@@ -130,6 +131,24 @@ class UtentiControllerTest {
                 .andExpect(status().isOk());
 
         verify(gestioneUtenti).verifyEmail("tok-123");
+    }
+
+    @Test
+    void getCurrentUser_restituisceIlProfiloDellUtenteAutenticato_nonUnIdEsterno() throws Exception {
+        autenticaComeUtente(5L);
+        when(gestioneUtenti.getCurrentUser(5L)).thenReturn(new CurrentUserDTO(
+                "marco@provider.it", com.motormindhub.Api.model.entity.Ruolo.ISCRITTO,
+                StatoUtente.ATTIVO, java.time.Instant.parse("2026-01-10T10:00:00Z"),
+                "Marco", "Verdi", null, "Bio"));
+
+        mockMvc.perform(get("/api/v1/utenti/me"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("marco@provider.it"))
+                .andExpect(jsonPath("$.ruolo").value("ISCRITTO"))
+                .andExpect(jsonPath("$.stato").value("ATTIVO"));
+
+        // Nessun id passato dalla richiesta: la sola fonte e' il principal in SecurityContext.
+        verify(gestioneUtenti).getCurrentUser(5L);
     }
 
     @Test
