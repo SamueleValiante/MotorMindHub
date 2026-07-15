@@ -67,6 +67,16 @@ public class RefreshTokenService {
      * risultato) e restituisce l'Utente associato perche' il chiamante possa emettere la nuova
      * coppia di token.
      *
+     * Rilevamento del riuso (oltre la richiesta letterale, pratica consolidata per la rotation dei
+     * refresh token - OWASP ASVS 3.3): se il token presentato esiste ma risulta gia' revocato (da
+     * una rotation precedente o da un logout), non e' un semplice errore - e' il segnale che il
+     * token e' stato copiato e sia il legittimo proprietario sia un possibile attaccante lo stanno
+     * usando. In quel caso non basta rifiutare la richiesta corrente: se il token e' stato rubato,
+     * l'attaccante potrebbe gia' aver completato una rotation legittima e possedere un token piu'
+     * recente e ancora valido. Si revoca quindi l'intera famiglia di refresh token attivi
+     * dell'utente, costringendo un nuovo login su tutte le sessioni. Un token scaduto ma mai
+     * revocato non attiva questo comportamento: e' scadenza naturale, non un segnale di riuso.
+     *
      * Il controllo di stato dell'account (ATTIVO, non bloccato) va oltre la richiesta letterale
      * ("scambia un refresh token valido per una nuova coppia") ma e' necessario per evitare che un
      * account sospeso o bloccato dopo il login (UC_23, RNF2.6) possa continuare a ottenere nuovi
@@ -75,9 +85,18 @@ public class RefreshTokenService {
     @Transactional
     public Utente rotate(String rawToken) {
         RefreshToken token = refreshTokenRepository.findByTokenHash(hash(rawToken))
-                .filter(RefreshToken::isValido)
                 .orElseThrow(() -> new RefreshTokenNonValidoException(
                         "Il refresh token non e' valido, e' scaduto o e' gia' stato utilizzato."));
+
+        if (token.isRevocato()) {
+            refreshTokenRepository.revocaTuttiPerUtente(token.getUtente().getId());
+            throw new RefreshTokenNonValidoException(
+                    "Il refresh token non e' valido, e' scaduto o e' gia' stato utilizzato.");
+        }
+        if (!token.isValido()) {
+            throw new RefreshTokenNonValidoException(
+                    "Il refresh token non e' valido, e' scaduto o e' gia' stato utilizzato.");
+        }
 
         token.revoca();
 

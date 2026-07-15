@@ -110,22 +110,27 @@ class RefreshTokenServiceTest {
     }
 
     @Test
-    void rotate_lanciaEccezione_quandoTokenScaduto() {
+    void rotate_lanciaEccezioneSenzaRevocareLaFamiglia_quandoTokenScadutoMaMaiRevocato() {
         Utente utente = utente(1L, StatoUtente.ATTIVO);
         RefreshToken token = new RefreshToken(utente, "hash-qualsiasi", Instant.now().minus(1, ChronoUnit.DAYS));
         when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(token));
 
         assertThrows(RefreshTokenNonValidoException.class, () -> refreshTokenService.rotate("token-scaduto"));
+        // Scadenza naturale, non riuso: non deve innescare la revoca dell'intera famiglia.
+        verify(refreshTokenRepository, never()).revocaTuttiPerUtente(any());
     }
 
     @Test
-    void rotate_lanciaEccezione_quandoTokenGiaRevocato() {
+    void rotate_revocaLIntereFamigliaDiTokenDellUtente_quandoIlTokenPresentatoEraGiaStatoRevocato() {
         Utente utente = utente(1L, StatoUtente.ATTIVO);
         RefreshToken token = new RefreshToken(utente, "hash-qualsiasi", Instant.now().plus(1, ChronoUnit.DAYS));
         token.revoca();
         when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(token));
 
         assertThrows(RefreshTokenNonValidoException.class, () -> refreshTokenService.rotate("token-gia-usato"));
+        // Riuso rilevato (RefreshTokenService.rotate, javadoc): revoca l'intera famiglia dell'utente,
+        // non solo rifiuta la richiesta corrente.
+        verify(refreshTokenRepository).revocaTuttiPerUtente(1L);
     }
 
     @Test

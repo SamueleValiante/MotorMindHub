@@ -96,16 +96,57 @@ class RefreshTokenIntegrationTest {
         assertThat(nuovoAccessToken).isNotBlank();
         assertThat(nuovoRefreshToken).isNotEqualTo(vecchioRefreshToken);
 
-        // Rotation: il vecchio refresh token non e' piu' utilizzabile.
+        // Il nuovo refresh token e' valido - verificato PRIMA di ripresentare il vecchio: farlo dopo
+        // innescherebbe il rilevamento del riuso (vedi
+        // refresh_revocaLIntereFamigliaDiSessioni_...), che revocherebbe anche questo token appena
+        // emesso insieme al resto della famiglia - comportamento corretto ma non quello che questo
+        // test vuole isolare (la sola rotation).
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new RefreshTokenRequestDTO(nuovoRefreshToken))))
+                .andExpect(status().isOk());
+
+        // Rotation: il vecchio refresh token (gia' ruotato sopra) non e' piu' utilizzabile.
         mockMvc.perform(post("/api/v1/auth/refresh")
                         .contentType("application/json")
                         .content(objectMapper.writeValueAsString(new RefreshTokenRequestDTO(vecchioRefreshToken))))
                 .andExpect(status().isUnauthorized());
+    }
 
-        // Il nuovo refresh token, invece, e' valido.
+    @Test
+    void refresh_revocaLIntereFamigliaDiSessioni_quandoUnRefreshTokenGiaRuotatoVieneRipresentato() throws Exception {
+        // Sessione A (es. laptop): login, poi rotation legittima token1 -> token2.
+        String token1 = campoJson(login(), "refreshToken");
+        String token2 = campoJson(mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new RefreshTokenRequestDTO(token1))))
+                .andExpect(status().isOk())
+                .andReturn(), "refreshToken");
+
+        // Sessione B (es. telefono): login indipendente sullo stesso account, ancora mai usato per il refresh.
+        String tokenSessioneB = campoJson(login(), "refreshToken");
+
+        // Riuso: qualcuno ripresenta il token1, gia' invalidato dalla rotation legittima sopra.
         mockMvc.perform(post("/api/v1/auth/refresh")
                         .contentType("application/json")
-                        .content(objectMapper.writeValueAsString(new RefreshTokenRequestDTO(nuovoRefreshToken))))
+                        .content(objectMapper.writeValueAsString(new RefreshTokenRequestDTO(token1))))
+                .andExpect(status().isUnauthorized());
+
+        // L'intera famiglia dell'utente e' ora revocata: anche il token2, legittimo e mai
+        // presentato prima d'ora per un refresh, e il token della sessione B indipendente.
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new RefreshTokenRequestDTO(token2))))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new RefreshTokenRequestDTO(tokenSessioneB))))
+                .andExpect(status().isUnauthorized());
+
+        // L'account resta comunque utilizzabile: un nuovo login riparte da zero.
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new LoginRequestDTO(EMAIL, PASSWORD))))
                 .andExpect(status().isOk());
     }
 
