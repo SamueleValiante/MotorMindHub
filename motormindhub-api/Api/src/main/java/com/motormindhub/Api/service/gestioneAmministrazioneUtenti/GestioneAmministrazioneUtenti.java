@@ -22,6 +22,7 @@ import com.motormindhub.Api.model.repository.UtenteRepository;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.AdministrativeActionLogEntryDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.AdministrativeActionLogFiltersDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.DeletionRequestQueueItemDTO;
+import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.MotivazioneSospensione;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.ReportQueueItemDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.ReportResolutionDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.SuspensionDTO;
@@ -74,7 +75,7 @@ public class GestioneAmministrazioneUtenti {
 
     /**
      * pre: Utente.allInstances()-&gt;exists(u | u.id = userId and u.stato = StatoUtente::ATTIVO)
-     * and dto.motivazione.size() &gt; 0
+     * and dto.motivazione &lt;&gt; null
      * post: Utente.allInstances()-&gt;select(u | u.id = userId).stato = StatoUtente::SOSPESO
      * and LogAzioneAmministrativa.allInstances()-&gt;exists(l | l.utenteTarget.id = userId and l.tipoAzione = TipoAzioneAmministrativa::SOSPENSIONE)
      * (ODD 2.5, RF4.3, UC_23)
@@ -87,11 +88,11 @@ public class GestioneAmministrazioneUtenti {
         if (utente.getStato() != StatoUtente.ATTIVO) {
             throw new StatoAccountNonValidoException("Solo un account attivo puo' essere sospeso.");
         }
-        if (dto.motivazione() == null || dto.motivazione().isBlank()) {
-            // UC_23.1 - ridondante rispetto a @NotBlank sul DTO (validazione HTTP a monte): il
+        if (dto.motivazione() == null) {
+            // UC_23.1 - ridondante rispetto a @NotNull sul DTO (validazione HTTP a monte): il
             // service non deve dipendere da un livello di validazione esterno per restare corretto
             // se invocato direttamente (stesso pattern di GestioneUtenti.reportUser).
-            throw new RegolaDiDominioViolataException("E' necessario indicare una motivazione per la sospensione.");
+            throw new RegolaDiDominioViolataException("E' necessario selezionare una motivazione per procedere con la sospensione.");
         }
 
         utente.setStato(StatoUtente.SOSPESO);
@@ -99,7 +100,7 @@ public class GestioneAmministrazioneUtenti {
                 TipoAzioneAmministrativa.SOSPENSIONE, descrizioneSospensione(dto.durataGiorni())));
 
         eventPublisher.publishEvent(new AccountSospesoEvent(utente.getId(), utente.getEmail(),
-                dto.motivazione(), dto.durataGiorni()));
+                testoMotivazione(dto.motivazione(), dto.noteAggiuntive()), dto.durataGiorni()));
     }
 
     /**
@@ -292,5 +293,12 @@ public class GestioneAmministrazioneUtenti {
         return durataGiorni == null
                 ? "Sospensione account (permanente)"
                 : "Sospensione account (%d gg)".formatted(durataGiorni);
+    }
+
+    /** Combina l'etichetta della motivazione predefinita con le note libere opzionali (RAD, Tabella Formati §1.5.1). */
+    private static String testoMotivazione(MotivazioneSospensione motivazione, String noteAggiuntive) {
+        return noteAggiuntive == null || noteAggiuntive.isBlank()
+                ? motivazione.getEtichetta()
+                : motivazione.getEtichetta() + " - " + noteAggiuntive.trim();
     }
 }

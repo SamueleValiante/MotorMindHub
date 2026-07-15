@@ -20,6 +20,7 @@ import com.motormindhub.Api.model.repository.RichiestaCancellazioneRepository;
 import com.motormindhub.Api.model.repository.SegnalazioneRepository;
 import com.motormindhub.Api.model.repository.UtenteRepository;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.AdministrativeActionLogFiltersDTO;
+import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.MotivazioneSospensione;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.ReportResolutionDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.SuspensionDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.UserSearchCriteriaDTO;
@@ -105,7 +106,7 @@ class GestioneAmministrazioneUtentiTest {
     void suspendAccount_sospendeEPubblicaEventoELoggaAzione_quandoAccountAttivoEMotivazioneValida() {
         Utente utente = utente(1L, "paolo@provider.it", StatoUtente.ATTIVO);
         when(utenteRepository.findById(1L)).thenReturn(Optional.of(utente));
-        SuspensionDTO dto = new SuspensionDTO("Contenuti inappropriati", 30);
+        SuspensionDTO dto = new SuspensionDTO(MotivazioneSospensione.CONTENUTI_INAPPROPRIATI, null, 30);
 
         gestione.suspendAccount(1L, dto);
 
@@ -116,8 +117,22 @@ class GestioneAmministrazioneUtentiTest {
         assertThat(logCaptor.getValue().getUtenteTarget()).isEqualTo(utente);
         ArgumentCaptor<AccountSospesoEvent> eventCaptor = ArgumentCaptor.forClass(AccountSospesoEvent.class);
         verify(eventPublisher).publishEvent(eventCaptor.capture());
-        assertThat(eventCaptor.getValue().motivazione()).isEqualTo("Contenuti inappropriati");
+        assertThat(eventCaptor.getValue().motivazione()).isEqualTo(MotivazioneSospensione.CONTENUTI_INAPPROPRIATI.getEtichetta());
         assertThat(eventCaptor.getValue().durataGiorni()).isEqualTo(30);
+    }
+
+    @Test
+    void suspendAccount_includeLeNoteAggiuntiveNelTestoDellEvento_quandoPresenti() {
+        Utente utente = utente(1L, "paolo@provider.it", StatoUtente.ATTIVO);
+        when(utenteRepository.findById(1L)).thenReturn(Optional.of(utente));
+        SuspensionDTO dto = new SuspensionDTO(MotivazioneSospensione.ALTRO, "Foto profilo con contenuti non pertinenti", null);
+
+        gestione.suspendAccount(1L, dto);
+
+        ArgumentCaptor<AccountSospesoEvent> eventCaptor = ArgumentCaptor.forClass(AccountSospesoEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().motivazione())
+                .isEqualTo(MotivazioneSospensione.ALTRO.getEtichetta() + " - Foto profilo con contenuti non pertinenti");
     }
 
     @Test
@@ -125,7 +140,7 @@ class GestioneAmministrazioneUtentiTest {
         when(utenteRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(UtenteNonTrovatoException.class,
-                () -> gestione.suspendAccount(99L, new SuspensionDTO("Motivo", null)));
+                () -> gestione.suspendAccount(99L, new SuspensionDTO(MotivazioneSospensione.SPAM, null, null)));
     }
 
     @Test
@@ -134,17 +149,17 @@ class GestioneAmministrazioneUtentiTest {
         when(utenteRepository.findById(1L)).thenReturn(Optional.of(utente));
 
         assertThrows(StatoAccountNonValidoException.class,
-                () -> gestione.suspendAccount(1L, new SuspensionDTO("Motivo", null)));
+                () -> gestione.suspendAccount(1L, new SuspensionDTO(MotivazioneSospensione.SPAM, null, null)));
         verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
-    void suspendAccount_lanciaEccezione_quandoMotivazioneVuota() {
+    void suspendAccount_lanciaEccezione_quandoMotivazioneNulla() {
         Utente utente = utente(1L, "paolo@provider.it", StatoUtente.ATTIVO);
         when(utenteRepository.findById(1L)).thenReturn(Optional.of(utente));
 
         assertThrows(RegolaDiDominioViolataException.class,
-                () -> gestione.suspendAccount(1L, new SuspensionDTO("   ", null)));
+                () -> gestione.suspendAccount(1L, new SuspensionDTO(null, null, null)));
         assertThat(utente.getStato()).isEqualTo(StatoUtente.ATTIVO);
     }
 
