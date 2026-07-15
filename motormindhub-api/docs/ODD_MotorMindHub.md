@@ -126,6 +126,20 @@ Per ciascun sottosistema, le sezioni seguenti riportano gli invarianti di classe
 
 **Invarianti** *self.utenti-\>forAll(u1, u2 \| u1 \<\> u2 implies u1.email \<\> u2.email) — l'indirizzo email è univoco tra tutti gli utenti registrati.*
 
+**Attributi Utente** oltre ai campi già citati nei singoli contratti (email, stato, ruolo, tokenVerifica), l'implementazione corrente espone anche **dataRegistrazione** (Instant): impostato alla creazione dell'entità e mai più modificato in seguito; usato per l'ordinamento delle liste in searchUsers e getDeletionRequestsQueue (§2.5) e incluso nell'esportazione dati (RF1.10, RF4.7).
+
+**Enumerazione StatoUtente** (set completo attualmente implementato)
+
+> **—** NON_VERIFICATO — email non ancora confermata; stato di ingresso prodotto da registerUser.
+>
+> **—** ATTIVO — account pienamente operativo.
+>
+> **—** SOSPESO — sospensione amministrativa (RF4.3, UC_23, §2.5).
+>
+> **—** IN_CANCELLAZIONE — stato transitorio: esiste una RichiestaCancellazione in stato IN_CODA per l'utente, in attesa di lavorazione da parte del Gestore Utenti (RF4.6).
+>
+> **—** CANCELLATO — stato terminale raggiunto dopo l'elaborazione della richiesta di cancellazione (anonimizzazione irreversibile dei dati personali, RNF5.5, §2.5); non è sinonimo di IN_CANCELLAZIONE.
+
 **Nome metodo registerUser(dto: RegisterUserDTO)**
 
 **Descrizione** Crea un nuovo Utente in stato NON_VERIFICATO e pubblica l'evento UtenteRegistrato per l'invio dell'email di verifica. (cfr. RF1.3, UC_1)
