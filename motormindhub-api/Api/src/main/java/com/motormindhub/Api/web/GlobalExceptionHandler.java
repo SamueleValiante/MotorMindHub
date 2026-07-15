@@ -1,5 +1,6 @@
 package com.motormindhub.Api.web;
 
+import com.motormindhub.Api.security.exception.RefreshTokenNonValidoException;
 import com.motormindhub.Api.service.gestioneUtenti.exception.AccountNonAttivoException;
 import com.motormindhub.Api.service.gestioneUtenti.exception.EmailGiaRegistrataException;
 import com.motormindhub.Api.service.gestioneUtenti.exception.RichiestaCancellazioneEsistenteException;
@@ -90,6 +91,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleAutenticazione(AuthenticationException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ErrorResponseDTO.of(HttpStatus.UNAUTHORIZED.value(), "Unauthorized", "Credenziali non valide."));
+    }
+
+    @ExceptionHandler(RefreshTokenNonValidoException.class)
+    public ResponseEntity<ErrorResponseDTO> handleRefreshTokenNonValido(RefreshTokenNonValidoException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ErrorResponseDTO.of(HttpStatus.UNAUTHORIZED.value(), "Unauthorized", ex.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

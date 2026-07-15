@@ -11,9 +11,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 /**
- * Emissione e validazione degli access token JWT (RNF2.7, RNF9.2). Il refresh token e il
- * meccanismo di invalidazione esplicita al logout sono demandati a un incremento successivo,
- * fuori dallo scope dei contratti OCL di GestioneUtenti (ODD 2.1).
+ * Emissione e validazione degli access token JWT (RNF2.7, RNF9.2). Il refresh token opaco e la sua
+ * invalidazione esplicita al logout sono gestiti separatamente da RefreshTokenService: un JWT e'
+ * stateless per natura (nessuna blocklist), quindi non e' il meccanismo giusto per un token che deve
+ * poter essere revocato on-demand.
  */
 @Component
 public class JwtTokenProvider {

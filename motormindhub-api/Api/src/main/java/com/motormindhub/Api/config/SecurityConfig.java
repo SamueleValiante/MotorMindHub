@@ -31,6 +31,8 @@ public class SecurityConfig {
     // Path che espongono un unico metodo HTTP: permitAll sull'intero path e' sicuro.
     private static final String[] ENDPOINT_PUBBLICI = {
             "/api/v1/auth/login",
+            "/api/v1/auth/refresh",
+            "/api/v1/auth/logout",
             "/api/v1/utenti/registrazione",
             "/api/v1/utenti/verifica-email",
             "/api/v1/utenti/sblocco-account",

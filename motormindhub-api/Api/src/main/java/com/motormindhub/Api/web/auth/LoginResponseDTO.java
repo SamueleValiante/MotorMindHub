@@ -1,8 +1,8 @@
 package com.motormindhub.Api.web.auth;
 
-public record LoginResponseDTO(String accessToken, String tokenType) {
+public record LoginResponseDTO(String accessToken, String refreshToken, String tokenType) {
 
-    public LoginResponseDTO(String accessToken) {
-        this(accessToken, "Bearer");
+    public LoginResponseDTO(String accessToken, String refreshToken) {
+        this(accessToken, refreshToken, "Bearer");
     }
 }
