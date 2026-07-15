@@ -21,6 +21,7 @@ public class UserPrincipal implements UserDetails {
     private final String email;
     private final String passwordHash;
     private final StatoUtente stato;
+    private final boolean bloccatoPerTentativiFalliti;
     private final Collection<GrantedAuthority> authorities;
 
     public UserPrincipal(Utente utente) {
@@ -28,6 +29,7 @@ public class UserPrincipal implements UserDetails {
         this.email = utente.getEmail();
         this.passwordHash = utente.getPasswordHash();
         this.stato = utente.getStato();
+        this.bloccatoPerTentativiFalliti = utente.isBloccato();
         this.authorities = List.of(new SimpleGrantedAuthority("ROLE_" + utente.getRuolo().name()));
     }
 
@@ -57,7 +59,10 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return stato != StatoUtente.SOSPESO;
+        // RNF2.6: il blocco anti-bruteforce si aggiunge, senza sostituirla, alla sospensione
+        // amministrativa gia' modellata da "stato" (ODD 2.1/2.5) - entrambe emergono come
+        // LockedException dall'AccountStatusUserDetailsChecker di Spring Security.
+        return stato != StatoUtente.SOSPESO && !bloccatoPerTentativiFalliti;
     }
 
     @Override

@@ -3,10 +3,12 @@ package com.motormindhub.Api.config;
 import com.motormindhub.Api.security.JwtAuthenticationFilter;
 import com.motormindhub.Api.security.JwtTokenProvider;
 import com.motormindhub.Api.security.UserDetailsServiceImpl;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DefaultAuthenticationEventPublisher;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -31,6 +33,7 @@ public class SecurityConfig {
             "/api/v1/auth/login",
             "/api/v1/utenti/registrazione",
             "/api/v1/utenti/verifica-email",
+            "/api/v1/utenti/sblocco-account",
             "/api/v1/utenti/password/**",
             "/api/v1/utenti/*/profilo-pubblico",
             "/api/v1/autori/inviti/*/accetta",
@@ -60,12 +63,24 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * L'AuthenticationEventPublisher e' collegato esplicitamente (anziche' affidarsi
+     * all'autoconfigurazione di Spring Boot) perche' l'AuthenticationManager qui e' costruito a mano
+     * tramite ProviderManager, non tramite AuthenticationManagerBuilder: senza questo collegamento
+     * esplicito, AuthenticationFailureBadCredentialsEvent/AuthenticationSuccessEvent non verrebbero
+     * mai pubblicati sull'ApplicationEventPublisher condiviso, e le misure anti-bruteforce di
+     * RNF2.6 (LoginAttemptListener) non scatterebbero mai.
+     */
     @Bean
     public AuthenticationManager authenticationManager(UserDetailsServiceImpl userDetailsService,
-                                                         PasswordEncoder passwordEncoder) {
+                                                         PasswordEncoder passwordEncoder,
+                                                         ApplicationEventPublisher eventPublisher) {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder);
-        return new org.springframework.security.authentication.ProviderManager(provider);
+        org.springframework.security.authentication.ProviderManager providerManager =
+                new org.springframework.security.authentication.ProviderManager(provider);
+        providerManager.setAuthenticationEventPublisher(new DefaultAuthenticationEventPublisher(eventPublisher));
+        return providerManager;
     }
 
     @Bean

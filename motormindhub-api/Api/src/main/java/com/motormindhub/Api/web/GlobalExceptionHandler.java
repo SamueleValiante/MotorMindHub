@@ -33,7 +33,10 @@ public class GlobalExceptionHandler {
             com.motormindhub.Api.service.gestioneArticoli.exception.ArticoloNonSalvatoException.class,
             com.motormindhub.Api.service.gestioneAutori.exception.InvitoNonTrovatoException.class,
             com.motormindhub.Api.service.gestioneAutori.exception.AutoreNonTrovatoException.class,
-            com.motormindhub.Api.service.gestioneAutori.exception.ArticoloNonTrovatoException.class
+            com.motormindhub.Api.service.gestioneAutori.exception.ArticoloNonTrovatoException.class,
+            com.motormindhub.Api.service.gestioneAmministrazioneUtenti.exception.UtenteNonTrovatoException.class,
+            com.motormindhub.Api.service.gestioneAmministrazioneUtenti.exception.SegnalazioneNonTrovataException.class,
+            com.motormindhub.Api.service.gestioneAmministrazioneUtenti.exception.RichiestaCancellazioneNonTrovataException.class
     })
     public ResponseEntity<ErrorResponseDTO> handleNonTrovato(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -49,7 +52,9 @@ public class GlobalExceptionHandler {
             com.motormindhub.Api.service.gestioneArticoli.exception.StatoArticoloNonValidoException.class,
             com.motormindhub.Api.service.gestioneAutori.exception.InvitoGiaEsistenteException.class,
             com.motormindhub.Api.service.gestioneAutori.exception.EmailGiaRegistrataException.class,
-            com.motormindhub.Api.service.gestioneAutori.exception.StatoArticoloNonValidoException.class
+            com.motormindhub.Api.service.gestioneAutori.exception.StatoArticoloNonValidoException.class,
+            com.motormindhub.Api.service.gestioneAmministrazioneUtenti.exception.StatoAccountNonValidoException.class,
+            com.motormindhub.Api.service.gestioneAmministrazioneUtenti.exception.ContenutiInSospesoException.class
     })
     public ResponseEntity<ErrorResponseDTO> handleConflitto(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -73,6 +78,7 @@ public class GlobalExceptionHandler {
             com.motormindhub.Api.service.gestioneCategorie.exception.RegolaDiDominioViolataException.class,
             com.motormindhub.Api.service.gestioneArticoli.exception.RegolaDiDominioViolataException.class,
             com.motormindhub.Api.service.gestioneAutori.exception.RegolaDiDominioViolataException.class,
+            com.motormindhub.Api.service.gestioneAmministrazioneUtenti.exception.RegolaDiDominioViolataException.class,
             TokenNonValidoException.class
     })
     public ResponseEntity<ErrorResponseDTO> handleBadRequest(RuntimeException ex) {

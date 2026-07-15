@@ -89,6 +89,12 @@ public class UtentiController {
                 .body(new MessageResponseDTO("La tua richiesta di cancellazione e' stata presa in carico."));
     }
 
+    @GetMapping("/sblocco-account")
+    public ResponseEntity<MessageResponseDTO> confirmAccountUnlock(@RequestParam String token) {
+        gestioneUtenti.confirmAccountUnlock(token);
+        return ResponseEntity.ok(new MessageResponseDTO("Account sbloccato con successo. Ora puoi effettuare l'accesso."));
+    }
+
     @PostMapping("/segnalazioni")
     public ResponseEntity<MessageResponseDTO> reportUser(@AuthenticationPrincipal UserPrincipal principal,
                                                            @Valid @RequestBody ReportUserDTO dto) {

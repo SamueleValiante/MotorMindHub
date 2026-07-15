@@ -1,5 +1,6 @@
 package com.motormindhub.Api.service.gestioneUtenti;
 
+import com.motormindhub.Api.events.BruteForceLockoutEvent;
 import com.motormindhub.Api.events.DataExportReadyEvent;
 import com.motormindhub.Api.events.PasswordResetRequestedEvent;
 import com.motormindhub.Api.events.UtenteRegistratoEvent;
@@ -403,5 +404,75 @@ class GestioneUtentiTest {
 
         assertThrows(UtenteNonTrovatoException.class, () -> gestioneUtenti.reportUser(1L, dto));
         verify(segnalazioneRepository, never()).save(any());
+    }
+
+    // --- registerFailedLoginAttempt / registerSuccessfulLogin / confirmAccountUnlock (RNF2.6) ----
+
+    @Test
+    void registerFailedLoginAttempt_incrementaContatoreSenzaBloccare_quandoSottoSoglia() {
+        Utente utente = utenteAttivo(1L, "marco@provider.it");
+        when(utenteRepository.findByEmail("marco@provider.it")).thenReturn(Optional.of(utente));
+
+        gestioneUtenti.registerFailedLoginAttempt("marco@provider.it");
+
+        assertThat(utente.getTentativiFalliti()).isEqualTo(1);
+        assertThat(utente.isBloccato()).isFalse();
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void registerFailedLoginAttempt_bloccaAccountEPubblicaEvento_quandoSogliaRaggiunta() {
+        Utente utente = utenteAttivo(1L, "marco@provider.it");
+        when(utenteRepository.findByEmail("marco@provider.it")).thenReturn(Optional.of(utente));
+
+        for (int i = 0; i < 5; i++) {
+            gestioneUtenti.registerFailedLoginAttempt("marco@provider.it");
+        }
+
+        assertThat(utente.getTentativiFalliti()).isEqualTo(5);
+        assertThat(utente.isBloccato()).isTrue();
+        assertThat(utente.getTokenSblocco()).isNotBlank();
+        verify(eventPublisher).publishEvent(any(BruteForceLockoutEvent.class));
+    }
+
+    @Test
+    void registerFailedLoginAttempt_nonLanciaEccezioneNePubblicaEventi_quandoEmailInesistente() {
+        when(utenteRepository.findByEmail("assente@provider.it")).thenReturn(Optional.empty());
+
+        gestioneUtenti.registerFailedLoginAttempt("assente@provider.it");
+
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void registerSuccessfulLogin_azzeraContatoreTentativiFalliti() {
+        Utente utente = utenteAttivo(1L, "marco@provider.it");
+        utente.registraTentativoFallito();
+        utente.registraTentativoFallito();
+        when(utenteRepository.findByEmail("marco@provider.it")).thenReturn(Optional.of(utente));
+
+        gestioneUtenti.registerSuccessfulLogin("marco@provider.it");
+
+        assertThat(utente.getTentativiFalliti()).isEqualTo(0);
+    }
+
+    @Test
+    void confirmAccountUnlock_sbloccaAccount_quandoTokenValido() {
+        Utente utente = utenteAttivo(1L, "marco@provider.it");
+        utente.bloccaAccount("tok-sblocco", Instant.now().plus(15, ChronoUnit.MINUTES));
+        when(utenteRepository.findByTokenSblocco("tok-sblocco")).thenReturn(Optional.of(utente));
+
+        gestioneUtenti.confirmAccountUnlock("tok-sblocco");
+
+        assertThat(utente.isBloccato()).isFalse();
+        assertThat(utente.getTentativiFalliti()).isEqualTo(0);
+        assertThat(utente.getTokenSblocco()).isNull();
+    }
+
+    @Test
+    void confirmAccountUnlock_lanciaEccezione_quandoTokenInesistente() {
+        when(utenteRepository.findByTokenSblocco("assente")).thenReturn(Optional.empty());
+
+        assertThrows(TokenNonValidoException.class, () -> gestioneUtenti.confirmAccountUnlock("assente"));
     }
 }

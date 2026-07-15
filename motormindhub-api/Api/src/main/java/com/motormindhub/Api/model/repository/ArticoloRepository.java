@@ -45,6 +45,8 @@ public interface ArticoloRepository extends JpaRepository<Articolo, Long> {
 
     long countByAutoreId(Long autoreId);
 
+    boolean existsByAutoreIdAndStato(Long autoreId, StatoArticolo stato);
+
     void deleteByAutoreId(Long autoreId);
 
     /**

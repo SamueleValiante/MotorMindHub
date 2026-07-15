@@ -60,6 +60,22 @@ public class Utente {
     @Column(name = "data_registrazione", nullable = false, updatable = false)
     private Instant dataRegistrazione;
 
+    /*
+     * Campi anti-bruteforce (RNF2.6): non fanno parte dell'invariante o dei contratti OCL di
+     * GestioneUtenti (ODD 2.1), che non modella *authenticate (delegato alla filter chain di Spring
+     * Security - vedi GestioneUtenti javadoc). Il conteggio dei tentativi falliti e il blocco
+     * temporaneo sono comunque richiesti esplicitamente dal RAD (RNF2.6, UC_2.2) e vengono innestati
+     * sugli eventi di autenticazione di Spring Security (vedi security.LoginAttemptListener).
+     */
+    @Column(name = "tentativi_falliti", nullable = false)
+    private int tentativiFalliti = 0;
+
+    @Column(name = "bloccato_fino")
+    private Instant bloccatoFino;
+
+    @Column(name = "token_sblocco", unique = true)
+    private String tokenSblocco;
+
     protected Utente() {
         // richiesto da JPA
     }
@@ -157,6 +173,75 @@ public class Utente {
 
     public Instant getDataRegistrazione() {
         return dataRegistrazione;
+    }
+
+    public int getTentativiFalliti() {
+        return tentativiFalliti;
+    }
+
+    public Instant getBloccatoFino() {
+        return bloccatoFino;
+    }
+
+    public String getTokenSblocco() {
+        return tokenSblocco;
+    }
+
+    /** RNF2.6: incrementa il contatore dopo un tentativo di login fallito. */
+    public void registraTentativoFallito() {
+        this.tentativiFalliti++;
+    }
+
+    /** RNF2.6: azzera il contatore dopo un login riuscito. */
+    public void resetTentativiFalliti() {
+        this.tentativiFalliti = 0;
+    }
+
+    /** RNF2.6: blocca temporaneamente l'account, generando il token da usare nell'email di sblocco. */
+    public void bloccaAccount(String tokenSblocco, Instant bloccatoFino) {
+        this.tokenSblocco = tokenSblocco;
+        this.bloccatoFino = bloccatoFino;
+    }
+
+    /** RNF2.6: true se il blocco per tentativi falliti e' attualmente in vigore. */
+    public boolean isBloccato() {
+        return bloccatoFino != null && bloccatoFino.isAfter(Instant.now());
+    }
+
+    /** RNF2.6: sblocco anticipato via link di conferma email, oppure scadenza naturale del blocco. */
+    public void sbloccaAccount() {
+        this.bloccatoFino = null;
+        this.tentativiFalliti = 0;
+        this.tokenSblocco = null;
+    }
+
+    /**
+     * RF4.6, RNF5.5 (diritto all'oblio): scrubbing irreversibile dei dati personali, mantenendo la
+     * riga per l'integrita' referenziale verso segnalazioni/richieste di cancellazione/cronologia
+     * amministrativa (vedi GestioneAmministrazioneUtenti.processAccountDeletion, ODD 2.5, per il
+     * ragionamento completo).
+     *
+     * nome/cognome vengono sovrascritti con la stessa etichetta generica per tutti gli account
+     * anonimizzati (non un valore derivato dall'originale): questo li rende indistinguibili tra loro,
+     * non solo "diversi da prima". L'email e' resa un placeholder univoco basato su un UUID casuale
+     * (non sull'id incrementale dell'utente, che sarebbe enumerabile/prevedibile e correlabile
+     * all'ordine di cancellazione) - necessario comunque per non violare il vincolo NOT NULL/UNIQUE
+     * della colonna, dato che una nuova registrazione con la stessa email va permessa in futuro.
+     * passwordHash e' svuotato: BCryptPasswordEncoder.matches(...) tratta esplicitamente una stringa
+     * vuota come "nessuna corrispondenza" (non lancia eccezioni), quindi l'account resta
+     * permanentemente non autenticabile anche solo per questo, indipendentemente dal fatto che
+     * isEnabled()/isAccountNonLocked() (UserPrincipal) blocchino gia' l'accesso prima del controllo
+     * password. tokenVerifica non viene toccato qui perche' gia' nullo per qualunque account ATTIVO
+     * (svuotato da verifyEmail, ODD 2.1) - l'unico stato da cui si puo' arrivare a una cancellazione.
+     */
+    public void anonimizza() {
+        this.nome = "Utente";
+        this.cognome = "cancellato";
+        this.email = "utente-cancellato-" + java.util.UUID.randomUUID() + "@deleted.motormindhub.local";
+        this.passwordHash = "";
+        this.fotoProfilo = null;
+        this.biografia = null;
+        this.stato = StatoUtente.IN_CANCELLAZIONE;
     }
 
     @Override

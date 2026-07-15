@@ -1,5 +1,6 @@
 package com.motormindhub.Api.service.gestioneUtenti;
 
+import com.motormindhub.Api.events.BruteForceLockoutEvent;
 import com.motormindhub.Api.events.DataExportReadyEvent;
 import com.motormindhub.Api.events.PasswordResetRequestedEvent;
 import com.motormindhub.Api.events.UtenteRegistratoEvent;
@@ -43,6 +44,12 @@ import java.util.UUID;
 public class GestioneUtenti {
 
     private static final long SCADENZA_TOKEN_RECUPERO_PASSWORD_ORE = 24; // RNF9.3
+
+    // RNF2.6: soglia e durata del blocco non sono specificate numericamente dal RAD ("dopo n
+    // tentativi... bloccato temporaneamente") - valori ragionevoli per un blocco anti-bruteforce,
+    // analoghi a quelli tipicamente usati per form di login pubblici.
+    private static final int MAX_TENTATIVI_LOGIN_FALLITI = 5;
+    private static final long DURATA_BLOCCO_MINUTI = 15;
 
     private final UtenteRepository utenteRepository;
     private final TokenRecuperoPasswordRepository tokenRecuperoPasswordRepository;
@@ -243,5 +250,60 @@ public class GestioneUtenti {
                 .orElseThrow(() -> new UtenteNonTrovatoException("Utente segnalato non trovato."));
 
         segnalazioneRepository.save(new Segnalazione(segnalante, segnalato, dto.motivazione()));
+    }
+
+    /*
+     * --- Misure anti-bruteforce (RNF2.6, UC_2.2) --------------------------------------------
+     *
+     * Non fanno parte dei contratti OCL di GestioneUtenti (ODD 2.1), che non modella *authenticate:
+     * la verifica delle credenziali resta delegata alla filter chain di Spring Security (vedi
+     * javadoc di classe). Questi tre metodi sono invocati da security.LoginAttemptListener, che
+     * adatta gli eventi AuthenticationFailureBadCredentialsEvent/AuthenticationSuccessEvent
+     * pubblicati da Spring Security dopo ogni tentativo di login (SecurityConfig collega
+     * esplicitamente un DefaultAuthenticationEventPublisher all'ApplicationEventPublisher condiviso).
+     */
+
+    /**
+     * pre: exists u | u.email = email
+     * post: u.tentativiFalliti incrementato di 1; se la soglia e' raggiunta, u.bloccatoFino e'
+     * impostato e viene pubblicato BruteForceLockoutEvent (email di sblocco, ODD 2.6).
+     * (RNF2.6 - non un contratto OCL formale di ODD 2.1)
+     *
+     * Silenziosamente no-op se l'email non corrisponde a un account esistente: coerente con
+     * requestPasswordReset, evita di rivelare l'esistenza di un account a un attaccante.
+     */
+    @Transactional
+    public void registerFailedLoginAttempt(String email) {
+        utenteRepository.findByEmail(email).ifPresent(utente -> {
+            utente.registraTentativoFallito();
+            if (utente.getTentativiFalliti() >= MAX_TENTATIVI_LOGIN_FALLITI) {
+                String tokenSblocco = UUID.randomUUID().toString();
+                utente.bloccaAccount(tokenSblocco, Instant.now().plus(DURATA_BLOCCO_MINUTI, ChronoUnit.MINUTES));
+                eventPublisher.publishEvent(new BruteForceLockoutEvent(utente.getId(), utente.getEmail(), tokenSblocco));
+            }
+        });
+    }
+
+    /**
+     * pre: exists u | u.email = email
+     * post: u.tentativiFalliti = 0
+     * (RNF2.6 - non un contratto OCL formale di ODD 2.1)
+     */
+    @Transactional
+    public void registerSuccessfulLogin(String email) {
+        utenteRepository.findByEmail(email).ifPresent(Utente::resetTentativiFalliti);
+    }
+
+    /**
+     * pre: exists u | u.tokenSblocco = token
+     * post: u.bloccatoFino = null and u.tentativiFalliti = 0 and u.tokenSblocco = null
+     * (RNF2.6 - non un contratto OCL formale di ODD 2.1; sblocco anticipato via link email, UC_2.2)
+     */
+    @Transactional
+    public void confirmAccountUnlock(String token) {
+        Utente utente = utenteRepository.findByTokenSblocco(token)
+                .orElseThrow(() -> new TokenNonValidoException("Il link di sblocco non e' valido."));
+
+        utente.sbloccaAccount();
     }
 }
