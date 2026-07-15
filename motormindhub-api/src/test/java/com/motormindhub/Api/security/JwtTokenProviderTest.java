@@ -1,10 +1,17 @@
 package com.motormindhub.Api.security;
 
+import com.motormindhub.Api.model.entity.Ruolo;
 import com.motormindhub.Api.model.entity.StatoUtente;
 import com.motormindhub.Api.model.entity.Utente;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
+
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -50,5 +57,24 @@ class JwtTokenProviderTest {
         Thread.sleep(50);
 
         assertThat(providerConScadenzaBreve.isTokenValido(token)).isFalse();
+    }
+
+    @Test
+    void generateToken_includeRuoloEStatoComeClaimEsplicito() {
+        Utente utente = new Utente("Laura", "Bianchi", "laura@provider.it", "hash", null, null, true, null);
+        ReflectionTestUtils.setField(utente, "id", 9L);
+        utente.setRuolo(Ruolo.MANAGER_AUTORI);
+        utente.setStato(StatoUtente.SOSPESO);
+
+        String token = jwtTokenProvider.generateToken(new UserPrincipal(utente));
+
+        Claims claims = parseClaims(token);
+        assertThat(claims.get("ruolo", String.class)).isEqualTo("MANAGER_AUTORI");
+        assertThat(claims.get("stato", String.class)).isEqualTo("SOSPESO");
+    }
+
+    private Claims parseClaims(String token) {
+        SecretKey chiave = Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+        return Jwts.parser().verifyWith(chiave).build().parseSignedClaims(token).getPayload();
     }
 }

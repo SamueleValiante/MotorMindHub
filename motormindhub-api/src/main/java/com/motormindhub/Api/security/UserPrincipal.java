@@ -1,5 +1,6 @@
 package com.motormindhub.Api.security;
 
+import com.motormindhub.Api.model.entity.Ruolo;
 import com.motormindhub.Api.model.entity.StatoUtente;
 import com.motormindhub.Api.model.entity.Utente;
 import org.springframework.security.core.GrantedAuthority;
@@ -20,6 +21,7 @@ public class UserPrincipal implements UserDetails {
     private final Long id;
     private final String email;
     private final String passwordHash;
+    private final Ruolo ruolo;
     private final StatoUtente stato;
     private final boolean bloccatoPerTentativiFalliti;
     private final Collection<GrantedAuthority> authorities;
@@ -28,6 +30,7 @@ public class UserPrincipal implements UserDetails {
         this.id = utente.getId();
         this.email = utente.getEmail();
         this.passwordHash = utente.getPasswordHash();
+        this.ruolo = utente.getRuolo();
         this.stato = utente.getStato();
         this.bloccatoPerTentativiFalliti = utente.isBloccato();
         this.authorities = List.of(new SimpleGrantedAuthority("ROLE_" + utente.getRuolo().name()));
@@ -35,6 +38,14 @@ public class UserPrincipal implements UserDetails {
 
     public Long getId() {
         return id;
+    }
+
+    public Ruolo getRuolo() {
+        return ruolo;
+    }
+
+    public StatoUtente getStato() {
+        return stato;
     }
 
     @Override

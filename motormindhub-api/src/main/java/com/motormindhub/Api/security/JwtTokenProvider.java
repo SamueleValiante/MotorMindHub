@@ -28,6 +28,11 @@ public class JwtTokenProvider {
         this.durataMs = durataMs;
     }
 
+    /**
+     * "ruolo" e "stato" sono la fotografia dell'utente al momento dell'emissione: comodi lato
+     * front-end per evitare una chiamata dedicata, ma NON una fonte affidabile di autorizzazione
+     * per la durata del token, che resta stateless (nessuna blocklist) fino a scadenza naturale.
+     */
     public String generateToken(UserPrincipal principal) {
         Date ora = new Date();
         Date scadenza = new Date(ora.getTime() + durataMs);
@@ -35,6 +40,8 @@ public class JwtTokenProvider {
         return Jwts.builder()
                 .subject(principal.getUsername())
                 .claim("uid", principal.getId())
+                .claim("ruolo", principal.getRuolo().name())
+                .claim("stato", principal.getStato().name())
                 .issuedAt(ora)
                 .expiration(scadenza)
                 .signWith(chiaveFirma)
