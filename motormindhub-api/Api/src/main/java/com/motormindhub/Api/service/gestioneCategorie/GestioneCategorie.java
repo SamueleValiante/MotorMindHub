@@ -86,10 +86,12 @@ public class GestioneCategorie {
      *       and gli Articolo che puntavano a categoryId ora puntano a dto.categoriaDestinazioneId
      * (ODD 2.3, RF3.5, UC_13)
      *
-     * La riassegnazione degli articoli orfani (GestioneArticoli, non ancora implementato) avviene
-     * tramite l'evento CategoriaEliminataEvent, pubblicato sincronamente subito prima della
-     * cancellazione: con zero Articolo persistiti allo stato attuale del sistema, il post-condition
-     * e' banalmente soddisfatto.
+     * La riassegnazione degli articoli orfani e' delegata al listener sincrono di GestioneArticoli
+     * (CategoriaEliminataListener), che consuma CategoriaEliminataEvent. L'evento va pubblicato
+     * PRIMA della cancellazione della riga, non dopo: essendo il publisher sincrono (nessun @Async
+     * qui, a differenza dei listener di GestioneNotifiche), il listener riassegna gli Articolo
+     * all'interno della stessa transazione, cosi' il vincolo di integrita' referenziale
+     * articoli.categoria_id non viene mai violato al momento della DELETE.
      */
     @Transactional
     public void deleteCategory(Long categoryId, ReassignCategoryDTO dto) {
@@ -110,8 +112,8 @@ public class GestioneCategorie {
                     "Impossibile eliminare una categoria che contiene sottocategorie: riassegnale prima di procedere.");
         }
 
-        categoriaRepository.delete(categoria);
         eventPublisher.publishEvent(new CategoriaEliminataEvent(categoryId, dto.categoriaDestinazioneId()));
+        categoriaRepository.delete(categoria);
     }
 
     /** Query di sola lettura (RF1.2) - nessun contratto OCL formale. */

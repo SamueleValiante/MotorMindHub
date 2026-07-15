@@ -1,0 +1,401 @@
+package com.motormindhub.Api.service.gestioneArticoli;
+
+import com.motormindhub.Api.model.entity.Articolo;
+import com.motormindhub.Api.model.entity.ArticoloSalvato;
+import com.motormindhub.Api.model.entity.Categoria;
+import com.motormindhub.Api.model.entity.Ruolo;
+import com.motormindhub.Api.model.entity.StatoArticolo;
+import com.motormindhub.Api.model.entity.TipoLista;
+import com.motormindhub.Api.model.entity.Utente;
+import com.motormindhub.Api.model.repository.ArticoloRepository;
+import com.motormindhub.Api.model.repository.ArticoloSalvatoRepository;
+import com.motormindhub.Api.model.repository.CategoriaRepository;
+import com.motormindhub.Api.model.repository.UtenteRepository;
+import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleDetailDTO;
+import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleDraftDTO;
+import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleSearchResultDTO;
+import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleSummaryDTO;
+import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleUpdateDTO;
+import com.motormindhub.Api.service.gestioneArticoli.dto.OrdinamentoArticoli;
+import com.motormindhub.Api.service.gestioneArticoli.dto.SavedArticleDTO;
+import com.motormindhub.Api.service.gestioneArticoli.dto.SearchCriteriaDTO;
+import com.motormindhub.Api.service.gestioneArticoli.exception.ArticoloGiaSalvatoException;
+import com.motormindhub.Api.service.gestioneArticoli.exception.ArticoloNonSalvatoException;
+import com.motormindhub.Api.service.gestioneArticoli.exception.ArticoloNonTrovatoException;
+import com.motormindhub.Api.service.gestioneArticoli.exception.AutoreNonValidoException;
+import com.motormindhub.Api.service.gestioneArticoli.exception.CategoriaNonTrovataException;
+import com.motormindhub.Api.service.gestioneArticoli.exception.RegolaDiDominioViolataException;
+import com.motormindhub.Api.service.gestioneArticoli.exception.StatoArticoloNonValidoException;
+import com.motormindhub.Api.service.gestioneArticoli.exception.UtenteNonTrovatoException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Deque;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+/**
+ * Facade del sottosistema GestioneArticoli (SDD 3.1, ODD 2.2): creazione, modifica, bozze,
+ * pubblicazione, ricerca/filtri e liste personali (Preferiti/Leggi più tardi).
+ */
+@Service
+public class GestioneArticoli {
+
+    private static final int PAGINA_DEFAULT = 0;
+    private static final int DIMENSIONE_PAGINA_DEFAULT = 20;
+    private static final int PAROLE_AL_MINUTO = 200;
+    private static final int LUNGHEZZA_ESTRATTO = 160;
+
+    private final ArticoloRepository articoloRepository;
+    private final ArticoloSalvatoRepository articoloSalvatoRepository;
+    private final CategoriaRepository categoriaRepository;
+    private final UtenteRepository utenteRepository;
+
+    public GestioneArticoli(ArticoloRepository articoloRepository,
+                             ArticoloSalvatoRepository articoloSalvatoRepository,
+                             CategoriaRepository categoriaRepository,
+                             UtenteRepository utenteRepository) {
+        this.articoloRepository = articoloRepository;
+        this.articoloSalvatoRepository = articoloSalvatoRepository;
+        this.categoriaRepository = categoriaRepository;
+        this.utenteRepository = utenteRepository;
+    }
+
+    /**
+     * pre: exists u | u.id = authorId and (u.ruolo = AUTORE or u.ruolo = MANAGER_AUTORI)
+     * post: exists a | a.autore.id = authorId and a.stato = BOZZA
+     * (ODD 2.2, RF2.7, UC_16)
+     */
+    @Transactional
+    public Long createDraft(Long authorId, ArticleDraftDTO dto) {
+        Utente autore = utenteRepository.findById(authorId)
+                .filter(u -> u.getRuolo() == Ruolo.AUTORE || u.getRuolo() == Ruolo.MANAGER_AUTORI)
+                .orElseThrow(() -> new AutoreNonValidoException("Solo autori e manager possono creare articoli."));
+
+        Categoria categoria = risolviCategoria(dto.categoriaId());
+        Articolo articolo = new Articolo(autore, dto.titolo(), dto.testo(), categoria, unisciTag(dto.tag()), dto.immagineCopertina());
+        articolo = articoloRepository.save(articolo);
+        return articolo.getId();
+    }
+
+    /**
+     * pre: exists a | a.id = draftId and a.stato = BOZZA
+     * post: a.titolo = dto.titolo
+     * (ODD 2.2, RF2.7, UC_17)
+     */
+    @Transactional
+    public void updateDraft(Long draftId, Long callerId, ArticleDraftDTO dto) {
+        Articolo bozza = trovaBozzaDiProprietaOLancia(draftId, callerId);
+
+        Categoria categoria = risolviCategoria(dto.categoriaId());
+        bozza.aggiornaContenuto(dto.titolo(), dto.testo(), categoria, unisciTag(dto.tag()), dto.immagineCopertina());
+    }
+
+    /**
+     * pre: exists a | a.id = articleId and a.stato = BOZZA and not a.titolo.oclIsUndefined()
+     *      and not a.categoria.oclIsUndefined()
+     * post: a.stato = IN_ATTESA_APPROVAZIONE
+     * (ODD 2.2, RF2.2, UC_15, UC_17)
+     */
+    @Transactional
+    public void publishArticle(Long articleId, Long callerId) {
+        Articolo articolo = trovaArticoloOLancia(articleId);
+        verificaAutoreOManager(articolo, callerId);
+
+        if (articolo.getStato() != StatoArticolo.BOZZA) {
+            throw new StatoArticoloNonValidoException("Solo una bozza puo' essere inviata in approvazione.");
+        }
+        if (articolo.getTitolo() == null || articolo.getTitolo().isBlank()) {
+            throw new RegolaDiDominioViolataException("Il titolo e' obbligatorio prima di pubblicare l'articolo.");
+        }
+        if (articolo.getCategoria() == null) {
+            throw new RegolaDiDominioViolataException("La categoria e' obbligatoria prima di pubblicare l'articolo.");
+        }
+
+        articolo.setStato(StatoArticolo.IN_ATTESA_APPROVAZIONE);
+    }
+
+    /**
+     * pre: exists a | a.id = articleId and a.stato = PUBBLICATO
+     * post: a.testo = dto.testo  and  a.stato resta PUBBLICATO
+     * (ODD 2.2, RF2.3, UC_20)
+     */
+    @Transactional
+    public void updatePublishedArticle(Long articleId, Long callerId, ArticleUpdateDTO dto) {
+        Articolo articolo = trovaArticoloOLancia(articleId);
+        verificaAutoreOManager(articolo, callerId);
+
+        if (articolo.getStato() != StatoArticolo.PUBBLICATO) {
+            throw new StatoArticoloNonValidoException("Solo un articolo pubblicato puo' essere corretto con questa operazione.");
+        }
+
+        Categoria categoria = categoriaRepository.findById(dto.categoriaId())
+                .orElseThrow(() -> new CategoriaNonTrovataException("Categoria non trovata."));
+        articolo.aggiornaContenuto(dto.titolo(), dto.testo(), categoria, unisciTag(dto.tag()), dto.immagineCopertina());
+        // stato invariato = PUBBLICATO: aggiornaContenuto non tocca il campo stato.
+    }
+
+    /**
+     * pre: exists a | a.id = draftId and a.stato = BOZZA
+     * post: not exists a | a.id = draftId
+     * (ODD 2.2, RF2.7, UC_18)
+     */
+    @Transactional
+    public void deleteDraft(Long draftId, Long callerId) {
+        Articolo bozza = trovaBozzaDiProprietaOLancia(draftId, callerId);
+        articoloRepository.delete(bozza);
+    }
+
+    /**
+     * pre: exists a | a.id = articleId and a.stato = PUBBLICATO
+     * post: not exists a | a.id = articleId
+     * (ODD 2.2, RF2.4, UC_19)
+     */
+    @Transactional
+    public void deleteArticle(Long articleId, Long callerId) {
+        Articolo articolo = trovaArticoloOLancia(articleId);
+        verificaAutoreOManager(articolo, callerId);
+
+        if (articolo.getStato() != StatoArticolo.PUBBLICATO) {
+            throw new StatoArticoloNonValidoException("Solo un articolo pubblicato puo' essere eliminato con questa operazione.");
+        }
+        articoloRepository.delete(articolo);
+    }
+
+    /**
+     * pre: not exists s | s.utente.id = userId and s.articolo.id = articleId and s.tipoLista = tipo
+     * post: exists s | s.utente.id = userId and s.articolo.id = articleId and s.tipoLista = tipo
+     * (ODD 2.2, RF1.7, UC_6)
+     */
+    @Transactional
+    public void saveArticleToList(Long userId, Long articleId, TipoLista tipo) {
+        if (articoloSalvatoRepository.existsByUtenteIdAndArticoloIdAndTipoLista(userId, articleId, tipo)) {
+            throw new ArticoloGiaSalvatoException("Articolo gia' presente in questa lista.");
+        }
+
+        Utente utente = utenteRepository.findById(userId)
+                .orElseThrow(() -> new UtenteNonTrovatoException("Utente non trovato."));
+        Articolo articolo = trovaArticoloOLancia(articleId);
+
+        articoloSalvatoRepository.save(new ArticoloSalvato(utente, articolo, tipo));
+    }
+
+    /**
+     * pre: exists s | s.utente.id = userId and s.articolo.id = articleId and s.tipoLista = tipo
+     * post: not exists s | s.utente.id = userId and s.articolo.id = articleId and s.tipoLista = tipo
+     * (ODD 2.2, RF1.7, UC_7)
+     */
+    @Transactional
+    public void removeArticleFromList(Long userId, Long articleId, TipoLista tipo) {
+        ArticoloSalvato salvato = articoloSalvatoRepository.findByUtenteIdAndArticoloIdAndTipoLista(userId, articleId, tipo)
+                .orElseThrow(() -> new ArticoloNonSalvatoException("L'articolo non risulta salvato in questa lista."));
+        articoloSalvatoRepository.delete(salvato);
+    }
+
+    /**
+     * Query di sola lettura (RF1.2) - nessun contratto OCL formale. RF1.2 richiede filtri "per
+     * Categoria e relative sottocategorie" (mockup 02_esplora_articoli.png: dropdown categoria +
+     * checkbox "Componente" sulle sue sottocategorie dirette): selezionare una categoria padre deve
+     * includere anche gli articoli delle sue sottocategorie, non solo il match esatto sull'id. La
+     * risoluzione dell'albero e' quindi responsabilita' del service, non del chiamante.
+     */
+    @Transactional(readOnly = true)
+    public ArticleSearchResultDTO searchArticles(SearchCriteriaDTO criteria) {
+        int pagina = Optional.ofNullable(criteria.pagina()).filter(p -> p >= 0).orElse(PAGINA_DEFAULT);
+        int dimensionePagina = Optional.ofNullable(criteria.dimensionePagina()).filter(d -> d > 0).orElse(DIMENSIONE_PAGINA_DEFAULT);
+        OrdinamentoArticoli ordinamento = Optional.ofNullable(criteria.ordinamento()).orElse(OrdinamentoArticoli.PIU_RECENTI);
+        String query = (criteria.query() == null || criteria.query().isBlank()) ? null : criteria.query();
+        List<Long> categoriaIds = espandiConSottocategorie(criteria.categoriaIds());
+
+        Pageable pageable = PageRequest.of(pagina, dimensionePagina, risolviOrdinamento(ordinamento));
+        Page<Articolo> risultati = articoloRepository.cercaPubblicati(query, categoriaIds, pageable);
+
+        List<ArticleSummaryDTO> articoli = risultati.getContent().stream().map(this::mappaSummary).toList();
+        return new ArticleSearchResultDTO(articoli, risultati.getTotalElements(), pagina, dimensionePagina);
+    }
+
+    /**
+     * Query di sola lettura (RF1.1) - nessun contratto OCL formale. Incrementa il contatore
+     * "letture" mostrato nel mockup 22_autore_articoli.png.
+     */
+    @Transactional
+    public ArticleDetailDTO getArticleById(Long articleId) {
+        Articolo articolo = trovaArticoloOLancia(articleId);
+        articolo.incrementaVisualizzazioni();
+        return mappaDettaglio(articolo);
+    }
+
+    /** Query di sola lettura (RF2.1) - nessun contratto OCL formale. */
+    @Transactional(readOnly = true)
+    public List<ArticleSummaryDTO> getArticlesByAuthor(Long authorId) {
+        return articoloRepository.findByAutoreIdOrderByDataUltimoAggiornamentoDesc(authorId).stream()
+                .map(this::mappaSummary)
+                .toList();
+    }
+
+    /** Query di sola lettura (RF1.8, UC_7) - nessun contratto OCL formale. */
+    @Transactional(readOnly = true)
+    public List<SavedArticleDTO> getSavedArticles(Long userId) {
+        return articoloSalvatoRepository.findByUtenteIdOrderByDataSalvataggioDesc(userId).stream()
+                .map(s -> new SavedArticleDTO(mappaSummary(s.getArticolo()), s.getTipoLista(),
+                        DateTimeFormatter.ISO_INSTANT.format(s.getDataSalvataggio())))
+                .toList();
+    }
+
+    // --- helper privati -----------------------------------------------------
+
+    private Articolo trovaArticoloOLancia(Long articleId) {
+        return articoloRepository.findById(articleId)
+                .orElseThrow(() -> new ArticoloNonTrovatoException("Articolo non trovato."));
+    }
+
+    private Articolo trovaBozzaDiProprietaOLancia(Long draftId, Long callerId) {
+        Articolo articolo = trovaArticoloOLancia(draftId);
+        verificaAutoreOManager(articolo, callerId);
+        if (articolo.getStato() != StatoArticolo.BOZZA) {
+            throw new StatoArticoloNonValidoException("L'articolo non e' in stato di bozza.");
+        }
+        return articolo;
+    }
+
+    /**
+     * Controllo di ownership non richiesto esplicitamente dall'OCL (ODD 2.2), ma necessario per
+     * evitare che un Autore modifichi/elimini/pubblichi gli articoli di un altro Autore: il Manager
+     * Autori, che eredita i permessi dell'Autore (SDD 3.4, Tabella 1), non e' soggetto al vincolo.
+     */
+    private void verificaAutoreOManager(Articolo articolo, Long callerId) {
+        if (articolo.getAutore().getId().equals(callerId)) {
+            return;
+        }
+        Utente caller = utenteRepository.findById(callerId)
+                .orElseThrow(() -> new UtenteNonTrovatoException("Utente non trovato."));
+        if (caller.getRuolo() != Ruolo.MANAGER_AUTORI) {
+            throw new AutoreNonValidoException("Non sei autorizzato a operare su questo articolo.");
+        }
+    }
+
+    private Categoria risolviCategoria(Long categoriaId) {
+        if (categoriaId == null) {
+            return null;
+        }
+        return categoriaRepository.findById(categoriaId)
+                .orElseThrow(() -> new CategoriaNonTrovataException("Categoria non trovata."));
+    }
+
+    /**
+     * Espande gli id di categoria richiesti includendo, transitivamente, tutte le loro
+     * sottocategorie (RF1.2, mockup 02_esplora_articoli.png). L'intero albero e' caricato in
+     * memoria (come gia' fa GestioneCategorie.getCategoryTree): accettabile ai volumi attesi
+     * (RNF3.3, centinaia di categorie, non milioni).
+     */
+    private List<Long> espandiConSottocategorie(List<Long> categoriaIds) {
+        if (categoriaIds == null || categoriaIds.isEmpty()) {
+            return null;
+        }
+
+        Map<Long, List<Long>> figliPerPadre = categoriaRepository.findAll().stream()
+                .filter(c -> c.getCategoriaPadre() != null)
+                .collect(Collectors.groupingBy(c -> c.getCategoriaPadre().getId(),
+                        Collectors.mapping(Categoria::getId, Collectors.toList())));
+
+        Set<Long> risultato = new LinkedHashSet<>();
+        Deque<Long> daVisitare = new ArrayDeque<>(categoriaIds);
+        while (!daVisitare.isEmpty()) {
+            Long corrente = daVisitare.poll();
+            if (risultato.add(corrente)) {
+                daVisitare.addAll(figliPerPadre.getOrDefault(corrente, List.of()));
+            }
+        }
+        return List.copyOf(risultato);
+    }
+
+    private Sort risolviOrdinamento(OrdinamentoArticoli ordinamento) {
+        return switch (ordinamento) {
+            case PIU_RECENTI -> Sort.by(Sort.Direction.DESC, "data_ultimo_aggiornamento");
+            // IN_EVIDENZA non ha un campo editoriale dedicato nel modello dati (RAD 3.4.4):
+            // trattato come sinonimo di PIU_LETTI (vedi OrdinamentoArticoli).
+            case PIU_LETTI, IN_EVIDENZA -> Sort.by(Sort.Direction.DESC, "numero_visualizzazioni");
+        };
+    }
+
+    private static String unisciTag(List<String> tag) {
+        if (tag == null || tag.isEmpty()) {
+            return null;
+        }
+        return String.join(",", tag);
+    }
+
+    private static List<String> dividiTag(String tag) {
+        if (tag == null || tag.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(tag.split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList();
+    }
+
+    private static int calcolaTempoLettura(String testo) {
+        if (testo == null || testo.isBlank()) {
+            return 0;
+        }
+        int parole = testo.trim().split("\\s+").length;
+        return Math.max(1, (int) Math.ceil(parole / (double) PAROLE_AL_MINUTO));
+    }
+
+    private static String calcolaEstratto(String testo) {
+        if (testo == null) {
+            return null;
+        }
+        String pulito = testo.strip();
+        return pulito.length() <= LUNGHEZZA_ESTRATTO ? pulito : pulito.substring(0, LUNGHEZZA_ESTRATTO) + "...";
+    }
+
+    private ArticleSummaryDTO mappaSummary(Articolo articolo) {
+        Categoria categoria = articolo.getCategoria();
+        Utente autore = articolo.getAutore();
+        return new ArticleSummaryDTO(
+                articolo.getId(),
+                articolo.getTitolo(),
+                calcolaEstratto(articolo.getTesto()),
+                articolo.getImmagineCopertina(),
+                categoria != null ? categoria.getId() : null,
+                categoria != null ? categoria.getNome() : null,
+                autore.getId(),
+                autore.getNome() + " " + autore.getCognome(),
+                articolo.getStato(),
+                calcolaTempoLettura(articolo.getTesto()),
+                articolo.getNumeroVisualizzazioni(),
+                DateTimeFormatter.ISO_INSTANT.format(articolo.getDataUltimoAggiornamento())
+        );
+    }
+
+    private ArticleDetailDTO mappaDettaglio(Articolo articolo) {
+        Categoria categoria = articolo.getCategoria();
+        Utente autore = articolo.getAutore();
+        return new ArticleDetailDTO(
+                articolo.getId(),
+                articolo.getTitolo(),
+                articolo.getTesto(),
+                articolo.getImmagineCopertina(),
+                dividiTag(articolo.getTag()),
+                categoria != null ? categoria.getId() : null,
+                categoria != null ? categoria.getNome() : null,
+                autore.getId(),
+                autore.getNome() + " " + autore.getCognome(),
+                articolo.getStato(),
+                calcolaTempoLettura(articolo.getTesto()),
+                articolo.getNumeroVisualizzazioni(),
+                DateTimeFormatter.ISO_INSTANT.format(articolo.getDataCreazione()),
+                DateTimeFormatter.ISO_INSTANT.format(articolo.getDataUltimoAggiornamento())
+        );
+    }
+}

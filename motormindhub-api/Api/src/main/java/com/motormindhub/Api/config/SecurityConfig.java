@@ -33,6 +33,8 @@ public class SecurityConfig {
             "/api/v1/utenti/verifica-email",
             "/api/v1/utenti/password/**",
             "/api/v1/utenti/*/profilo-pubblico",
+            "/api/v1/autori/inviti/*/accetta",
+            "/api/v1/autori/inviti/*/rifiuta",
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html"
@@ -43,8 +45,15 @@ public class SecurityConfig {
     // ristretto al solo metodo GET, altrimenti bypasserebbe anche le scritture a livello di filtro.
     private static final String[] ENDPOINT_PUBBLICI_SOLO_LETTURA = {
             "/api/v1/categorie",
-            "/api/v1/categorie/**"
+            "/api/v1/categorie/**",
+            "/api/v1/articoli"
     };
+
+    // GestioneArticoli ha, sotto lo stesso prefisso, sotto-risorse private non numeriche
+    // (/api/v1/articoli/me, /api/v1/articoli/salvataggi): un wildcard "/**" le esporrebbe
+    // pubblicamente. Il vincolo regex sul path variable ammette solo id numerici, coerente con
+    // @GetMapping("/{articleId:[0-9]+}") nel controller.
+    private static final String ARTICOLO_DETTAGLIO_PUBBLICO = "/api/v1/articoli/{articleId:[0-9]+}";
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -73,6 +82,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(ENDPOINT_PUBBLICI).permitAll()
                         .requestMatchers(HttpMethod.GET, ENDPOINT_PUBBLICI_SOLO_LETTURA).permitAll()
+                        .requestMatchers(HttpMethod.GET, ARTICOLO_DETTAGLIO_PUBBLICO).permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

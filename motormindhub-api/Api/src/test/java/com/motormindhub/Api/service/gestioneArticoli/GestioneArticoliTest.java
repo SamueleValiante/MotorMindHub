@@ -1,0 +1,507 @@
+package com.motormindhub.Api.service.gestioneArticoli;
+
+import com.motormindhub.Api.model.entity.Articolo;
+import com.motormindhub.Api.model.entity.ArticoloSalvato;
+import com.motormindhub.Api.model.entity.Categoria;
+import com.motormindhub.Api.model.entity.Ruolo;
+import com.motormindhub.Api.model.entity.StatoArticolo;
+import com.motormindhub.Api.model.entity.StatoUtente;
+import com.motormindhub.Api.model.entity.TipoLista;
+import com.motormindhub.Api.model.entity.Utente;
+import com.motormindhub.Api.model.repository.ArticoloRepository;
+import com.motormindhub.Api.model.repository.ArticoloSalvatoRepository;
+import com.motormindhub.Api.model.repository.CategoriaRepository;
+import com.motormindhub.Api.model.repository.UtenteRepository;
+import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleDetailDTO;
+import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleDraftDTO;
+import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleSummaryDTO;
+import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleUpdateDTO;
+import com.motormindhub.Api.service.gestioneArticoli.dto.SavedArticleDTO;
+import com.motormindhub.Api.service.gestioneArticoli.dto.SearchCriteriaDTO;
+import com.motormindhub.Api.service.gestioneArticoli.exception.ArticoloGiaSalvatoException;
+import com.motormindhub.Api.service.gestioneArticoli.exception.ArticoloNonSalvatoException;
+import com.motormindhub.Api.service.gestioneArticoli.exception.ArticoloNonTrovatoException;
+import com.motormindhub.Api.service.gestioneArticoli.exception.AutoreNonValidoException;
+import com.motormindhub.Api.service.gestioneArticoli.exception.CategoriaNonTrovataException;
+import com.motormindhub.Api.service.gestioneArticoli.exception.RegolaDiDominioViolataException;
+import com.motormindhub.Api.service.gestioneArticoli.exception.StatoArticoloNonValidoException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+/**
+ * Un test per ciascun contratto OCL di GestioneArticoli (ODD 2.2): un caso verifica la
+ * post-condizione quando la pre-condizione e' soddisfatta, uno o piu' casi verificano che la
+ * violazione della pre-condizione sollevi l'eccezione applicativa attesa. Include anche i test per
+ * il controllo di ownership aggiunto su richiesta esplicita, non presente nell'OCL letterale.
+ */
+@ExtendWith(MockitoExtension.class)
+class GestioneArticoliTest {
+
+    @Mock
+    private ArticoloRepository articoloRepository;
+    @Mock
+    private ArticoloSalvatoRepository articoloSalvatoRepository;
+    @Mock
+    private CategoriaRepository categoriaRepository;
+    @Mock
+    private UtenteRepository utenteRepository;
+
+    private GestioneArticoli gestioneArticoli;
+
+    @BeforeEach
+    void setUp() {
+        gestioneArticoli = new GestioneArticoli(articoloRepository, articoloSalvatoRepository, categoriaRepository, utenteRepository);
+    }
+
+    private static Utente utente(Long id, Ruolo ruolo) {
+        Utente u = new Utente("Giulia", "Rossi", "utente" + id + "@provider.it", "hash", null, null, true, null);
+        ReflectionTestUtils.setField(u, "id", id);
+        u.setRuolo(ruolo);
+        u.setStato(StatoUtente.ATTIVO);
+        return u;
+    }
+
+    private static Categoria categoria(Long id) {
+        Categoria c = new Categoria("Manutenzione ordinaria", "descrizione", null);
+        ReflectionTestUtils.setField(c, "id", id);
+        return c;
+    }
+
+    private static Articolo articolo(Long id, Utente autore, Categoria categoria, StatoArticolo stato, String titolo) {
+        Articolo a = new Articolo(autore, titolo, "Testo di prova", categoria, "freni,manutenzione", null);
+        ReflectionTestUtils.setField(a, "id", id);
+        a.setStato(stato);
+        return a;
+    }
+
+    // --- createDraft ---------------------------------------------------
+
+    @Test
+    void createDraft_creaArticoloInBozza_quandoAutoreValido() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        when(utenteRepository.findById(1L)).thenReturn(Optional.of(autore));
+        when(articoloRepository.save(any(Articolo.class))).thenAnswer(inv -> {
+            Articolo salvato = inv.getArgument(0);
+            ReflectionTestUtils.setField(salvato, "id", 100L);
+            return salvato;
+        });
+        ArticleDraftDTO dto = new ArticleDraftDTO("Candele adatte per Ape50", null, null, List.of("candele"), null);
+
+        Long id = gestioneArticoli.createDraft(1L, dto);
+
+        assertThat(id).isEqualTo(100L);
+        ArgumentCaptor<Articolo> captor = ArgumentCaptor.forClass(Articolo.class);
+        verify(articoloRepository).save(captor.capture());
+        assertThat(captor.getValue().getStato()).isEqualTo(StatoArticolo.BOZZA);
+        assertThat(captor.getValue().getAutore()).isEqualTo(autore);
+    }
+
+    @Test
+    void createDraft_creaArticolo_quandoAutoreEManagerAutori() {
+        Utente manager = utente(2L, Ruolo.MANAGER_AUTORI);
+        when(utenteRepository.findById(2L)).thenReturn(Optional.of(manager));
+        when(articoloRepository.save(any(Articolo.class))).thenAnswer(inv -> inv.getArgument(0));
+        ArticleDraftDTO dto = new ArticleDraftDTO(null, null, null, null, null);
+
+        gestioneArticoli.createDraft(2L, dto);
+
+        verify(articoloRepository).save(any(Articolo.class));
+    }
+
+    @Test
+    void createDraft_lanciaEccezione_quandoUtenteInesistente() {
+        when(utenteRepository.findById(99L)).thenReturn(Optional.empty());
+        ArticleDraftDTO dto = new ArticleDraftDTO(null, null, null, null, null);
+
+        assertThrows(AutoreNonValidoException.class, () -> gestioneArticoli.createDraft(99L, dto));
+        verify(articoloRepository, never()).save(any());
+    }
+
+    @Test
+    void createDraft_lanciaEccezione_quandoRuoloNonAutorizzato() {
+        Utente iscritto = utente(3L, Ruolo.ISCRITTO);
+        when(utenteRepository.findById(3L)).thenReturn(Optional.of(iscritto));
+        ArticleDraftDTO dto = new ArticleDraftDTO(null, null, null, null, null);
+
+        assertThrows(AutoreNonValidoException.class, () -> gestioneArticoli.createDraft(3L, dto));
+        verify(articoloRepository, never()).save(any());
+    }
+
+    @Test
+    void createDraft_lanciaEccezione_quandoCategoriaInesistente() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        when(utenteRepository.findById(1L)).thenReturn(Optional.of(autore));
+        when(categoriaRepository.findById(50L)).thenReturn(Optional.empty());
+        ArticleDraftDTO dto = new ArticleDraftDTO("Titolo", "Testo", 50L, null, null);
+
+        assertThrows(CategoriaNonTrovataException.class, () -> gestioneArticoli.createDraft(1L, dto));
+    }
+
+    // --- updateDraft -----------------------------------------------------
+
+    @Test
+    void updateDraft_aggiornaTitolo_quandoBozzaEProprietario() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo bozza = articolo(10L, autore, null, StatoArticolo.BOZZA, "Titolo vecchio");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(bozza));
+        ArticleDraftDTO dto = new ArticleDraftDTO("Titolo nuovo", "Testo nuovo", null, null, null);
+
+        gestioneArticoli.updateDraft(10L, 1L, dto);
+
+        assertThat(bozza.getTitolo()).isEqualTo("Titolo nuovo");
+    }
+
+    @Test
+    void updateDraft_consentito_quandoChiamanteEManagerAutoriNonProprietario() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Utente manager = utente(2L, Ruolo.MANAGER_AUTORI);
+        Articolo bozza = articolo(10L, autore, null, StatoArticolo.BOZZA, "Titolo vecchio");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(bozza));
+        when(utenteRepository.findById(2L)).thenReturn(Optional.of(manager));
+        ArticleDraftDTO dto = new ArticleDraftDTO("Titolo nuovo", null, null, null, null);
+
+        gestioneArticoli.updateDraft(10L, 2L, dto);
+
+        assertThat(bozza.getTitolo()).isEqualTo("Titolo nuovo");
+    }
+
+    @Test
+    void updateDraft_lanciaEccezione_quandoBozzaInesistente() {
+        when(articoloRepository.findById(99L)).thenReturn(Optional.empty());
+        ArticleDraftDTO dto = new ArticleDraftDTO("Titolo", null, null, null, null);
+
+        assertThrows(ArticoloNonTrovatoException.class, () -> gestioneArticoli.updateDraft(99L, 1L, dto));
+    }
+
+    @Test
+    void updateDraft_lanciaEccezione_quandoArticoloNonInBozza() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo pubblicato = articolo(10L, autore, categoria(5L), StatoArticolo.PUBBLICATO, "Titolo");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(pubblicato));
+        ArticleDraftDTO dto = new ArticleDraftDTO("Titolo nuovo", null, null, null, null);
+
+        assertThrows(StatoArticoloNonValidoException.class, () -> gestioneArticoli.updateDraft(10L, 1L, dto));
+    }
+
+    @Test
+    void updateDraft_lanciaEccezione_quandoChiamanteNonEProprietarioNeManager() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Utente altroAutore = utente(2L, Ruolo.AUTORE);
+        Articolo bozza = articolo(10L, autore, null, StatoArticolo.BOZZA, "Titolo");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(bozza));
+        when(utenteRepository.findById(2L)).thenReturn(Optional.of(altroAutore));
+        ArticleDraftDTO dto = new ArticleDraftDTO("Titolo nuovo", null, null, null, null);
+
+        assertThrows(AutoreNonValidoException.class, () -> gestioneArticoli.updateDraft(10L, 2L, dto));
+    }
+
+    // --- publishArticle -----------------------------------------------------
+
+    @Test
+    void publishArticle_passaAdAttesaApprovazione_quandoBozzaCompleta() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo bozza = articolo(10L, autore, categoria(5L), StatoArticolo.BOZZA, "Pressione gomme");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(bozza));
+
+        gestioneArticoli.publishArticle(10L, 1L);
+
+        assertThat(bozza.getStato()).isEqualTo(StatoArticolo.IN_ATTESA_APPROVAZIONE);
+    }
+
+    @Test
+    void publishArticle_lanciaEccezione_quandoNonInBozza() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo pubblicato = articolo(10L, autore, categoria(5L), StatoArticolo.PUBBLICATO, "Titolo");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(pubblicato));
+
+        assertThrows(StatoArticoloNonValidoException.class, () -> gestioneArticoli.publishArticle(10L, 1L));
+    }
+
+    @Test
+    void publishArticle_lanciaEccezione_quandoTitoloMancante() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo bozza = articolo(10L, autore, categoria(5L), StatoArticolo.BOZZA, null);
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(bozza));
+
+        assertThrows(RegolaDiDominioViolataException.class, () -> gestioneArticoli.publishArticle(10L, 1L));
+    }
+
+    @Test
+    void publishArticle_lanciaEccezione_quandoCategoriaMancante() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo bozza = articolo(10L, autore, null, StatoArticolo.BOZZA, "Titolo valido");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(bozza));
+
+        assertThrows(RegolaDiDominioViolataException.class, () -> gestioneArticoli.publishArticle(10L, 1L));
+    }
+
+    @Test
+    void publishArticle_lanciaEccezione_quandoChiamanteNonAutorizzato() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Utente altroAutore = utente(2L, Ruolo.AUTORE);
+        Articolo bozza = articolo(10L, autore, categoria(5L), StatoArticolo.BOZZA, "Titolo");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(bozza));
+        when(utenteRepository.findById(2L)).thenReturn(Optional.of(altroAutore));
+
+        assertThrows(AutoreNonValidoException.class, () -> gestioneArticoli.publishArticle(10L, 2L));
+    }
+
+    // --- updatePublishedArticle -----------------------------------------------
+
+    @Test
+    void updatePublishedArticle_aggiornaTestoERestaPubblicato_quandoArticoloPubblicato() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Categoria categoriaOriginale = categoria(5L);
+        Articolo pubblicato = articolo(10L, autore, categoriaOriginale, StatoArticolo.PUBBLICATO, "Titolo");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(pubblicato));
+        when(categoriaRepository.findById(5L)).thenReturn(Optional.of(categoriaOriginale));
+        ArticleUpdateDTO dto = new ArticleUpdateDTO("Titolo corretto", "Testo corretto", 5L, List.of("freni"), null);
+
+        gestioneArticoli.updatePublishedArticle(10L, 1L, dto);
+
+        assertThat(pubblicato.getTesto()).isEqualTo("Testo corretto");
+        assertThat(pubblicato.getStato()).isEqualTo(StatoArticolo.PUBBLICATO);
+    }
+
+    @Test
+    void updatePublishedArticle_lanciaEccezione_quandoNonPubblicato() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo bozza = articolo(10L, autore, categoria(5L), StatoArticolo.BOZZA, "Titolo");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(bozza));
+        ArticleUpdateDTO dto = new ArticleUpdateDTO("Titolo", "Testo", 5L, null, null);
+
+        assertThrows(StatoArticoloNonValidoException.class, () -> gestioneArticoli.updatePublishedArticle(10L, 1L, dto));
+    }
+
+    @Test
+    void updatePublishedArticle_lanciaEccezione_quandoChiamanteNonAutorizzato() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Utente altroAutore = utente(2L, Ruolo.AUTORE);
+        Articolo pubblicato = articolo(10L, autore, categoria(5L), StatoArticolo.PUBBLICATO, "Titolo");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(pubblicato));
+        when(utenteRepository.findById(2L)).thenReturn(Optional.of(altroAutore));
+        ArticleUpdateDTO dto = new ArticleUpdateDTO("Titolo", "Testo", 5L, null, null);
+
+        assertThrows(AutoreNonValidoException.class, () -> gestioneArticoli.updatePublishedArticle(10L, 2L, dto));
+    }
+
+    // --- deleteDraft -----------------------------------------------------
+
+    @Test
+    void deleteDraft_eliminaBozza_quandoStatoBozzaEProprietario() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo bozza = articolo(10L, autore, null, StatoArticolo.BOZZA, "Titolo");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(bozza));
+
+        gestioneArticoli.deleteDraft(10L, 1L);
+
+        verify(articoloRepository).delete(bozza);
+    }
+
+    @Test
+    void deleteDraft_lanciaEccezione_quandoNonInBozza() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo pubblicato = articolo(10L, autore, categoria(5L), StatoArticolo.PUBBLICATO, "Titolo");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(pubblicato));
+
+        assertThrows(StatoArticoloNonValidoException.class, () -> gestioneArticoli.deleteDraft(10L, 1L));
+        verify(articoloRepository, never()).delete(any());
+    }
+
+    // --- deleteArticle -----------------------------------------------------
+
+    @Test
+    void deleteArticle_eliminaArticolo_quandoPubblicato() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo pubblicato = articolo(10L, autore, categoria(5L), StatoArticolo.PUBBLICATO, "Titolo");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(pubblicato));
+
+        gestioneArticoli.deleteArticle(10L, 1L);
+
+        verify(articoloRepository).delete(pubblicato);
+    }
+
+    @Test
+    void deleteArticle_lanciaEccezione_quandoNonPubblicato() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo bozza = articolo(10L, autore, null, StatoArticolo.BOZZA, "Titolo");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(bozza));
+
+        assertThrows(StatoArticoloNonValidoException.class, () -> gestioneArticoli.deleteArticle(10L, 1L));
+        verify(articoloRepository, never()).delete(any());
+    }
+
+    // --- saveArticleToList -----------------------------------------------------
+
+    @Test
+    void saveArticleToList_salvaArticolo_quandoNonGiaPresenteNellaLista() {
+        Utente utente = utente(1L, Ruolo.ISCRITTO);
+        Articolo pubblicato = articolo(10L, utente(2L, Ruolo.AUTORE), categoria(5L), StatoArticolo.PUBBLICATO, "Titolo");
+        when(articoloSalvatoRepository.existsByUtenteIdAndArticoloIdAndTipoLista(1L, 10L, TipoLista.PREFERITI)).thenReturn(false);
+        when(utenteRepository.findById(1L)).thenReturn(Optional.of(utente));
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(pubblicato));
+
+        gestioneArticoli.saveArticleToList(1L, 10L, TipoLista.PREFERITI);
+
+        ArgumentCaptor<ArticoloSalvato> captor = ArgumentCaptor.forClass(ArticoloSalvato.class);
+        verify(articoloSalvatoRepository).save(captor.capture());
+        assertThat(captor.getValue().getTipoLista()).isEqualTo(TipoLista.PREFERITI);
+    }
+
+    @Test
+    void saveArticleToList_lanciaEccezione_quandoGiaPresenteNellaLista() {
+        when(articoloSalvatoRepository.existsByUtenteIdAndArticoloIdAndTipoLista(1L, 10L, TipoLista.PREFERITI)).thenReturn(true);
+
+        assertThrows(ArticoloGiaSalvatoException.class,
+                () -> gestioneArticoli.saveArticleToList(1L, 10L, TipoLista.PREFERITI));
+        verify(articoloSalvatoRepository, never()).save(any());
+    }
+
+    // --- removeArticleFromList -----------------------------------------------------
+
+    @Test
+    void removeArticleFromList_rimuoveArticolo_quandoPresenteNellaLista() {
+        ArticoloSalvato salvato = new ArticoloSalvato(utente(1L, Ruolo.ISCRITTO),
+                articolo(10L, utente(2L, Ruolo.AUTORE), categoria(5L), StatoArticolo.PUBBLICATO, "Titolo"),
+                TipoLista.LEGGI_PIU_TARDI);
+        when(articoloSalvatoRepository.findByUtenteIdAndArticoloIdAndTipoLista(1L, 10L, TipoLista.LEGGI_PIU_TARDI))
+                .thenReturn(Optional.of(salvato));
+
+        gestioneArticoli.removeArticleFromList(1L, 10L, TipoLista.LEGGI_PIU_TARDI);
+
+        verify(articoloSalvatoRepository).delete(salvato);
+    }
+
+    @Test
+    void removeArticleFromList_lanciaEccezione_quandoNonPresenteNellaLista() {
+        when(articoloSalvatoRepository.findByUtenteIdAndArticoloIdAndTipoLista(1L, 10L, TipoLista.PREFERITI))
+                .thenReturn(Optional.empty());
+
+        assertThrows(ArticoloNonSalvatoException.class,
+                () -> gestioneArticoli.removeArticleFromList(1L, 10L, TipoLista.PREFERITI));
+        verify(articoloSalvatoRepository, never()).delete(any());
+    }
+
+    // --- query: getArticleById -----------------------------------------------------
+
+    @Test
+    void getArticleById_restituisceDettaglioEIncrementaVisualizzazioni() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo pubblicato = articolo(10L, autore, categoria(5L), StatoArticolo.PUBBLICATO, "Dischi freno forati vs baffati");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(pubblicato));
+
+        ArticleDetailDTO dettaglio = gestioneArticoli.getArticleById(10L);
+
+        assertThat(dettaglio.titolo()).isEqualTo("Dischi freno forati vs baffati");
+        assertThat(dettaglio.tag()).containsExactly("freni", "manutenzione");
+        assertThat(pubblicato.getNumeroVisualizzazioni()).isEqualTo(1L);
+    }
+
+    @Test
+    void getArticleById_lanciaEccezione_quandoInesistente() {
+        when(articoloRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(ArticoloNonTrovatoException.class, () -> gestioneArticoli.getArticleById(99L));
+    }
+
+    // --- query: getArticlesByAuthor -----------------------------------------------------
+
+    @Test
+    void getArticlesByAuthor_restituisceTuttiGliArticoliDellAutore() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo bozza = articolo(10L, autore, null, StatoArticolo.BOZZA, "Bozza");
+        Articolo pubblicato = articolo(11L, autore, categoria(5L), StatoArticolo.PUBBLICATO, "Pubblicato");
+        when(articoloRepository.findByAutoreIdOrderByDataUltimoAggiornamentoDesc(1L))
+                .thenReturn(List.of(pubblicato, bozza));
+
+        List<ArticleSummaryDTO> risultato = gestioneArticoli.getArticlesByAuthor(1L);
+
+        assertThat(risultato).hasSize(2);
+        assertThat(risultato).extracting(ArticleSummaryDTO::stato)
+                .containsExactly(StatoArticolo.PUBBLICATO, StatoArticolo.BOZZA);
+    }
+
+    // --- query: getSavedArticles -----------------------------------------------------
+
+    @Test
+    void getSavedArticles_restituisceListaConTipoAssociato() {
+        Utente iscritto = utente(1L, Ruolo.ISCRITTO);
+        Articolo pubblicato = articolo(10L, utente(2L, Ruolo.AUTORE), categoria(5L), StatoArticolo.PUBBLICATO, "Titolo");
+        ArticoloSalvato salvato = new ArticoloSalvato(iscritto, pubblicato, TipoLista.PREFERITI);
+        when(articoloSalvatoRepository.findByUtenteIdOrderByDataSalvataggioDesc(1L)).thenReturn(List.of(salvato));
+
+        List<SavedArticleDTO> risultato = gestioneArticoli.getSavedArticles(1L);
+
+        assertThat(risultato).hasSize(1);
+        assertThat(risultato.get(0).tipoLista()).isEqualTo(TipoLista.PREFERITI);
+        assertThat(risultato.get(0).articolo().id()).isEqualTo(10L);
+    }
+
+    // --- query: searchArticles -----------------------------------------------------
+
+    @Test
+    void searchArticles_deleganAlRepositoryConDefaultDiPaginazione() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo pubblicato = articolo(10L, autore, categoria(5L), StatoArticolo.PUBBLICATO, "Titolo");
+        Page<Articolo> pagina = new PageImpl<>(List.of(pubblicato));
+        when(articoloRepository.cercaPubblicati(isNull(), isNull(), any())).thenReturn(pagina);
+
+        var risultato = gestioneArticoli.searchArticles(new SearchCriteriaDTO(null, null, null, null, null));
+
+        assertThat(risultato.articoli()).hasSize(1);
+        assertThat(risultato.totaleRisultati()).isEqualTo(1);
+        assertThat(risultato.pagina()).isZero();
+    }
+
+    @Test
+    void searchArticles_passaQueryECategorieAlRepository() {
+        // 5L e 6L senza sottocategorie (findAll non stubbato = lista vuota): l'espansione
+        // restituisce esattamente gli id richiesti, nello stesso ordine di inserimento.
+        Page<Articolo> paginaVuota = new PageImpl<>(List.of());
+        when(articoloRepository.cercaPubblicati(eq("freni"), eq(List.of(5L, 6L)), any())).thenReturn(paginaVuota);
+
+        gestioneArticoli.searchArticles(new SearchCriteriaDTO("freni", List.of(5L, 6L), 1, 10, null));
+
+        verify(articoloRepository).cercaPubblicati(eq("freni"), eq(List.of(5L, 6L)), any());
+    }
+
+    @Test
+    void searchArticles_includeLeSottocategorie_quandoFiltraPerCategoriaPadre() {
+        // RF1.2 ("Categoria e relative sottocategorie") + mockup 02_esplora_articoli.png: filtrare
+        // per "Manutenzione Ordinaria" (id 1) deve includere anche i suoi figli diretti e indiretti.
+        Categoria radice = categoria(1L);
+        Categoria figlia = new Categoria("Impianto Frenante", "desc", radice);
+        ReflectionTestUtils.setField(figlia, "id", 2L);
+        Categoria nipote = new Categoria("Pastiglie", "desc", figlia);
+        ReflectionTestUtils.setField(nipote, "id", 3L);
+        Categoria categoriaNonImparentata = categoria(9L);
+        when(categoriaRepository.findAll()).thenReturn(List.of(radice, figlia, nipote, categoriaNonImparentata));
+
+        Page<Articolo> paginaVuota = new PageImpl<>(List.of());
+        ArgumentCaptor<List<Long>> categoriaIdsCaptor = ArgumentCaptor.forClass(List.class);
+        when(articoloRepository.cercaPubblicati(isNull(), categoriaIdsCaptor.capture(), any())).thenReturn(paginaVuota);
+
+        gestioneArticoli.searchArticles(new SearchCriteriaDTO(null, List.of(1L), null, null, null));
+
+        assertThat(categoriaIdsCaptor.getValue()).containsExactlyInAnyOrder(1L, 2L, 3L);
+    }
+}
