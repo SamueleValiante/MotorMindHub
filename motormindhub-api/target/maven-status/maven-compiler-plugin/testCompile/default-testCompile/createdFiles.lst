@@ -5,8 +5,10 @@ com/motormindhub/Api/service/gestioneArticoli/CategoriaEliminataListenerTest.cla
 com/motormindhub/Api/utility/constraints/PasswordSicuraValidatorTest.class
 com/motormindhub/Api/service/gestioneCategorie/GestioneCategorieTest.class
 com/motormindhub/Api/service/gestioneAutori/GestioneAutoriTest.class
+com/motormindhub/Api/security/JwtClaimsIntegrationTest.class
 com/motormindhub/Api/ApiApplicationTests.class
 com/motormindhub/Api/security/LoginLockoutIntegrationTest.class
+com/motormindhub/Api/security/AccountSospesoOBloccatoConTokenGiaEmessoIntegrationTest.class
 com/motormindhub/Api/web/utenti/UtentiControllerTest$1.class
 com/motormindhub/Api/service/gestioneNotifiche/GestioneNotificheTest.class
 com/motormindhub/Api/web/utenti/UtentiControllerTest.class
@@ -15,5 +17,6 @@ com/motormindhub/Api/utility/constraints/EmailUnivocaValidatorTest.class
 com/motormindhub/Api/model/repository/UtenteRepositoryTest.class
 com/motormindhub/Api/service/gestioneUtenti/GestioneUtentiTest.class
 com/motormindhub/Api/web/MalformedRequestBodyIntegrationTest.class
+com/motormindhub/Api/web/utenti/CurrentUserIntegrationTest.class
 com/motormindhub/Api/service/gestioneAmministrazioneUtenti/GestioneAmministrazioneUtentiTest.class
 com/motormindhub/Api/service/gestioneArticoli/GestioneArticoliTest.class

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.motormindhub.Api.security.RefreshTokenServiceTest" time="0.122" tests="9" errors="0" skipped="0" failures="0" flakes="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.motormindhub.Api.security.JwtClaimsIntegrationTest" time="0.272" tests="2" errors="0" skipped="0" failures="0" flakes="0">
   <properties>
     <property name="java.specification.version" value="21"/>
     <property name="sun.jnu.encoding" value="UTF-8"/>
@@ -62,13 +62,12 @@
     <property name="java.class.version" value="65.0"/>
     <property name="LOGGED_APPLICATION_NAME" value="[Api] "/>
   </properties>
-  <testcase name="rotate_revocaLIntereFamigliaDiTokenDellUtente_quandoIlTokenPresentatoEraGiaStatoRevocato" classname="com.motormindhub.Api.security.RefreshTokenServiceTest" time="0.1"/>
-  <testcase name="revoke_nonLanciaEccezione_quandoTokenInesistente" classname="com.motormindhub.Api.security.RefreshTokenServiceTest" time="0.002"/>
-  <testcase name="rotate_lanciaEccezione_quandoTokenInesistente" classname="com.motormindhub.Api.security.RefreshTokenServiceTest" time="0.002"/>
-  <testcase name="rotate_revocaIlVecchioTokenERestituisceLUtente_quandoTokenValidoEAccountAttivo" classname="com.motormindhub.Api.security.RefreshTokenServiceTest" time="0.002"/>
-  <testcase name="rotate_lanciaEccezioneMaRevocaComunqueIlToken_quandoAccountNonPiuAttivo" classname="com.motormindhub.Api.security.RefreshTokenServiceTest" time="0.001"/>
-  <testcase name="generate_produceTokenDiversiAOgniChiamata" classname="com.motormindhub.Api.security.RefreshTokenServiceTest" time="0.002"/>
-  <testcase name="generate_restituisceTokenCasualeEPersisteSoloLHash" classname="com.motormindhub.Api.security.RefreshTokenServiceTest" time="0.004"/>
-  <testcase name="rotate_lanciaEccezioneSenzaRevocareLaFamiglia_quandoTokenScadutoMaMaiRevocato" classname="com.motormindhub.Api.security.RefreshTokenServiceTest" time="0.002"/>
-  <testcase name="revoke_marcaIlTokenComeRevocato_quandoEsiste" classname="com.motormindhub.Api.security.RefreshTokenServiceTest" time="0.002"/>
+  <testcase name="refresh_emetteNuovoAccessTokenConClaimRuoloEStatoAggiornati" classname="com.motormindhub.Api.security.JwtClaimsIntegrationTest" time="0.136">
+    <system-out><![CDATA[2026-07-15T22:18:16.546+02:00  INFO 307194 --- [Api] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.motormindhub.Api.security.JwtClaimsIntegrationTest]: JwtClaimsIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-07-15T22:18:16.548+02:00  INFO 307194 --- [Api] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.motormindhub.Api.ApiApplication for test class com.motormindhub.Api.security.JwtClaimsIntegrationTest
+2026-07-15T22:18:16.549+02:00  INFO 307194 --- [Api] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.motormindhub.Api.security.JwtClaimsIntegrationTest]: JwtClaimsIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-07-15T22:18:16.551+02:00  INFO 307194 --- [Api] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.motormindhub.Api.ApiApplication for test class com.motormindhub.Api.security.JwtClaimsIntegrationTest
+]]></system-out>
+  </testcase>
+  <testcase name="login_emetteAccessTokenConClaimRuoloEStato" classname="com.motormindhub.Api.security.JwtClaimsIntegrationTest" time="0.126"/>
 </testsuite>

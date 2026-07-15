@@ -126,6 +126,20 @@ Per ciascun sottosistema, le sezioni seguenti riportano gli invarianti di classe
 
 **Invarianti** *self.utenti-\>forAll(u1, u2 \| u1 \<\> u2 implies u1.email \<\> u2.email) — l'indirizzo email è univoco tra tutti gli utenti registrati.*
 
+**Attributi Utente** oltre ai campi già citati nei singoli contratti (email, stato, ruolo, tokenVerifica), l'implementazione corrente espone anche **dataRegistrazione** (Instant): impostato alla creazione dell'entità e mai più modificato in seguito; usato per l'ordinamento delle liste in searchUsers e getDeletionRequestsQueue (§2.5) e incluso nell'esportazione dati (RF1.10, RF4.7).
+
+**Enumerazione StatoUtente** (set completo attualmente implementato)
+
+> **—** NON_VERIFICATO — email non ancora confermata; stato di ingresso prodotto da registerUser.
+>
+> **—** ATTIVO — account pienamente operativo.
+>
+> **—** SOSPESO — sospensione amministrativa (RF4.3, UC_23, §2.5).
+>
+> **—** IN_CANCELLAZIONE — stato transitorio: esiste una RichiestaCancellazione in stato IN_CODA per l'utente, in attesa di lavorazione da parte del Gestore Utenti (RF4.6).
+>
+> **—** CANCELLATO — stato terminale raggiunto dopo l'elaborazione della richiesta di cancellazione (anonimizzazione irreversibile dei dati personali, RNF5.5, §2.5); non è sinonimo di IN_CANCELLAZIONE.
+
 **Nome metodo registerUser(dto: RegisterUserDTO)**
 
 **Descrizione** Crea un nuovo Utente in stato NON_VERIFICATO e pubblica l'evento UtenteRegistrato per l'invio dell'email di verifica. (cfr. RF1.3, UC_1)
@@ -676,7 +690,11 @@ Nota di collaborazione tra sottosistemi: acceptInvite crea un nuovo record Utent
 >
 > post: RichiestaCancellazione.allInstances()-\>select(r \| r.id = requestId).stato = StatoRichiestaCancellazione::COMPLETATA
 >
-> and not Utente.allInstances()-\>exists(u \| u = self.richiesta(requestId)@pre.utente)
+> and self.richiesta(requestId)@pre.utente.stato = StatoUtente::CANCELLATO
+>
+> and LogAzioneAmministrativa.allInstances()-\>exists(l \| l.utenteTarget.id = self.richiesta(requestId)@pre.utente.id and l.tipoAzione = TipoAzioneAmministrativa::CANCELLAZIONE)
+
+**Nota** A differenza di una precedente versione di questo contratto, la post-condizione non afferma più `not Utente.allInstances()->exists(...)`: l'implementazione (Utente.anonimizza()) non rimuove la riga, la anonimizza (nome, cognome, email, passwordHash, fotoProfilo, biografia sovrascritti; stato → CANCELLATO), perché segnalazioni, richieste di cancellazione e cronologia amministrativa (RF4.8) referenziano utenti.id con FK non nullable e nessun ON DELETE CASCADE in nessuna migrazione esistente — un hard delete violerebbe l'integrità referenziale e distruggerebbe proprio la cronologia che RF4.8 richiede di conservare. RNF5.5 ammette esplicitamente sia l'eliminazione sia l'anonimizzazione irreversibile come modi per soddisfare il diritto all'oblio; qui è stata scelta la seconda. Stessa logica pragmatica di GestioneAutori.removeAuthor (§2.4), la cui post-condizione resta invece corretta così com'è perché qualificata sul ruolo (`u.ruolo = Ruolo::AUTORE`), non sull'identità dell'oggetto.
 
 **Nome metodo exportUserDataAssisted(userId: Long)**
 

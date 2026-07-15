@@ -1,4 +1,5 @@
 com/motormindhub/Api/model/entity/TipoLista.class
+com/motormindhub/Api/service/gestioneUtenti/dto/CurrentUserDTO.class
 com/motormindhub/Api/service/gestioneUtenti/exception/AccountNonAttivoException.class
 com/motormindhub/Api/service/gestioneArticoli/exception/UtenteNonTrovatoException.class
 com/motormindhub/Api/service/gestioneAmministrazioneUtenti/dto/AdministrativeActionLogEntryDTO.class

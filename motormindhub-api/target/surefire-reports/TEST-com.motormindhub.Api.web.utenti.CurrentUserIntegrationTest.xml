@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.motormindhub.Api.security.RefreshTokenServiceTest" time="0.122" tests="9" errors="0" skipped="0" failures="0" flakes="0">
+<testsuite xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://maven.apache.org/surefire/maven-surefire-plugin/xsd/surefire-test-report.xsd" version="3.0.2" name="com.motormindhub.Api.web.utenti.CurrentUserIntegrationTest" time="2.218" tests="3" errors="0" skipped="0" failures="0" flakes="0">
   <properties>
     <property name="java.specification.version" value="21"/>
     <property name="sun.jnu.encoding" value="UTF-8"/>
@@ -62,13 +62,58 @@
     <property name="java.class.version" value="65.0"/>
     <property name="LOGGED_APPLICATION_NAME" value="[Api] "/>
   </properties>
-  <testcase name="rotate_revocaLIntereFamigliaDiTokenDellUtente_quandoIlTokenPresentatoEraGiaStatoRevocato" classname="com.motormindhub.Api.security.RefreshTokenServiceTest" time="0.1"/>
-  <testcase name="revoke_nonLanciaEccezione_quandoTokenInesistente" classname="com.motormindhub.Api.security.RefreshTokenServiceTest" time="0.002"/>
-  <testcase name="rotate_lanciaEccezione_quandoTokenInesistente" classname="com.motormindhub.Api.security.RefreshTokenServiceTest" time="0.002"/>
-  <testcase name="rotate_revocaIlVecchioTokenERestituisceLUtente_quandoTokenValidoEAccountAttivo" classname="com.motormindhub.Api.security.RefreshTokenServiceTest" time="0.002"/>
-  <testcase name="rotate_lanciaEccezioneMaRevocaComunqueIlToken_quandoAccountNonPiuAttivo" classname="com.motormindhub.Api.security.RefreshTokenServiceTest" time="0.001"/>
-  <testcase name="generate_produceTokenDiversiAOgniChiamata" classname="com.motormindhub.Api.security.RefreshTokenServiceTest" time="0.002"/>
-  <testcase name="generate_restituisceTokenCasualeEPersisteSoloLHash" classname="com.motormindhub.Api.security.RefreshTokenServiceTest" time="0.004"/>
-  <testcase name="rotate_lanciaEccezioneSenzaRevocareLaFamiglia_quandoTokenScadutoMaMaiRevocato" classname="com.motormindhub.Api.security.RefreshTokenServiceTest" time="0.002"/>
-  <testcase name="revoke_marcaIlTokenComeRevocato_quandoEsiste" classname="com.motormindhub.Api.security.RefreshTokenServiceTest" time="0.002"/>
+  <testcase name="getCurrentUser_restituisceIlProprioProfilo_quandoRuoloAmmesso" classname="com.motormindhub.Api.web.utenti.CurrentUserIntegrationTest" time="0.58">
+    <system-out><![CDATA[2026-07-15T22:18:08.195+02:00  INFO 307194 --- [Api] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.motormindhub.Api.web.utenti.CurrentUserIntegrationTest]: CurrentUserIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-07-15T22:18:08.217+02:00  INFO 307194 --- [Api] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.motormindhub.Api.ApiApplication for test class com.motormindhub.Api.web.utenti.CurrentUserIntegrationTest
+2026-07-15T22:18:08.218+02:00  INFO 307194 --- [Api] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.motormindhub.Api.web.utenti.CurrentUserIntegrationTest]: CurrentUserIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-07-15T22:18:08.222+02:00  INFO 307194 --- [Api] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.motormindhub.Api.ApiApplication for test class com.motormindhub.Api.web.utenti.CurrentUserIntegrationTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v4.1.0)
+
+2026-07-15T22:18:08.264+02:00  INFO 307194 --- [Api] [           main] c.m.A.w.u.CurrentUserIntegrationTest     : Starting CurrentUserIntegrationTest using Java 21.0.11 with PID 307194 (started by samuele in /home/samuele/Desktop/MotorMindHub/motormindhub-api)
+2026-07-15T22:18:08.264+02:00  INFO 307194 --- [Api] [           main] c.m.A.w.u.CurrentUserIntegrationTest     : No active profile set, falling back to 1 default profile: "default"
+2026-07-15T22:18:08.557+02:00  INFO 307194 --- [Api] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-07-15T22:18:08.578+02:00  INFO 307194 --- [Api] [           main] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 19 ms. Found 10 JPA repository interfaces.
+2026-07-15T22:18:08.773+02:00  INFO 307194 --- [Api] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Starting...
+2026-07-15T22:18:08.785+02:00  INFO 307194 --- [Api] [           main] com.zaxxer.hikari.pool.HikariPool        : HikariPool-2 - Added connection org.postgresql.jdbc.PgConnection@6d74cd1d
+2026-07-15T22:18:08.786+02:00  INFO 307194 --- [Api] [           main] com.zaxxer.hikari.HikariDataSource       : HikariPool-2 - Start completed.
+2026-07-15T22:18:08.787+02:00  INFO 307194 --- [Api] [           main] org.flywaydb.core.FlywayExecutor         : Database: jdbc:postgresql://localhost:5432/motormindhub (PostgreSQL 16.14)
+2026-07-15T22:18:08.811+02:00  INFO 307194 --- [Api] [           main] o.f.core.internal.command.DbValidate     : Successfully validated 12 migrations (execution time 00:00.010s)
+2026-07-15T22:18:08.833+02:00  INFO 307194 --- [Api] [           main] o.f.core.internal.command.DbMigrate      : Current version of schema "public": 12
+2026-07-15T22:18:08.834+02:00  INFO 307194 --- [Api] [           main] o.f.core.internal.command.DbMigrate      : Schema "public" is up to date. No migration necessary.
+2026-07-15T22:18:08.864+02:00  INFO 307194 --- [Api] [           main] org.hibernate.orm.jpa                    : HHH008540: Processing PersistenceUnitInfo [name: default]
+2026-07-15T22:18:08.895+02:00  INFO 307194 --- [Api] [           main] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-07-15T22:18:08.904+02:00  INFO 307194 --- [Api] [           main] org.hibernate.orm.connections.pooling    : HHH10001005: Database info:
+	Database JDBC URL [jdbc:postgresql://localhost:5432/motormindhub]
+	Database driver: PostgreSQL JDBC Driver
+	Database dialect: PostgreSQLDialect
+	Database version: 16.14
+	Default catalog/schema: motormindhub/public
+	Autocommit mode: undefined/unknown
+	Isolation level: READ_COMMITTED [default READ_COMMITTED]
+	JDBC fetch size: none
+	Pool: DataSourceConnectionProvider
+	Minimum pool size: undefined/unknown
+	Maximum pool size: undefined/unknown
+2026-07-15T22:18:09.018+02:00  INFO 307194 --- [Api] [           main] org.hibernate.orm.core                   : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-07-15T22:18:09.033+02:00  INFO 307194 --- [Api] [           main] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-07-15T22:18:09.296+02:00  WARN 307194 --- [Api] [           main] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-07-15T22:18:09.345+02:00  INFO 307194 --- [Api] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name userDetailsServiceImpl
+2026-07-15T22:18:09.625+02:00  INFO 307194 --- [Api] [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-07-15T22:18:09.625+02:00  INFO 307194 --- [Api] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-07-15T22:18:09.627+02:00  INFO 307194 --- [Api] [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 2 ms
+2026-07-15T22:18:09.663+02:00  INFO 307194 --- [Api] [           main] c.m.A.w.u.CurrentUserIntegrationTest     : Started CurrentUserIntegrationTest in 1.432 seconds (process running for 10.557)
+2026-07-15T22:18:09.665+02:00  WARN 307194 --- [Api] [           main] o.s.core.events.SpringDocAppInitializer  : SpringDoc /v3/api-docs endpoint is enabled by default. To disable it in production, set the property 'springdoc.api-docs.enabled=false'
+2026-07-15T22:18:09.665+02:00  WARN 307194 --- [Api] [           main] o.s.core.events.SpringDocAppInitializer  : SpringDoc /swagger-ui.html endpoint is enabled by default. To disable it in production, set the property 'springdoc.swagger-ui.enabled=false'
+]]></system-out>
+  </testcase>
+  <testcase name="getCurrentUser_ritorna403_seNonAutenticato" classname="com.motormindhub.Api.web.utenti.CurrentUserIntegrationTest" time="0.007"/>
+  <testcase name="getCurrentUser_ritorna403_perGestoreUtenti" classname="com.motormindhub.Api.web.utenti.CurrentUserIntegrationTest" time="0.151"/>
 </testsuite>
