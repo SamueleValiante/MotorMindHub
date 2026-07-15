@@ -8,6 +8,7 @@ import com.motormindhub.Api.service.gestioneUtenti.exception.TokenNonValidoExcep
 import com.motormindhub.Api.service.gestioneUtenti.exception.UtenteNonTrovatoException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -106,5 +107,23 @@ public class GlobalExceptionHandler {
                 .toList();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ErrorResponseDTO.of(HttpStatus.BAD_REQUEST.value(), "Bad Request", messaggi));
+    }
+
+    /**
+     * Corpo della richiesta JSON malformato, illeggibile, o con un valore che non corrisponde al
+     * tipo atteso (es. un valore enum inesistente, una stringa dove e' atteso un numero). Prima
+     * dell'introduzione di questo handler, l'eccezione non veniva gestita da nessun
+     * @ExceptionHandler: ricadeva sul comportamento di default di Spring MVC
+     * (DefaultHandlerExceptionResolver -&gt; response.sendError(400) -&gt; forward interno a /error),
+     * che in questa configurazione di sicurezza produceva un 403 vuoto - identico sia con sia senza
+     * autenticazione, quindi non un problema di autorizzazione ma di gestione delle eccezioni
+     * mancante. Il messaggio restituito e' generico (non il messaggio originale di Jackson, che
+     * espone nomi di classi Java interne) per non trapelare dettagli implementativi al client.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponseDTO> handleBodyNonLeggibile(HttpMessageNotReadableException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponseDTO.of(HttpStatus.BAD_REQUEST.value(), "Bad Request",
+                        "Il corpo della richiesta e' malformato o contiene un valore non valido per uno dei campi."));
     }
 }
