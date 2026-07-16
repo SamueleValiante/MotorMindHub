@@ -2,6 +2,8 @@ package com.motormindhub.Api.config;
 
 import com.motormindhub.Api.security.JwtAuthenticationFilter;
 import com.motormindhub.Api.security.JwtTokenProvider;
+import com.motormindhub.Api.security.RestAccessDeniedHandler;
+import com.motormindhub.Api.security.RestAuthenticationEntryPoint;
 import com.motormindhub.Api.security.UserDetailsServiceImpl;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
@@ -115,11 +117,16 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter,
-                                                     CorsConfigurationSource corsConfigurationSource) throws Exception {
+                                                     CorsConfigurationSource corsConfigurationSource,
+                                                     RestAuthenticationEntryPoint authenticationEntryPoint,
+                                                     RestAccessDeniedHandler accessDeniedHandler) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(handling -> handling
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(ENDPOINT_PUBBLICI).permitAll()
                         .requestMatchers(HttpMethod.GET, ENDPOINT_PUBBLICI_SOLO_LETTURA).permitAll()

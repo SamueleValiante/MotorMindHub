@@ -80,12 +80,11 @@ class CurrentUserIntegrationTest {
     }
 
     @Test
-    void getCurrentUser_ritorna403_seNonAutenticato() throws Exception {
-        // SecurityConfig non definisce un AuthenticationEntryPoint dedicato: come per il resto
-        // dell'app, l'assenza di autenticazione ricade sul fallback 403 di Spring Security, non 401
-        // (che qui e' riservato ai casi di token presente ma non piu' valido - vedi
-        // JwtAuthenticationFilter e AccountSospesoOBloccatoConTokenGiaEmessoIntegrationTest).
+    void getCurrentUser_ritorna401_seNonAutenticato() throws Exception {
+        // RestAuthenticationEntryPoint (SecurityConfig): l'assenza di autenticazione e' ora distinta
+        // dal 403 di ruolo insufficiente sopra - copertura approfondita in
+        // SecurityExceptionHandlingIntegrationTest.
         mockMvc.perform(get("/api/v1/utenti/me"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 }
