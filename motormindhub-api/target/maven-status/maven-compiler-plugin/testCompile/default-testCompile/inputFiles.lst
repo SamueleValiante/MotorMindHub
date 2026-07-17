@@ -20,4 +20,5 @@
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/web/MalformedRequestBodyIntegrationTest.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/web/SelfServiceAuthorizationIntegrationTest.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/web/utenti/CurrentUserIntegrationTest.java
+/home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/web/utenti/PasswordResetRequestNonDisclosureIntegrationTest.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/web/utenti/UtentiControllerTest.java

@@ -8,13 +8,19 @@
       "Bash(npx playwright test*)",
       "Bash(npx tsc*)",
       "Bash(npm run lint*)",
-      "Bash(docker exec*)",
+      "Bash(docker*)",
       "Bash(git status)",
       "Bash(git diff*)",
       "Bash(git add*)",
       "Bash(git commit*)",
       "Bash(curl*)",
-      "Bash(./mvnw*)"
+      "Bash(./mvnw*)",
+      "Bash(find*)",
+      "Bash(cat*)",
+      "Bash(echo*)",
+      "Bash(grep*)",
+      "Bash(cd*)",
+      "Bash(diff*)"
     ]
   }
 }

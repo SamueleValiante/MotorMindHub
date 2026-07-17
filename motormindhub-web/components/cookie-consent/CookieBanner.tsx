@@ -68,10 +68,15 @@ export function CookieBanner() {
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-50 flex justify-center p-4">
+    // pointer-events-none sul wrapper: è full-width (inset-x-0) anche se la
+    // card visibile è più stretta e centrata, quindi senza questo la fascia
+    // trasparente ai lati intercetterebbe comunque i click destinati al
+    // contenuto sottostante (bug reale: bloccava il submit di form più
+    // lunghi di quello di login, cfr. e2e/register-confirm.spec.ts).
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center p-4">
       <div
         data-testid="cookie-banner"
-        className="w-full max-w-4xl rounded-xl bg-carbon p-6 shadow-xl"
+        className="pointer-events-auto w-full max-w-4xl rounded-xl bg-carbon p-6 shadow-xl"
       >
         {!showCustomize ? (
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

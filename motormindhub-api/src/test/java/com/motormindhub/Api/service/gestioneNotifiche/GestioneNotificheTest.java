@@ -68,7 +68,7 @@ class GestioneNotificheTest {
 
         SimpleMailMessage messaggio = catturaMessaggioSemplice();
         assertThat(messaggio.getTo()).containsExactly("marco@provider.it");
-        assertThat(messaggio.getText()).contains(FRONTEND_BASE_URL + "/recupero-password/reimposta?token=tok-reset");
+        assertThat(messaggio.getText()).contains(FRONTEND_BASE_URL + "/reimposta-password?token=tok-reset");
     }
 
     @Test

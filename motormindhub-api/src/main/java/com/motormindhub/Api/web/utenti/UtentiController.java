@@ -9,6 +9,7 @@ import com.motormindhub.Api.service.gestioneUtenti.dto.PublicProfileDTO;
 import com.motormindhub.Api.service.gestioneUtenti.dto.RegisterUserDTO;
 import com.motormindhub.Api.service.gestioneUtenti.dto.ReportUserDTO;
 import com.motormindhub.Api.service.gestioneUtenti.dto.UpdateProfileDTO;
+import com.motormindhub.Api.service.gestioneUtenti.exception.AccountNonAttivoException;
 import com.motormindhub.Api.web.MessageResponseDTO;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -53,7 +54,16 @@ public class UtentiController {
 
     @PostMapping("/password/recupero")
     public ResponseEntity<MessageResponseDTO> requestPasswordReset(@Valid @RequestBody PasswordResetRequestDTO dto) {
-        gestioneUtenti.requestPasswordReset(dto.email());
+        try {
+            gestioneUtenti.requestPasswordReset(dto.email());
+        } catch (AccountNonAttivoException ignored) {
+            // Non-disclosure (RAD UC_3.1): stessa risposta (status incluso, non solo il
+            // messaggio) sia che l'email esista/sia attiva sia che non lo sia - altrimenti
+            // il solo status code (409 via GlobalExceptionHandler, diverso da 202) rivelerebbe
+            // comunque quali email sono registrate, a parita' di testo. Locale a questo
+            // endpoint: AccountNonAttivoException resta un vero 409 altrove (es.
+            // requestAccountDataExport, dove l'utente e' gia' autenticato sul proprio account).
+        }
         return ResponseEntity.accepted()
                 .body(new MessageResponseDTO("Se l'indirizzo email e' associato a un account attivo, riceverai le istruzioni per il recupero."));
     }

@@ -13,9 +13,9 @@ test.describe("Login", () => {
 
   test("account non verificato: messaggio specifico, nessun redirect", async ({
     page,
-    createTestUser,
+    testUsers,
   }) => {
-    const { email, password } = await createTestUser({ unverified: true });
+    const { email, password } = await testUsers.create({ unverified: true });
 
     await page.goto("/login");
     await page.getByLabel("Email").fill(email);
@@ -40,9 +40,9 @@ test.describe("Login", () => {
   for (const [ruolo, path] of roleRedirects) {
     test(`login riuscito come ${ruolo} reindirizza a ${path}`, async ({
       page,
-      createTestUser,
+      testUsers,
     }) => {
-      const { email, password } = await createTestUser({ ruolo });
+      const { email, password } = await testUsers.create({ ruolo });
 
       await page.goto("/login");
       await page.getByLabel("Email").fill(email);

@@ -82,7 +82,7 @@ public class GestioneNotifiche {
     @Async
     @EventListener
     public void onPasswordResetRequested(PasswordResetRequestedEvent evento) {
-        String link = frontendBaseUrl + "/recupero-password/reimposta?token=" + evento.token();
+        String link = frontendBaseUrl + "/reimposta-password?token=" + evento.token();
         invia(evento.email(), "Recupero password", """
                 Hai richiesto il recupero della password del tuo account MotorMindHub. Clicca sul link seguente per impostarne una nuova:
                 %s
