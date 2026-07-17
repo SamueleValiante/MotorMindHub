@@ -1,3 +1,4 @@
+com/motormindhub/Api/security/SecurityExceptionHandlingIntegrationTest.class
 com/motormindhub/Api/security/RefreshTokenServiceTest.class
 com/motormindhub/Api/web/SelfServiceAuthorizationIntegrationTest.class
 com/motormindhub/Api/security/RefreshTokenIntegrationTest.class
@@ -12,6 +13,7 @@ com/motormindhub/Api/security/AccountSospesoOBloccatoConTokenGiaEmessoIntegratio
 com/motormindhub/Api/web/utenti/UtentiControllerTest$1.class
 com/motormindhub/Api/service/gestioneNotifiche/GestioneNotificheTest.class
 com/motormindhub/Api/web/utenti/UtentiControllerTest.class
+com/motormindhub/Api/security/LoginErrorCodeIntegrationTest.class
 com/motormindhub/Api/security/JwtTokenProviderTest.class
 com/motormindhub/Api/utility/constraints/EmailUnivocaValidatorTest.class
 com/motormindhub/Api/model/repository/UtenteRepositoryTest.class

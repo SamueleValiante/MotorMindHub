@@ -40,10 +40,13 @@
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/model/repository/SegnalazioneRepository.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/model/repository/TokenRecuperoPasswordRepository.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/model/repository/UtenteRepository.java
+/home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/security/JsonErrorResponseWriter.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/security/JwtAuthenticationFilter.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/security/JwtTokenProvider.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/security/LoginAttemptListener.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/security/RefreshTokenService.java
+/home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/security/RestAccessDeniedHandler.java
+/home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/security/RestAuthenticationEntryPoint.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/security/UserDetailsServiceImpl.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/security/UserPrincipal.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/security/exception/RefreshTokenNonValidoException.java

@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm test*)",
+      "Bash(npm run test:e2e*)",
+      "Bash(npm run build*)",
+      "Bash(npm run dev*)",
+      "Bash(npx playwright test*)",
+      "Bash(npx tsc*)",
+      "Bash(npm run lint*)",
+      "Bash(docker exec*)",
+      "Bash(git status)",
+      "Bash(git diff*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(curl*)",
+      "Bash(./mvnw*)"
+    ]
+  }
+}

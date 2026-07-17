@@ -56,6 +56,7 @@ com/motormindhub/Api/service/gestioneAmministrazioneUtenti/dto/ReportQueueItemDT
 com/motormindhub/Api/web/MessageResponseDTO.class
 com/motormindhub/Api/service/gestioneUtenti/GestioneUtenti.class
 com/motormindhub/Api/events/AccountCancellatoEvent.class
+com/motormindhub/Api/security/RestAccessDeniedHandler.class
 com/motormindhub/Api/events/BruteForceLockoutEvent.class
 com/motormindhub/Api/service/gestioneAmministrazioneUtenti/exception/StatoAccountNonValidoException.class
 com/motormindhub/Api/service/gestioneAutori/exception/StatoArticoloNonValidoException.class
@@ -93,6 +94,7 @@ com/motormindhub/Api/model/entity/ArticoloSalvato.class
 com/motormindhub/Api/service/gestioneArticoli/CategoriaEliminataListener.class
 com/motormindhub/Api/service/gestioneCategorie/exception/CategoriaGiaEsistenteException.class
 com/motormindhub/Api/service/gestioneAmministrazioneUtenti/dto/SuspensionDTO.class
+com/motormindhub/Api/security/JsonErrorResponseWriter.class
 com/motormindhub/Api/model/entity/StatoRichiestaCancellazione.class
 com/motormindhub/Api/security/JwtAuthenticationFilter.class
 com/motormindhub/Api/utility/constraints/EmailUnivocaValidator.class
@@ -139,3 +141,4 @@ com/motormindhub/Api/utility/constraints/EmailUnivoca.class
 com/motormindhub/Api/web/auth/RefreshTokenRequestDTO.class
 com/motormindhub/Api/service/gestioneAutori/dto/InviteAuthorDTO.class
 com/motormindhub/Api/service/gestioneAmministrazioneUtenti/exception/RegolaDiDominioViolataException.class
+com/motormindhub/Api/security/RestAuthenticationEntryPoint.class

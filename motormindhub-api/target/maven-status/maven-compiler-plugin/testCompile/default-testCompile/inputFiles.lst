@@ -3,9 +3,11 @@
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/security/AccountSospesoOBloccatoConTokenGiaEmessoIntegrationTest.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/security/JwtClaimsIntegrationTest.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/security/JwtTokenProviderTest.java
+/home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/security/LoginErrorCodeIntegrationTest.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/security/LoginLockoutIntegrationTest.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/security/RefreshTokenIntegrationTest.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/security/RefreshTokenServiceTest.java
+/home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/security/SecurityExceptionHandlingIntegrationTest.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/service/gestioneAmministrazioneUtenti/GestioneAmministrazioneUtentiTest.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/service/gestioneArticoli/CategoriaEliminataListenerTest.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/service/gestioneArticoli/GestioneArticoliTest.java

@@ -13,6 +13,8 @@ Questo file accompagna le immagini in `docs/mockups/`. Le screenshot mostrano il
 | Chrome line | `#B8BEC7` | Bordi, icone, testo secondario chiaro |
 | Fog gray | `#6B7178` | Testo muto/secondario |
 | Paper | `#EDEEF0` | Testo primario su sfondo scuro |
+| Success green | `#3FB27F` | Badge di stato attivo/ok, toast di successo |
+| Surface raised | `#20242B` | Campi input e superfici annidate dentro le card |
 
 Badge di stato — logica cromatica fissa: verde = attivo/ok, amber = in corso/attesa, ember = sospeso/criticità.
 

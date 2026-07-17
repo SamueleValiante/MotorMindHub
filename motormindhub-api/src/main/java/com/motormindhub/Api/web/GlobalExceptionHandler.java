@@ -9,6 +9,9 @@ import com.motormindhub.Api.service.gestioneUtenti.exception.UtenteNonTrovatoExc
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -88,10 +91,47 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponseDTO.of(HttpStatus.BAD_REQUEST.value(), "Bad Request", ex.getMessage()));
     }
 
+    /**
+     * BadCredentialsException/DisabledException/LockedException sono le tre sottoclassi di
+     * AuthenticationException che AuthenticationManager.authenticate() puo' sollevare per un
+     * login fallito (cfr. UserPrincipal, AccountStatusUserDetailsChecker di Spring Security):
+     * rispettivamente credenziali errate, account non ancora verificato (stato != ATTIVO), account
+     * bloccato/sospeso (isAccountNonLocked() = false). Handler dedicati - invece del solo fallback
+     * generico sotto - cosi' il client puo' distinguerle via errorCode (RAD UC_2.1-2.3: tre UX
+     * diverse, non un unico "credenziali non valide" per tutto). Nota: LockedException copre sia la
+     * sospensione amministrativa sia il blocco anti-bruteforce (RNF2.6) - Spring non li distingue a
+     * questo livello (isAccountNonLocked() e' un singolo booleano), quindi restano un'unica categoria
+     * "ACCOUNT_BLOCCATO" anche qui.
+     */
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ErrorResponseDTO> handleCredenzialiNonValide(BadCredentialsException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ErrorResponseDTO.of(HttpStatus.UNAUTHORIZED.value(), "Unauthorized",
+                        "Credenziali non valide.", "CREDENZIALI_NON_VALIDE"));
+    }
+
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<ErrorResponseDTO> handleAccountNonVerificato(DisabledException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ErrorResponseDTO.of(HttpStatus.UNAUTHORIZED.value(), "Unauthorized",
+                        "Il tuo account non e' ancora stato verificato. Controlla la tua casella email per attivarlo.",
+                        "ACCOUNT_NON_VERIFICATO"));
+    }
+
+    @ExceptionHandler(LockedException.class)
+    public ResponseEntity<ErrorResponseDTO> handleAccountBloccato(LockedException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ErrorResponseDTO.of(HttpStatus.UNAUTHORIZED.value(), "Unauthorized",
+                        "Il tuo account e' bloccato o sospeso. Controlla la tua email per le istruzioni.",
+                        "ACCOUNT_BLOCCATO"));
+    }
+
+    /** Fallback per altre sottoclassi di AuthenticationException non gestite sopra (es. AccountExpiredException, non usata oggi). */
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErrorResponseDTO> handleAutenticazione(AuthenticationException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(ErrorResponseDTO.of(HttpStatus.UNAUTHORIZED.value(), "Unauthorized", "Credenziali non valide."));
+                .body(ErrorResponseDTO.of(HttpStatus.UNAUTHORIZED.value(), "Unauthorized",
+                        "Credenziali non valide.", "CREDENZIALI_NON_VALIDE"));
     }
 
     @ExceptionHandler(RefreshTokenNonValidoException.class)
