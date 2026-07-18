@@ -136,9 +136,9 @@ Per ciascun sottosistema, le sezioni seguenti riportano gli invarianti di classe
 >
 > **—** SOSPESO — sospensione amministrativa (RF4.3, UC_23, §2.5).
 >
-> **—** IN_CANCELLAZIONE — stato transitorio: esiste una RichiestaCancellazione in stato IN_CODA per l'utente, in attesa di lavorazione da parte del Gestore Utenti (RF4.6).
->
-> **—** CANCELLATO — stato terminale raggiunto dopo l'elaborazione della richiesta di cancellazione (anonimizzazione irreversibile dei dati personali, RNF5.5, §2.5); non è sinonimo di IN_CANCELLAZIONE.
+> **—** CANCELLATO — stato terminale raggiunto dopo l'elaborazione della richiesta di cancellazione (anonimizzazione irreversibile dei dati personali, RNF5.5, §2.5).
+
+**Nota** Non esiste uno stato transitorio "in attesa di cancellazione" sull'utente. Il mockup 39_gestore_gestione_account.png mostra un badge/filtro "IN CANCELLAZIONE" sulla lista account, che una precedente versione di questa enumerazione modellava con un valore IN_CANCELLAZIONE — mai assegnato però da nessun metodo di GestioneUtenti/GestioneAmministrazioneUtenti (requestAccountDeletion crea solo una RichiestaCancellazione, non tocca Utente.stato), quindi rimosso in quanto dead code. L'informazione "richiesta di cancellazione in coda per questo utente" resta comunque disponibile senza duplicazione tramite RichiestaCancellazione (stato IN_CODA) — già la fonte usata da getUserManagementDashboard e getDeletionRequestsQueue (§2.5) — semplicemente non è (ancora) esposta come badge/filtro sulla lista account come nel mockup: scelta deliberata di non duplicare lo stato, non un'omissione.
 
 **Nome metodo registerUser(dto: RegisterUserDTO)**
 
