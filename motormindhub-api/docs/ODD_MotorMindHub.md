@@ -160,13 +160,13 @@ Per ciascun sottosistema, le sezioni seguenti riportano gli invarianti di classe
 
 **Nome metodo verifyEmail(token: String)**
 
-**Descrizione** Attiva l'account a seguito del click sul link di verifica ricevuto via email. (cfr. RF1.3, UC_1)
+**Descrizione** Attiva l'account a seguito del click sul link di verifica ricevuto via email. Il token ha una scadenza di 24 ore dalla registrazione (RNF9.3, allineata al testo dell'email di verifica e alla scadenza gia' applicata a TokenRecuperoPassword): se scaduto viene sollevata TokenVerificaScadutoException, distinta da TokenNonValidoException (token inesistente o account gia' verificato) per permettere in futuro un flusso di reinvio dedicato. (cfr. RF1.3, UC_1)
 
 **Pre-condizioni**
 
 > *context GestioneUtenti::verifyEmail(token: String)*
 >
-> pre: Utente.allInstances()-\>exists(u \| u.tokenVerifica = token and u.stato = StatoUtente::NON_VERIFICATO)
+> pre: Utente.allInstances()-\>exists(u \| u.tokenVerifica = token and u.stato = StatoUtente::NON_VERIFICATO and u.dataScadenzaTokenVerifica \> now())
 
 **Post-condizioni**
 

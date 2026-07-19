@@ -5,6 +5,7 @@ import com.motormindhub.Api.service.gestioneUtenti.exception.AccountNonAttivoExc
 import com.motormindhub.Api.service.gestioneUtenti.exception.EmailGiaRegistrataException;
 import com.motormindhub.Api.service.gestioneUtenti.exception.RichiestaCancellazioneEsistenteException;
 import com.motormindhub.Api.service.gestioneUtenti.exception.TokenNonValidoException;
+import com.motormindhub.Api.service.gestioneUtenti.exception.TokenVerificaScadutoException;
 import com.motormindhub.Api.service.gestioneUtenti.exception.UtenteNonTrovatoException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -89,6 +90,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleBadRequest(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ErrorResponseDTO.of(HttpStatus.BAD_REQUEST.value(), "Bad Request", ex.getMessage()));
+    }
+
+    /** RNF9.3: distinto da handleBadRequest/TokenNonValidoException per un futuro flusso di reinvio del link. */
+    @ExceptionHandler(TokenVerificaScadutoException.class)
+    public ResponseEntity<ErrorResponseDTO> handleTokenVerificaScaduto(TokenVerificaScadutoException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponseDTO.of(HttpStatus.BAD_REQUEST.value(), "Bad Request",
+                        ex.getMessage(), "TOKEN_VERIFICA_SCADUTO"));
     }
 
     /**

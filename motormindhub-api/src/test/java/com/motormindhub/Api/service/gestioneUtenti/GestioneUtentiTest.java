@@ -26,6 +26,7 @@ import com.motormindhub.Api.service.gestioneUtenti.exception.EmailGiaRegistrataE
 import com.motormindhub.Api.service.gestioneUtenti.exception.RegolaDiDominioViolataException;
 import com.motormindhub.Api.service.gestioneUtenti.exception.RichiestaCancellazioneEsistenteException;
 import com.motormindhub.Api.service.gestioneUtenti.exception.TokenNonValidoException;
+import com.motormindhub.Api.service.gestioneUtenti.exception.TokenVerificaScadutoException;
 import com.motormindhub.Api.service.gestioneUtenti.exception.UtenteNonTrovatoException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -108,6 +109,7 @@ class GestioneUtentiTest {
         assertThat(salvato.getEmail()).isEqualTo("marco@provider.it");
         assertThat(salvato.getStato()).isEqualTo(StatoUtente.NON_VERIFICATO);
         assertThat(salvato.getRuolo().name()).isEqualTo("ISCRITTO");
+        assertThat(salvato.getDataScadenzaTokenVerifica()).isAfter(Instant.now());
         verify(eventPublisher).publishEvent(any(UtenteRegistratoEvent.class));
     }
 
@@ -137,6 +139,7 @@ class GestioneUtentiTest {
     @Test
     void verifyEmail_attivaAccount_quandoTokenValidoEAccountNonVerificato() {
         Utente utente = new Utente("Marco", "Verdi", "marco@provider.it", "hash", null, null, true, "tok-123");
+        utente.setDataScadenzaTokenVerifica(Instant.now().plus(1, ChronoUnit.HOURS));
         ReflectionTestUtils.setField(utente, "id", 1L);
         when(utenteRepository.findByTokenVerifica("tok-123")).thenReturn(Optional.of(utente));
 
@@ -144,6 +147,7 @@ class GestioneUtentiTest {
 
         assertThat(utente.getStato()).isEqualTo(StatoUtente.ATTIVO);
         assertThat(utente.getTokenVerifica()).isNull();
+        assertThat(utente.getDataScadenzaTokenVerifica()).isNull();
     }
 
     @Test
@@ -156,10 +160,30 @@ class GestioneUtentiTest {
     @Test
     void verifyEmail_lanciaEccezione_quandoAccountGiaVerificato() {
         Utente utente = new Utente("Marco", "Verdi", "marco@provider.it", "hash", null, null, true, "tok-123");
+        utente.setDataScadenzaTokenVerifica(Instant.now().plus(1, ChronoUnit.HOURS));
         utente.setStato(StatoUtente.ATTIVO);
         when(utenteRepository.findByTokenVerifica("tok-123")).thenReturn(Optional.of(utente));
 
         assertThrows(TokenNonValidoException.class, () -> gestioneUtenti.verifyEmail("tok-123"));
+    }
+
+    @Test
+    void verifyEmail_lanciaEccezioneDedicata_quandoTokenScaduto() {
+        Utente utente = new Utente("Marco", "Verdi", "marco@provider.it", "hash", null, null, true, "tok-scaduto");
+        utente.setDataScadenzaTokenVerifica(Instant.now().minus(1, ChronoUnit.HOURS));
+        when(utenteRepository.findByTokenVerifica("tok-scaduto")).thenReturn(Optional.of(utente));
+
+        assertThrows(TokenVerificaScadutoException.class, () -> gestioneUtenti.verifyEmail("tok-scaduto"));
+        assertThat(utente.getStato()).isEqualTo(StatoUtente.NON_VERIFICATO);
+    }
+
+    @Test
+    void verifyEmail_lanciaEccezioneDedicata_quandoDataScadenzaAssente() {
+        // simula un token emesso prima dell'introduzione della scadenza (dato legacy senza migrazione applicata a livello di test)
+        Utente utente = new Utente("Marco", "Verdi", "marco@provider.it", "hash", null, null, true, "tok-legacy");
+        when(utenteRepository.findByTokenVerifica("tok-legacy")).thenReturn(Optional.of(utente));
+
+        assertThrows(TokenVerificaScadutoException.class, () -> gestioneUtenti.verifyEmail("tok-legacy"));
     }
 
     // --- requestPasswordReset ---------------------------------------------

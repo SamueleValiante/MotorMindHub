@@ -54,6 +54,9 @@ public class Utente {
     @Column(name = "token_verifica", unique = true)
     private String tokenVerifica;
 
+    @Column(name = "data_scadenza_token_verifica")
+    private Instant dataScadenzaTokenVerifica;
+
     @Column(name = "consenso_privacy", nullable = false)
     private boolean consensoPrivacy;
 
@@ -165,6 +168,19 @@ public class Utente {
 
     public void setTokenVerifica(String tokenVerifica) {
         this.tokenVerifica = tokenVerifica;
+    }
+
+    public Instant getDataScadenzaTokenVerifica() {
+        return dataScadenzaTokenVerifica;
+    }
+
+    public void setDataScadenzaTokenVerifica(Instant dataScadenzaTokenVerifica) {
+        this.dataScadenzaTokenVerifica = dataScadenzaTokenVerifica;
+    }
+
+    /** RNF9.3: true se il token di verifica email non e' (piu') utilizzabile perche' scaduto o mai schedulato. */
+    public boolean isTokenVerificaScaduto() {
+        return dataScadenzaTokenVerifica == null || dataScadenzaTokenVerifica.isBefore(Instant.now());
     }
 
     public boolean isConsensoPrivacy() {

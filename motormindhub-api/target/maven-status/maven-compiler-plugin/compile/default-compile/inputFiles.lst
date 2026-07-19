@@ -124,6 +124,7 @@
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/service/gestioneUtenti/exception/RegolaDiDominioViolataException.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/service/gestioneUtenti/exception/RichiestaCancellazioneEsistenteException.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/service/gestioneUtenti/exception/TokenNonValidoException.java
+/home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/service/gestioneUtenti/exception/TokenVerificaScadutoException.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/service/gestioneUtenti/exception/UtenteNonTrovatoException.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/utility/constraints/EmailUnivoca.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/utility/constraints/EmailUnivocaValidator.java

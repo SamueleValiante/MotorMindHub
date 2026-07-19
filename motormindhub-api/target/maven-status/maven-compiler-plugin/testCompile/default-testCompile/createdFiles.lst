@@ -18,6 +18,7 @@ com/motormindhub/Api/utility/constraints/PasswordSicuraValidatorTest.class
 com/motormindhub/Api/service/gestioneCategorie/GestioneCategorieTest.class
 com/motormindhub/Api/service/gestioneAutori/GestioneAutoriTest.class
 com/motormindhub/Api/security/JwtClaimsIntegrationTest.class
+com/motormindhub/Api/web/utenti/EmailVerificationExpirationIntegrationTest.class
 com/motormindhub/Api/security/JwtTokenProviderTest.class
 com/motormindhub/Api/model/repository/UtenteRepositoryTest.class
 com/motormindhub/Api/web/utenti/CurrentUserIntegrationTest.class

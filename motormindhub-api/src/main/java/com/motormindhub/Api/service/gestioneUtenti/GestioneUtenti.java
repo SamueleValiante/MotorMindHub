@@ -25,6 +25,7 @@ import com.motormindhub.Api.service.gestioneUtenti.exception.EmailGiaRegistrataE
 import com.motormindhub.Api.service.gestioneUtenti.exception.RegolaDiDominioViolataException;
 import com.motormindhub.Api.service.gestioneUtenti.exception.RichiestaCancellazioneEsistenteException;
 import com.motormindhub.Api.service.gestioneUtenti.exception.TokenNonValidoException;
+import com.motormindhub.Api.service.gestioneUtenti.exception.TokenVerificaScadutoException;
 import com.motormindhub.Api.service.gestioneUtenti.exception.UtenteNonTrovatoException;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -45,6 +46,7 @@ import java.util.UUID;
 public class GestioneUtenti {
 
     private static final long SCADENZA_TOKEN_RECUPERO_PASSWORD_ORE = 24; // RNF9.3
+    private static final long SCADENZA_TOKEN_VERIFICA_ORE = 24; // RNF9.3, coerente col testo dell'email di verifica
 
     // RNF2.6: soglia e durata del blocco non sono specificate numericamente dal RAD ("dopo n
     // tentativi... bloccato temporaneamente") - valori ragionevoli per un blocco anti-bruteforce,
@@ -99,6 +101,7 @@ public class GestioneUtenti {
                 true,
                 tokenVerifica
         );
+        utente.setDataScadenzaTokenVerifica(Instant.now().plus(SCADENZA_TOKEN_VERIFICA_ORE, ChronoUnit.HOURS));
         utente = utenteRepository.save(utente);
 
         eventPublisher.publishEvent(new UtenteRegistratoEvent(utente.getId(), utente.getEmail(), utente.getNome(), tokenVerifica));
@@ -106,9 +109,9 @@ public class GestioneUtenti {
     }
 
     /**
-     * pre: exists u | u.tokenVerifica = token and u.stato = NON_VERIFICATO
+     * pre: exists u | u.tokenVerifica = token and u.stato = NON_VERIFICATO and u.dataScadenzaTokenVerifica > now()
      * post: quell'u.stato = ATTIVO
-     * (ODD 2.1, RF1.3, UC_1)
+     * (ODD 2.1, RF1.3, UC_1, RNF9.3)
      */
     @Transactional
     public void verifyEmail(String token) {
@@ -116,8 +119,13 @@ public class GestioneUtenti {
                 .filter(u -> u.getStato() == StatoUtente.NON_VERIFICATO)
                 .orElseThrow(() -> new TokenNonValidoException("Il link di verifica non e' valido o e' gia' stato utilizzato."));
 
+        if (utente.isTokenVerificaScaduto()) {
+            throw new TokenVerificaScadutoException("Il link di verifica e' scaduto.");
+        }
+
         utente.setStato(StatoUtente.ATTIVO);
         utente.setTokenVerifica(null);
+        utente.setDataScadenzaTokenVerifica(null);
     }
 
     /**

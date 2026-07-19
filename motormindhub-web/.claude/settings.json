@@ -21,6 +21,7 @@
       "Bash(grep*)",
       "Bash(cd*)",
       "Bash(diff*)"
+
     ]
   }
 }

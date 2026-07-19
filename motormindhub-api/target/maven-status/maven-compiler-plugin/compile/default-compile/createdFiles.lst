@@ -20,6 +20,7 @@ com/motormindhub/Api/model/repository/TokenRecuperoPasswordRepository.class
 com/motormindhub/Api/security/exception/RefreshTokenNonValidoException.class
 com/motormindhub/Api/web/ErrorResponseDTO.class
 com/motormindhub/Api/service/gestioneAutori/dto/RejectionReasonDTO.class
+com/motormindhub/Api/service/gestioneUtenti/exception/TokenVerificaScadutoException.class
 com/motormindhub/Api/security/UserDetailsServiceImpl.class
 com/motormindhub/Api/service/gestioneAutori/exception/EmailGiaRegistrataException.class
 com/motormindhub/Api/web/GlobalExceptionHandler.class
