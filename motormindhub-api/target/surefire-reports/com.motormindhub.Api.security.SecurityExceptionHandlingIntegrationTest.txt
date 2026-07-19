@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: com.motormindhub.Api.security.SecurityExceptionHandlingIntegrationTest
 -------------------------------------------------------------------------------
-Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.024 s -- in com.motormindhub.Api.security.SecurityExceptionHandlingIntegrationTest
+Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.029 s -- in com.motormindhub.Api.security.SecurityExceptionHandlingIntegrationTest

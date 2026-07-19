@@ -14,6 +14,9 @@ export default async function globalTeardown(): Promise<void> {
     execSync(
       `docker exec ${DB_CONTAINER} psql -U mmh -d motormindhub -c "` +
         `DELETE FROM refresh_tokens WHERE utente_id IN (SELECT id FROM utenti WHERE email LIKE 'e2e-%'); ` +
+        `DELETE FROM token_recupero_password WHERE utente_id IN (SELECT id FROM utenti WHERE email LIKE 'e2e-%'); ` +
+        `DELETE FROM richieste_cancellazione WHERE utente_id IN (SELECT id FROM utenti WHERE email LIKE 'e2e-%'); ` +
+        `DELETE FROM segnalazioni WHERE segnalante_id IN (SELECT id FROM utenti WHERE email LIKE 'e2e-%') OR segnalato_id IN (SELECT id FROM utenti WHERE email LIKE 'e2e-%'); ` +
         `DELETE FROM utenti WHERE email LIKE 'e2e-%';"`
     );
   } catch (error) {

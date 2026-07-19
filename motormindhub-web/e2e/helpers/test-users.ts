@@ -97,6 +97,32 @@ async function waitForEmailToken(
 }
 
 /**
+ * Verifica che sia arrivata l'email di esportazione dati (GestioneNotifiche.
+ * onDataExportReady): allegato JSON diretto, non un link di download —
+ * cfr. commento nel backend su questa deviazione da RNF9.3.
+ */
+export async function waitForDataExportEmail(
+  email: string,
+  attempts = 20
+): Promise<{ subject: string; attachments: number }> {
+  for (let i = 0; i < attempts; i++) {
+    const res = await fetch(
+      `${MAILPIT_BASE}/api/v1/search?query=to:${encodeURIComponent(email)}`
+    );
+    const data = await res.json();
+    const messages: Array<{ Subject: string; Attachments: number }> = data.messages ?? [];
+    const match = messages.find((m) => m.Subject.includes("dati personali"));
+    if (match) {
+      return { subject: match.Subject, attachments: match.Attachments };
+    }
+    await new Promise((resolve) => setTimeout(resolve, 300));
+  }
+  throw new Error(
+    `Nessuna email di esportazione dati trovata per ${email} dopo ${attempts} tentativi`
+  );
+}
+
+/**
  * I ruoli AUTORE/MANAGER_AUTORI/GESTORE_UTENTI non sono auto-registrabili
  * (RAD: invito autore, ruolo interno) — per testare il redirect per ruolo
  * si promuove via SQL diretto un account ISCRITTO gia' registrato e
@@ -108,8 +134,22 @@ export function setUserRole(email: string, ruolo: string): void {
   );
 }
 
+export function getUserId(email: string): number {
+  const output = execSync(
+    `docker exec ${DB_CONTAINER} psql -U mmh -d motormindhub -t -A -c "SELECT id FROM utenti WHERE email='${email}';"`
+  )
+    .toString()
+    .trim();
+  return Number(output);
+}
+
 export function deleteTestUser(email: string): void {
   execSync(
-    `docker exec ${DB_CONTAINER} psql -U mmh -d motormindhub -c "DELETE FROM refresh_tokens WHERE utente_id = (SELECT id FROM utenti WHERE email='${email}'); DELETE FROM token_recupero_password WHERE utente_id = (SELECT id FROM utenti WHERE email='${email}'); DELETE FROM utenti WHERE email='${email}';"`
+    `docker exec ${DB_CONTAINER} psql -U mmh -d motormindhub -c "` +
+      `DELETE FROM refresh_tokens WHERE utente_id = (SELECT id FROM utenti WHERE email='${email}'); ` +
+      `DELETE FROM token_recupero_password WHERE utente_id = (SELECT id FROM utenti WHERE email='${email}'); ` +
+      `DELETE FROM richieste_cancellazione WHERE utente_id = (SELECT id FROM utenti WHERE email='${email}'); ` +
+      `DELETE FROM segnalazioni WHERE segnalante_id = (SELECT id FROM utenti WHERE email='${email}') OR segnalato_id = (SELECT id FROM utenti WHERE email='${email}'); ` +
+      `DELETE FROM utenti WHERE email='${email}';"`
   );
 }

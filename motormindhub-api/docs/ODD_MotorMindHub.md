@@ -291,6 +291,8 @@ Per ciascun sottosistema, le sezioni seguenti riportano gli invarianti di classe
 
 **Invarianti** *self.articoli-\>select(a \| a.stato = StatoArticolo::PUBBLICATO)-\>forAll(a \| not a.categoria.oclIsUndefined()) — un articolo pubblicato deve appartenere a una categoria.*
 
+**Nota (ownership)** updateDraft, publishArticle, updatePublishedArticle, deleteDraft e deleteArticle accettano tutti un parametro callerId (il chiamante autenticato) oltre all'id dell'articolo, e condividono lo stesso vincolo, non altrimenti derivabile dai soli ruoli RBAC (@PreAuthorize verifica solo "è un Autore o un Manager Autori", non "è l'autore *di questo articolo*"): solo l'autore proprietario dell'articolo o un utente con ruolo MANAGER_AUTORI può operare su di esso, altrimenti AutoreNonValidoException. Per non ripeterlo identico cinque volte, le pre-condizioni seguenti lo esprimono con la clausola comune `and (a.autore.id = callerId or Utente.allInstances()->exists(u | u.id = callerId and u.ruolo = Ruolo::MANAGER_AUTORI))`.
+
 **Nome metodo createDraft(authorId: Long, dto: ArticleDraftDTO)**
 
 **Descrizione** Crea un nuovo articolo in stato BOZZA. (cfr. RF2.7, UC_16)
@@ -307,85 +309,90 @@ Per ciascun sottosistema, le sezioni seguenti riportano gli invarianti di classe
 >
 > post: Articolo.allInstances()-\>exists(a \| a.autore.id = authorId and a.stato = StatoArticolo::BOZZA)
 
-**Nome metodo updateDraft(draftId: Long, dto: ArticleDraftDTO)**
+**Nome metodo updateDraft(draftId: Long, callerId: Long, dto: ArticleDraftDTO)**
 
 **Descrizione** Aggiorna una bozza esistente, ripristinando l'editor allo stato salvato. (cfr. RF2.7, UC_17)
 
 **Pre-condizioni**
 
-> *context GestioneArticoli::updateDraft(draftId: Long, dto: ArticleDraftDTO)*
+> *context GestioneArticoli::updateDraft(draftId: Long, callerId: Long, dto: ArticleDraftDTO)*
 >
-> pre: Articolo.allInstances()-\>exists(a \| a.id = draftId and a.stato = StatoArticolo::BOZZA)
+> pre: Articolo.allInstances()-\>exists(a \| a.id = draftId and a.stato = StatoArticolo::BOZZA
+> and (a.autore.id = callerId or Utente.allInstances()-\>exists(u \| u.id = callerId and u.ruolo = Ruolo::MANAGER_AUTORI)))
 
 **Post-condizioni**
 
-> *context GestioneArticoli::updateDraft(draftId: Long, dto: ArticleDraftDTO)*
+> *context GestioneArticoli::updateDraft(draftId: Long, callerId: Long, dto: ArticleDraftDTO)*
 >
 > post: Articolo.allInstances()-\>select(a \| a.id = draftId).titolo = dto.titolo
 
-**Nome metodo publishArticle(articleId: Long)**
+**Nome metodo publishArticle(articleId: Long, callerId: Long)**
 
 **Descrizione** Porta l'articolo dallo stato BOZZA a IN_ATTESA_APPROVAZIONE. (cfr. RF2.2, UC_15, UC_17)
 
 **Pre-condizioni**
 
-> *context GestioneArticoli::publishArticle(articleId: Long)*
+> *context GestioneArticoli::publishArticle(articleId: Long, callerId: Long)*
 >
-> pre: Articolo.allInstances()-\>exists(a \| a.id = articleId and a.stato = StatoArticolo::BOZZA and not a.titolo.oclIsUndefined() and not a.categoria.oclIsUndefined())
+> pre: Articolo.allInstances()-\>exists(a \| a.id = articleId and a.stato = StatoArticolo::BOZZA and not a.titolo.oclIsUndefined() and not a.categoria.oclIsUndefined()
+> and (a.autore.id = callerId or Utente.allInstances()-\>exists(u \| u.id = callerId and u.ruolo = Ruolo::MANAGER_AUTORI)))
 
 **Post-condizioni**
 
-> *context GestioneArticoli::publishArticle(articleId: Long)*
+> *context GestioneArticoli::publishArticle(articleId: Long, callerId: Long)*
 >
 > post: Articolo.allInstances()-\>select(a \| a.id = articleId).stato = StatoArticolo::IN_ATTESA_APPROVAZIONE
 
-**Nome metodo updatePublishedArticle(articleId: Long, dto: ArticleUpdateDTO)**
+**Nome metodo updatePublishedArticle(articleId: Long, callerId: Long, dto: ArticleUpdateDTO)**
 
 **Descrizione** Corregge un articolo già pubblicato; le modifiche sono immediatamente visibili. (cfr. RF2.3, UC_20)
 
 **Pre-condizioni**
 
-> *context GestioneArticoli::updatePublishedArticle(articleId: Long, dto: ArticleUpdateDTO)*
+> *context GestioneArticoli::updatePublishedArticle(articleId: Long, callerId: Long, dto: ArticleUpdateDTO)*
 >
-> pre: Articolo.allInstances()-\>exists(a \| a.id = articleId and a.stato = StatoArticolo::PUBBLICATO)
+> pre: Articolo.allInstances()-\>exists(a \| a.id = articleId and a.stato = StatoArticolo::PUBBLICATO
+> and (a.autore.id = callerId or Utente.allInstances()-\>exists(u \| u.id = callerId and u.ruolo = Ruolo::MANAGER_AUTORI)))
 
 **Post-condizioni**
 
-> *context GestioneArticoli::updatePublishedArticle(articleId: Long, dto: ArticleUpdateDTO)*
+> *context GestioneArticoli::updatePublishedArticle(articleId: Long, callerId: Long, dto: ArticleUpdateDTO)*
 >
 > post: Articolo.allInstances()-\>select(a \| a.id = articleId).testo = dto.testo
 >
 > and self.articoli-\>select(a \| a.id = articleId).stato = StatoArticolo::PUBBLICATO
 
-**Nome metodo deleteDraft(draftId: Long)**
+**Nome metodo deleteDraft(draftId: Long, callerId: Long)**
 
 **Descrizione** Elimina definitivamente una bozza. (cfr. RF2.7, UC_18)
 
 **Pre-condizioni**
 
-> *context GestioneArticoli::deleteDraft(draftId: Long)*
+> *context GestioneArticoli::deleteDraft(draftId: Long, callerId: Long)*
 >
-> pre: Articolo.allInstances()-\>exists(a \| a.id = draftId and a.stato = StatoArticolo::BOZZA)
+> pre: Articolo.allInstances()-\>exists(a \| a.id = draftId and a.stato = StatoArticolo::BOZZA
+> and (a.autore.id = callerId or Utente.allInstances()-\>exists(u \| u.id = callerId and u.ruolo = Ruolo::MANAGER_AUTORI)))
 
 **Post-condizioni**
 
-> *context GestioneArticoli::deleteDraft(draftId: Long)*
+> *context GestioneArticoli::deleteDraft(draftId: Long, callerId: Long)*
 >
 > post: not Articolo.allInstances()-\>exists(a \| a.id = draftId)
 
-**Nome metodo deleteArticle(articleId: Long)**
+**Nome metodo deleteArticle(articleId: Long, callerId: Long)**
 
 **Descrizione** Elimina definitivamente un articolo pubblicato. (cfr. RF2.4, UC_19)
 
 **Pre-condizioni**
 
-> *context GestioneArticoli::deleteArticle(articleId: Long)*
+> *context GestioneArticoli::deleteArticle(articleId: Long, callerId: Long)*
 >
-> pre: Articolo.allInstances()-\>exists(a \| a.id = articleId and a.stato = StatoArticolo::PUBBLICATO)
+> pre: Articolo.allInstances()-\>exists(a \| a.id = articleId and a.stato = StatoArticolo::PUBBLICATO
+> and (a.autore.id = callerId or Utente.allInstances()-\>exists(u \| u.id = callerId and u.ruolo = Ruolo::MANAGER_AUTORI)))
 
 **Post-condizioni**
 
-> *context GestioneArticoli::deleteArticle(articleId: Long)*
+> *context GestioneArticoli::deleteArticle(articleId: Long, callerId: Long)*
 >
 > post: not Articolo.allInstances()-\>exists(a \| a.id = articleId)
 
