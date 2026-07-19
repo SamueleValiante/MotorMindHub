@@ -67,7 +67,7 @@ export async function requestPasswordResetAndGetToken(email: string): Promise<st
  * fissa, e un token UUID può finire tagliato a metà — visto succedere
  * durante la verifica manuale del link di recupero password).
  */
-async function waitForEmailToken(
+export async function waitForEmailToken(
   email: string,
   subjectContains: string,
   attempts = 20

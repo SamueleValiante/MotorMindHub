@@ -10,8 +10,8 @@ export function Avatar({ nome, cognome, fotoProfilo, className }: AvatarProps) {
   const size = className ?? "h-16 w-16";
 
   if (fotoProfilo) {
-    // eslint-disable-next-line @next/next/no-img-element -- URL arbitraria fornita dall'utente, non ottimizzabile da next/image senza un dominio remoto configurato
     return (
+      // eslint-disable-next-line @next/next/no-img-element -- URL arbitraria fornita dall'utente, non ottimizzabile da next/image senza un dominio remoto configurato
       <img
         src={fotoProfilo}
         alt={`${nome} ${cognome}`}
