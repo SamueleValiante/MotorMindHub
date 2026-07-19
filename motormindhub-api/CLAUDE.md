@@ -38,3 +38,9 @@ Decisione di design importante: **un'unica entità `Utente`** con campo `ruolo` 
 - Ogni metodo che modifica lo stato ha un contratto OCL nell'ODD (§2.x): usalo come specifica per il test unitario, non solo come commento.
 - Le operazioni di sola lettura (query) non hanno contratto OCL formale nell'ODD — la descrizione testuale basta.
 - Dopo ogni sottosistema: far girare i test, poi commit.
+
+## Fonte di verità della documentazione
+docs/ in questo repo è una COPIA. La fonte di verità è
+motormindhub-api/docs/. Dopo ogni aggiornamento a PS/RAD/SDD/ODD nel
+backend, ricopiare manualmente qui prima di continuare il lavoro
+frontend — non fidarsi che questa copia sia già aggiornata.

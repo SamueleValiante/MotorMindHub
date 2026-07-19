@@ -29,3 +29,9 @@ GestioneCategorie → GestioneAutori → GestioneAmministrazioneUtenti.
 Per ogni pagina: apri il mockup indicato in MOCKUPS.md PRIMA di scrivere
 il componente, verifica lo schema reale in Swagger PRIMA di scrivere la
 chiamata API. Responsive obbligatorio (mobile-first, Tailwind).
+
+## Fonte di verità della documentazione
+docs/ in questo repo è una COPIA. La fonte di verità è
+motormindhub-api/docs/. Dopo ogni aggiornamento a PS/RAD/SDD/ODD nel
+backend, ricopiare manualmente qui prima di continuare il lavoro
+frontend — non fidarsi che questa copia sia già aggiornata.
