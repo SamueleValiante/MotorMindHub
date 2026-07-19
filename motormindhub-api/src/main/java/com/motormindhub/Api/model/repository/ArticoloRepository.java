@@ -23,18 +23,18 @@ public interface ArticoloRepository extends JpaRepository<Articolo, Long> {
     @Query(value = """
             SELECT a.* FROM articoli a
             WHERE a.stato = 'PUBBLICATO'
-              AND (:query IS NULL OR a.search_vector @@ websearch_to_tsquery('italian', :query))
-              AND (:categoriaIds IS NULL OR a.categoria_id = ANY (:categoriaIds))
+              AND (CAST(:query AS text) IS NULL OR a.search_vector @@ websearch_to_tsquery('italian', CAST(:query AS text)))
+              AND (CAST(:categoriaIds AS bigint[]) IS NULL OR a.categoria_id = ANY (CAST(:categoriaIds AS bigint[])))
             """,
             countQuery = """
             SELECT count(*) FROM articoli a
             WHERE a.stato = 'PUBBLICATO'
-              AND (:query IS NULL OR a.search_vector @@ websearch_to_tsquery('italian', :query))
-              AND (:categoriaIds IS NULL OR a.categoria_id = ANY (:categoriaIds))
+              AND (CAST(:query AS text) IS NULL OR a.search_vector @@ websearch_to_tsquery('italian', CAST(:query AS text)))
+              AND (CAST(:categoriaIds AS bigint[]) IS NULL OR a.categoria_id = ANY (CAST(:categoriaIds AS bigint[])))
             """,
             nativeQuery = true)
     Page<Articolo> cercaPubblicati(@Param("query") String query,
-                                    @Param("categoriaIds") List<Long> categoriaIds,
+                                    @Param("categoriaIds") Long[] categoriaIds,
                                     Pageable pageable);
 
     List<Articolo> findByAutoreIdOrderByDataUltimoAggiornamentoDesc(Long autoreId);

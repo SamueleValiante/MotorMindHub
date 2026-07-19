@@ -5,6 +5,7 @@ import com.motormindhub.Api.security.JwtTokenProvider;
 import com.motormindhub.Api.security.RestAccessDeniedHandler;
 import com.motormindhub.Api.security.RestAuthenticationEntryPoint;
 import com.motormindhub.Api.security.UserDetailsServiceImpl;
+import jakarta.servlet.DispatcherType;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -128,6 +129,16 @@ public class SecurityConfig {
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
+                        // Il forward interno di Spring Boot verso /error (dispatch di tipo ERROR) ripassa
+                        // per l'intera filter chain come una nuova richiesta: senza questa regola, per una
+                        // richiesta originaria non autenticata su un endpoint permitAll che solleva
+                        // un'eccezione non gestita, quel secondo passaggio finirebbe su anyRequest().authenticated()
+                        // e verrebbe intercettato da RestAuthenticationEntryPoint - un 401 che maschera un 500
+                        // reale. GlobalExceptionHandler.handleErroreInterno intercetta gia' la stragrande
+                        // maggioranza dei casi prima che si arrivi a un dispatch verso /error; questa regola e'
+                        // una seconda rete di sicurezza per cio' che sfugge a quel livello (es. eccezioni
+                        // sollevate da un filtro anziche' da un controller).
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers(ENDPOINT_PUBBLICI).permitAll()
                         .requestMatchers(HttpMethod.GET, ENDPOINT_PUBBLICI_SOLO_LETTURA).permitAll()
                         .requestMatchers(HttpMethod.GET, ARTICOLO_DETTAGLIO_PUBBLICO).permitAll()

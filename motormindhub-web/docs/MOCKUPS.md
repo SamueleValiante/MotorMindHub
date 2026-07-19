@@ -35,10 +35,10 @@ Copre NP1 (Guest, parte) e NP2 (Iscritto). Autenticazione, profilo, diritti GDPR
 | File | Schermata (RAD) | Rif. |
 |---|---|---|
 | `05_login.png` | Login | RF1.4, UC_2 |
-| `06_registrazione.png` | Registrazione | RF1.3, UC_1 — testo mockup sui requisiti password non affidabile: dice "minimo 10 caratteri, un numero e un simbolo", ma il backend (`PasswordSicuraValidator`) richiede 8 caratteri + maiuscola + minuscola + cifra + simbolo; il codice implementato segue il backend, non il mockup |
+| `06_registrazione.png` | Registrazione | RF1.3, UC_1 |
 | `07_conferma_email.png` | Conferma / verifica email | UC_1 |
 | `08_recupero_password.png` | Recupero password — richiesta | RF1.5, UC_3 |
-| `09_reimposta_password.png` | Recupero password — reimposta | RF1.5, UC_3 — stesso testo mockup sui requisiti password non affidabile del punto 06 ("minimo 10 caratteri, un numero e un simbolo" vs 8 caratteri + maiuscola + minuscola + cifra + simbolo di `PasswordSicuraValidator`); il codice implementato segue il backend |
+| `09_reimposta_password.png` | Recupero password — reimposta | RF1.5, UC_3 |
 | `15_account_panoramica.png` | Area Personale — Panoramica | NP2 |
 | `16_account_impostazioni.png` | Impostazioni Profilo | RF1.6, UC_4 |
 | `18_form_segnalazione.png` | Form di Segnalazione profilo/contenuto | RF1.9, UC_26 |

@@ -10,6 +10,7 @@ import com.motormindhub.Api.service.gestioneUtenti.exception.UtenteNonTrovatoExc
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
@@ -174,5 +175,42 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ErrorResponseDTO.of(HttpStatus.BAD_REQUEST.value(), "Bad Request",
                         "Il corpo della richiesta e' malformato o contiene un valore non valido per uno dei campi."));
+    }
+
+    /**
+     * AccessDeniedException (sollevata da @PreAuthorize durante l'invocazione di un metodo
+     * controller, cfr. SecurityConfig @EnableMethodSecurity) e' normalmente lasciata risalire non
+     * gestita da questa classe, cosi' che esca da DispatcherServlet e venga intercettata da
+     * ExceptionTranslationFilter -&gt; RestAccessDeniedHandler (stesso status/messaggio replicati qui).
+     * Un handler esplicito e' comunque necessario ora che esiste handleErroreInterno sotto: senza,
+     * quel catch-all (l'unico match disponibile per ExceptionHandlerExceptionResolver, in assenza di
+     * un handler piu' specifico) la intercetterebbe per primo e la trasformerebbe in un 500 invece
+     * del 403 di autorizzazione atteso.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponseDTO> handleAccessoNegato(AccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponseDTO.of(HttpStatus.FORBIDDEN.value(), "Forbidden",
+                        "Permessi insufficienti per accedere a questa risorsa."));
+    }
+
+    /**
+     * Fallback generico per qualunque RuntimeException non gestita esplicitamente sopra (bug
+     * applicativo, errore del database non mappato a un'eccezione di dominio, ecc.). Stesso
+     * ragionamento del commento su handleBodyNonLeggibile: senza questo handler l'eccezione
+     * ricadrebbe sul dispatch di default verso /error (DispatcherType.ERROR); per una richiesta
+     * originariamente non autenticata su un endpoint permitAll, quel secondo passaggio nella filter
+     * chain di sicurezza (vedi SecurityConfig, .dispatcherTypeMatchers(ERROR).permitAll() la rende
+     * comunque innocua come ulteriore rete di sicurezza) veniva intercettato da
+     * RestAuthenticationEntryPoint prima ancora di arrivare qui - un 500 reale finiva mascherato da
+     * un 401, facendo credere a un client che si fida dello status code che serva un login, non che
+     * ci sia un bug da segnalare. Il messaggio e' generico per non esporre dettagli implementativi
+     * (stack trace, nomi di classi Java interne) al client.
+     */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponseDTO> handleErroreInterno(Exception ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ErrorResponseDTO.of(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Internal Server Error",
+                        "Si e' verificato un errore interno. Riprova piu' tardi."));
     }
 }

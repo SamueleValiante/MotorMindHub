@@ -217,9 +217,10 @@ public class GestioneArticoli {
         OrdinamentoArticoli ordinamento = Optional.ofNullable(criteria.ordinamento()).orElse(OrdinamentoArticoli.PIU_RECENTI);
         String query = (criteria.query() == null || criteria.query().isBlank()) ? null : criteria.query();
         List<Long> categoriaIds = espandiConSottocategorie(criteria.categoriaIds());
+        Long[] categoriaIdsArray = categoriaIds == null ? null : categoriaIds.toArray(new Long[0]);
 
         Pageable pageable = PageRequest.of(pagina, dimensionePagina, risolviOrdinamento(ordinamento));
-        Page<Articolo> risultati = articoloRepository.cercaPubblicati(query, categoriaIds, pageable);
+        Page<Articolo> risultati = articoloRepository.cercaPubblicati(query, categoriaIdsArray, pageable);
 
         List<ArticleSummaryDTO> articoli = risultati.getContent().stream().map(this::mappaSummary).toList();
         return new ArticleSearchResultDTO(articoli, risultati.getTotalElements(), pagina, dimensionePagina);

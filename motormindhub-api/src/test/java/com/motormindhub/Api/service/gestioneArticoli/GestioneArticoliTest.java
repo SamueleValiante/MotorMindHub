@@ -477,11 +477,11 @@ class GestioneArticoliTest {
         // 5L e 6L senza sottocategorie (findAll non stubbato = lista vuota): l'espansione
         // restituisce esattamente gli id richiesti, nello stesso ordine di inserimento.
         Page<Articolo> paginaVuota = new PageImpl<>(List.of());
-        when(articoloRepository.cercaPubblicati(eq("freni"), eq(List.of(5L, 6L)), any())).thenReturn(paginaVuota);
+        when(articoloRepository.cercaPubblicati(eq("freni"), eq(new Long[]{5L, 6L}), any())).thenReturn(paginaVuota);
 
         gestioneArticoli.searchArticles(new SearchCriteriaDTO("freni", List.of(5L, 6L), 1, 10, null));
 
-        verify(articoloRepository).cercaPubblicati(eq("freni"), eq(List.of(5L, 6L)), any());
+        verify(articoloRepository).cercaPubblicati(eq("freni"), eq(new Long[]{5L, 6L}), any());
     }
 
     @Test
@@ -497,7 +497,7 @@ class GestioneArticoliTest {
         when(categoriaRepository.findAll()).thenReturn(List.of(radice, figlia, nipote, categoriaNonImparentata));
 
         Page<Articolo> paginaVuota = new PageImpl<>(List.of());
-        ArgumentCaptor<List<Long>> categoriaIdsCaptor = ArgumentCaptor.forClass(List.class);
+        ArgumentCaptor<Long[]> categoriaIdsCaptor = ArgumentCaptor.forClass(Long[].class);
         when(articoloRepository.cercaPubblicati(isNull(), categoriaIdsCaptor.capture(), any())).thenReturn(paginaVuota);
 
         gestioneArticoli.searchArticles(new SearchCriteriaDTO(null, List.of(1L), null, null, null));
