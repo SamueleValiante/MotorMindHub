@@ -3,6 +3,7 @@ package com.motormindhub.Api.web;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.motormindhub.Api.model.entity.Articolo;
 import com.motormindhub.Api.model.entity.Ruolo;
+import com.motormindhub.Api.model.entity.StatoArticolo;
 import com.motormindhub.Api.model.entity.StatoUtente;
 import com.motormindhub.Api.model.entity.TipoLista;
 import com.motormindhub.Api.model.entity.Utente;
@@ -63,8 +64,12 @@ class SelfServiceAuthorizationIntegrationTest {
         creaUtente("gestore-authz-test@provider.it", Ruolo.GESTORE_UTENTI);
         vittimaSegnalazioneId = creaUtente("vittima-authz-test@provider.it", Ruolo.ISCRITTO);
         Utente autoreArticolo = utenteRepository.getReferenceById(vittimaSegnalazioneId);
-        articoloId = articoloRepository.saveAndFlush(
-                new Articolo(autoreArticolo, "Articolo di test", "Testo", null, null, null)).getId();
+        Articolo articolo = new Articolo(autoreArticolo, "Articolo di test", "Testo", null, null, null);
+        // PUBBLICATO: saveArticleToList (usato piu' sotto) rifiuta ora esplicitamente un articolo non
+        // pubblicato (RF1.2/RF1.7) - qui si vuole isolare solo il comportamento di @PreAuthorize, non
+        // lo stato dell'articolo.
+        articolo.setStato(StatoArticolo.PUBBLICATO);
+        articoloId = articoloRepository.saveAndFlush(articolo).getId();
 
         iscrittoJwt = login("iscritto-authz-test@provider.it");
         gestoreJwt = login("gestore-authz-test@provider.it");

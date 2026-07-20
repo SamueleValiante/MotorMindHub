@@ -160,6 +160,7 @@ public class GestioneArticoli {
     /**
      * pre: exists a | a.id = articleId and a.stato = PUBBLICATO
      * post: not exists a | a.id = articleId
+     * and not exists s | s.articolo.id = articleId
      * (ODD 2.2, RF2.4, UC_19)
      */
     @Transactional
@@ -170,11 +171,18 @@ public class GestioneArticoli {
         if (articolo.getStato() != StatoArticolo.PUBBLICATO) {
             throw new StatoArticoloNonValidoException("Solo un articolo pubblicato puo' essere eliminato con questa operazione.");
         }
+        // Rimozione esplicita dei salvataggi (RF1.7/RF1.8) prima della cancellazione dell'articolo:
+        // articoli_salvati.articolo_id non ha ON DELETE CASCADE (vincolo di integrita' referenziale
+        // deliberatamente nudo, coerente con l'approccio del progetto per le cancellazioni con
+        // effetti a cascata - vedi CategoriaEliminataListener - esplicito e tracciabile a livello
+        // applicativo invece che implicito nello schema).
+        articoloSalvatoRepository.deleteByArticoloId(articleId);
         articoloRepository.delete(articolo);
     }
 
     /**
      * pre: not exists s | s.utente.id = userId and s.articolo.id = articleId and s.tipoLista = tipo
+     * and exists a | a.id = articleId and a.stato = StatoArticolo::PUBBLICATO
      * post: exists s | s.utente.id = userId and s.articolo.id = articleId and s.tipoLista = tipo
      * (ODD 2.2, RF1.7, UC_6)
      */
@@ -187,6 +195,14 @@ public class GestioneArticoli {
         Utente utente = utenteRepository.findById(userId)
                 .orElseThrow(() -> new UtenteNonTrovatoException("Utente non trovato."));
         Articolo articolo = trovaArticoloOLancia(articleId);
+        // RF1.2/RF1.7: solo articoli PUBBLICATO sono visibili/navigabili dall'Iscritto - una bozza o
+        // un articolo in attesa di approvazione non dovrebbe essere raggiungibile in primo luogo.
+        // Rifiutare esplicitamente qui (invece di limitarsi a ripulire articoli_salvati quando poi
+        // l'autore cancella la bozza, cfr. deleteArticle) impedisce il problema alla radice: un
+        // salvataggio "orfano" non arriva mai a esistere.
+        if (articolo.getStato() != StatoArticolo.PUBBLICATO) {
+            throw new StatoArticoloNonValidoException("Solo un articolo pubblicato puo' essere salvato in una lista personale.");
+        }
 
         articoloSalvatoRepository.save(new ArticoloSalvato(utente, articolo, tipo));
     }

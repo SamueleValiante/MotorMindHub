@@ -21,6 +21,8 @@
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/web/SelfServiceAuthorizationIntegrationTest.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/web/UnhandledExceptionOnPublicEndpointIntegrationTest.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/web/articoli/ArticoliSearchIntegrationTest.java
+/home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/web/articoli/DeleteArticoloSalvatoIntegrationTest.java
+/home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/web/articoli/SaveArticleToListStatoArticoloIntegrationTest.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/web/utenti/CurrentUserIntegrationTest.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/web/utenti/EmailVerificationExpirationIntegrationTest.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/web/utenti/PasswordResetRequestNonDisclosureIntegrationTest.java

@@ -17,6 +17,13 @@ export default async function globalTeardown(): Promise<void> {
         `DELETE FROM token_recupero_password WHERE utente_id IN (SELECT id FROM utenti WHERE email LIKE 'e2e-%'); ` +
         `DELETE FROM richieste_cancellazione WHERE utente_id IN (SELECT id FROM utenti WHERE email LIKE 'e2e-%'); ` +
         `DELETE FROM segnalazioni WHERE segnalante_id IN (SELECT id FROM utenti WHERE email LIKE 'e2e-%') OR segnalato_id IN (SELECT id FROM utenti WHERE email LIKE 'e2e-%'); ` +
+        // GestioneArticoli: articoli_salvati va ripulita sia per gli articoli
+        // salvati DA un utente e2e, sia per quelli salvati da altri su un
+        // articolo AUTORATO da un utente e2e (altrimenti la successiva DELETE
+        // su articoli violerebbe articoli_salvati_articolo_id_fkey).
+        `DELETE FROM articoli_salvati WHERE utente_id IN (SELECT id FROM utenti WHERE email LIKE 'e2e-%'); ` +
+        `DELETE FROM articoli_salvati WHERE articolo_id IN (SELECT id FROM articoli WHERE autore_id IN (SELECT id FROM utenti WHERE email LIKE 'e2e-%')); ` +
+        `DELETE FROM articoli WHERE autore_id IN (SELECT id FROM utenti WHERE email LIKE 'e2e-%'); ` +
         `DELETE FROM utenti WHERE email LIKE 'e2e-%';"`
     );
   } catch (error) {

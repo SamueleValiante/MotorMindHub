@@ -25,4 +25,6 @@ com/motormindhub/Api/security/JwtTokenProviderTest.class
 com/motormindhub/Api/model/repository/UtenteRepositoryTest.class
 com/motormindhub/Api/web/utenti/CurrentUserIntegrationTest.class
 com/motormindhub/Api/web/utenti/PasswordResetRequestNonDisclosureIntegrationTest.class
+com/motormindhub/Api/web/articoli/DeleteArticoloSalvatoIntegrationTest.class
+com/motormindhub/Api/web/articoli/SaveArticleToListStatoArticoloIntegrationTest.class
 com/motormindhub/Api/service/gestioneArticoli/GestioneArticoliTest.class

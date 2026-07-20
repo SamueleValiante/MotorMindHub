@@ -150,6 +150,10 @@ export function deleteTestUser(email: string): void {
       `DELETE FROM token_recupero_password WHERE utente_id = (SELECT id FROM utenti WHERE email='${email}'); ` +
       `DELETE FROM richieste_cancellazione WHERE utente_id = (SELECT id FROM utenti WHERE email='${email}'); ` +
       `DELETE FROM segnalazioni WHERE segnalante_id = (SELECT id FROM utenti WHERE email='${email}') OR segnalato_id = (SELECT id FROM utenti WHERE email='${email}'); ` +
+      // articoli_salvati: introdotta da GestioneArticoli (saveArticleToList) — un
+      // utente di test che ha salvato un articolo durante il test bloccherebbe
+      // altrimenti la DELETE su utenti con una violazione di foreign key.
+      `DELETE FROM articoli_salvati WHERE utente_id = (SELECT id FROM utenti WHERE email='${email}'); ` +
       `DELETE FROM utenti WHERE email='${email}';"`
   );
 }

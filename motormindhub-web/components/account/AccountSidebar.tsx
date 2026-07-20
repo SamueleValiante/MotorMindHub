@@ -23,10 +23,7 @@ const NAV_ITEMS = [
 ];
 
 /**
- * Sidebar condivisa dell'area account (mockup 15-20): Panoramica,
- * Impostazioni ed I Miei Salvataggi non hanno ancora una pagina propria —
- * i link puntano comunque alla route prevista (stesso pattern già usato
- * per /termini, /cookie-policy prima che esistessero le pagine reali).
+ * Sidebar condivisa dell'area account (mockup 15-20).
  *
  * Mobile-first: sotto md diventa una topbar compatta a icone (il mockup
  * mostra solo la variante desktop, una sidebar fissa a piena altezza non

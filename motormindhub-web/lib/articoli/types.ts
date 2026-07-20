@@ -31,3 +31,28 @@ export interface SearchArticlesParams {
   dimensionePagina?: number;
   ordinamento?: OrdinamentoArticoli;
 }
+
+export interface ArticleDetail {
+  id: number;
+  titolo: string;
+  testo: string;
+  immagineCopertina: string | null;
+  tag: string[];
+  categoriaId: number;
+  categoriaNome: string;
+  autoreId: number;
+  autoreNome: string;
+  stato: StatoArticolo;
+  tempoLetturaMinuti: number;
+  numeroVisualizzazioni: number;
+  dataCreazione: string;
+  dataUltimoAggiornamento: string;
+}
+
+export type TipoLista = "PREFERITI" | "LEGGI_PIU_TARDI";
+
+export interface SavedArticle {
+  articolo: ArticleSummary;
+  tipoLista: TipoLista;
+  dataSalvataggio: string;
+}

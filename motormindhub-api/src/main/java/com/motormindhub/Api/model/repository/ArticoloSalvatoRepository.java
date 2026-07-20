@@ -14,4 +14,6 @@ public interface ArticoloSalvatoRepository extends JpaRepository<ArticoloSalvato
     Optional<ArticoloSalvato> findByUtenteIdAndArticoloIdAndTipoLista(Long utenteId, Long articoloId, TipoLista tipoLista);
 
     List<ArticoloSalvato> findByUtenteIdOrderByDataSalvataggioDesc(Long utenteId);
+
+    void deleteByArticoloId(Long articoloId);
 }

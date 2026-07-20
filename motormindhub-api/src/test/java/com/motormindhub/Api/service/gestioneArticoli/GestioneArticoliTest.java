@@ -337,6 +337,7 @@ class GestioneArticoliTest {
 
         gestioneArticoli.deleteArticle(10L, 1L);
 
+        verify(articoloSalvatoRepository).deleteByArticoloId(10L);
         verify(articoloRepository).delete(pubblicato);
     }
 
@@ -372,6 +373,19 @@ class GestioneArticoliTest {
         when(articoloSalvatoRepository.existsByUtenteIdAndArticoloIdAndTipoLista(1L, 10L, TipoLista.PREFERITI)).thenReturn(true);
 
         assertThrows(ArticoloGiaSalvatoException.class,
+                () -> gestioneArticoli.saveArticleToList(1L, 10L, TipoLista.PREFERITI));
+        verify(articoloSalvatoRepository, never()).save(any());
+    }
+
+    @Test
+    void saveArticleToList_lanciaEccezione_quandoArticoloNonPubblicato() {
+        Utente utente = utente(1L, Ruolo.ISCRITTO);
+        Articolo bozza = articolo(10L, utente(2L, Ruolo.AUTORE), null, StatoArticolo.BOZZA, "Titolo");
+        when(articoloSalvatoRepository.existsByUtenteIdAndArticoloIdAndTipoLista(1L, 10L, TipoLista.PREFERITI)).thenReturn(false);
+        when(utenteRepository.findById(1L)).thenReturn(Optional.of(utente));
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(bozza));
+
+        assertThrows(StatoArticoloNonValidoException.class,
                 () -> gestioneArticoli.saveArticleToList(1L, 10L, TipoLista.PREFERITI));
         verify(articoloSalvatoRepository, never()).save(any());
     }
