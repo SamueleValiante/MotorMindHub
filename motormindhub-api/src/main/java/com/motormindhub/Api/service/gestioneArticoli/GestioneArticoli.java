@@ -429,7 +429,8 @@ public class GestioneArticoli {
                 calcolaTempoLettura(articolo.getTesto()),
                 articolo.getNumeroVisualizzazioni(),
                 DateTimeFormatter.ISO_INSTANT.format(articolo.getDataCreazione()),
-                DateTimeFormatter.ISO_INSTANT.format(articolo.getDataUltimoAggiornamento())
+                DateTimeFormatter.ISO_INSTANT.format(articolo.getDataUltimoAggiornamento()),
+                articolo.getMotivazioneRifiuto()
         );
     }
 }

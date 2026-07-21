@@ -74,6 +74,7 @@
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/service/gestioneArticoli/dto/ArticleSearchResultDTO.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/service/gestioneArticoli/dto/ArticleSummaryDTO.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/service/gestioneArticoli/dto/ArticleUpdateDTO.java
+/home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/service/gestioneArticoli/dto/DraftCreatedResponseDTO.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/service/gestioneArticoli/dto/OrdinamentoArticoli.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/service/gestioneArticoli/dto/SaveArticleDTO.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/service/gestioneArticoli/dto/SavedArticleDTO.java

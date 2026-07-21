@@ -8,6 +8,7 @@ import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleDraftDTO;
 import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleSearchResultDTO;
 import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleSummaryDTO;
 import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleUpdateDTO;
+import com.motormindhub.Api.service.gestioneArticoli.dto.DraftCreatedResponseDTO;
 import com.motormindhub.Api.service.gestioneArticoli.dto.OrdinamentoArticoli;
 import com.motormindhub.Api.service.gestioneArticoli.dto.SaveArticleDTO;
 import com.motormindhub.Api.service.gestioneArticoli.dto.SavedArticleDTO;
@@ -74,10 +75,11 @@ public class ArticoliController {
 
     @PostMapping("/bozze")
     @PreAuthorize("hasAnyRole('AUTORE', 'MANAGER_AUTORI')")
-    public ResponseEntity<MessageResponseDTO> createDraft(@AuthenticationPrincipal UserPrincipal principal,
-                                                            @Valid @RequestBody ArticleDraftDTO dto) {
-        gestioneArticoli.createDraft(principal.getId(), dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(new MessageResponseDTO("Bozza creata con successo."));
+    public ResponseEntity<DraftCreatedResponseDTO> createDraft(@AuthenticationPrincipal UserPrincipal principal,
+                                                                 @Valid @RequestBody ArticleDraftDTO dto) {
+        Long id = gestioneArticoli.createDraft(principal.getId(), dto);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new DraftCreatedResponseDTO(id, "Bozza creata con successo."));
     }
 
     @PutMapping("/bozze/{draftId}")

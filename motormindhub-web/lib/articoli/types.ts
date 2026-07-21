@@ -47,6 +47,8 @@ export interface ArticleDetail {
   numeroVisualizzazioni: number;
   dataCreazione: string;
   dataUltimoAggiornamento: string;
+  /** Valorizzato solo se stato = RIFIUTATO (ODD 2.2 Articolo.rifiuta), null altrimenti. */
+  motivazioneRifiuto: string | null;
 }
 
 export type TipoLista = "PREFERITI" | "LEGGI_PIU_TARDI";

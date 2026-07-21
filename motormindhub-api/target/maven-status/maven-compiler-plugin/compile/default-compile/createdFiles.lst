@@ -133,6 +133,7 @@ com/motormindhub/Api/service/gestioneAmministrazioneUtenti/GestioneAmministrazio
 com/motormindhub/Api/service/gestioneAutori/dto/SetPasswordDTO.class
 com/motormindhub/Api/service/gestioneCategorie/dto/CategoryResponseDTO.class
 com/motormindhub/Api/service/gestioneUtenti/exception/EmailGiaRegistrataException.class
+com/motormindhub/Api/service/gestioneArticoli/dto/DraftCreatedResponseDTO.class
 com/motormindhub/Api/service/gestioneArticoli/exception/CategoriaNonTrovataException.class
 com/motormindhub/Api/service/gestioneCategorie/GestioneCategorie.class
 com/motormindhub/Api/service/gestioneArticoli/exception/ArticoloNonTrovatoException.class

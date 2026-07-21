@@ -87,4 +87,53 @@ test.describe("Conferma email", () => {
 
     await expect(page.getByText("Link di conferma non valido: manca il token.")).toBeVisible();
   });
+
+  /**
+   * Regressione: bug gemello di quello trovato in useArticle/
+   * useEditableArticle. ConfirmEmailContent usa la stessa guardia "già
+   * richiesto" (ora requestedTokenRef) per non consumare due volte il
+   * token monouso — ma la cancellazione era legata a un flag `cancelled`
+   * locale all'effetto, impostato a true dalla cleanup sincrona del replay
+   * mount -> cleanup -> mount di StrictMode: la guardia impediva al
+   * remount di avviare una seconda verifica, quindi l'UNICA fetch rimasta
+   * in volo veniva sempre scartata al suo arrivo, bloccando la pagina su
+   * "Verifica in corso…" per sempre.
+   *
+   * I test sopra (con page.goto diretto) non lo intercettano: un hard
+   * navigation non riproduce il bug, serve una navigazione client-side (un
+   * <Link> dell'App Router già montato) — nel mondo reale il rischio è
+   * comunque basso, dato che si arriva quasi sempre qui da un link email
+   * esterno, ma nessuna pagina reale linka a /conferma-email per
+   * verificarlo altrimenti: /qa/link-to-conferma-email esiste solo per
+   * questo test (stesso schema di /qa/toast-cookie-overlap, /qa/report-user).
+   *
+   * Oltre all'esito finale, verifica che la chiamata reale a verifica-email
+   * avvenga esattamente una volta: è il punto che conta davvero per un
+   * token monouso — un fix che nasconde la UI bloccata ma richiama
+   * l'endpoint due volte consumerebbe comunque il token alla prima e
+   * fallirebbe silenziosamente alla seconda (o peggio, in un'API non
+   * idempotente diversa da questa, produrrebbe un doppio effetto reale).
+   */
+  test("navigazione client-side (Link) verso /conferma-email: verifica avviene una sola volta, nessun blocco su Verifica in corso (strict-mode)", async ({
+    page,
+    testUsers,
+  }) => {
+    const { verificationToken } = await testUsers.create({ unverified: true });
+
+    let verifyCalls = 0;
+    await page.route("**/api/v1/utenti/verifica-email**", (route) => {
+      verifyCalls++;
+      return route.continue();
+    });
+
+    await page.goto(`/qa/link-to-conferma-email?token=${verificationToken}`, {
+      waitUntil: "domcontentloaded",
+    });
+    await page.getByRole("link", { name: "Vai alla conferma email" }).click();
+    await page.waitForURL(/\/conferma-email/);
+
+    await expect(page.getByRole("heading", { name: "Account attivato" })).toBeVisible();
+    await expect(page.getByText("Verifica in corso…")).not.toBeVisible();
+    expect(verifyCalls).toBe(1);
+  });
 });

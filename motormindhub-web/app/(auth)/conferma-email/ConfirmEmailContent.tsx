@@ -20,23 +20,36 @@ export function ConfirmEmailContent() {
   const [message, setMessage] = useState("");
   // Il token e' monouso: in dev React StrictMode invoca l'effect due volte
   // (mount -> cleanup -> mount) sullo stesso componente. Senza questa
-  // guardia la seconda chiamata arriverebbe con un token gia' consumato
-  // dalla prima, mostrando un falso "link non valido".
-  const hasRequestedRef = useRef(false);
+  // guardia la seconda invocazione arriverebbe con un token gia' consumato
+  // dalla prima, mostrando un falso "link non valido". Tiene il VALORE del
+  // token già richiesto (non un semplice booleano) per lo stesso motivo di
+  // requestedIdRef in useArticle/useEditableArticle: la validità della
+  // risposta si verifica confrontando requestedTokenRef.current con il
+  // token di quella specifica richiesta, non con un flag `cancelled` locale
+  // all'effetto — quel flag veniva impostato a true dalla cleanup sincrona
+  // del replay mount -> cleanup -> mount di StrictMode, prima ancora che la
+  // fetch potesse risolversi, e la guardia sopra impediva al remount di
+  // avviarne una seconda: l'UNICA fetch rimasta in volo (quella reale, che
+  // consuma il token una sola volta) veniva sempre scartata al suo arrivo,
+  // bloccando la pagina su "Verifica in corso…" per sempre. Bug gemello di
+  // quello in useArticle/useEditableArticle — qui raggiungibile solo da una
+  // navigazione client-side interna (un <Link>), non da un page.goto
+  // diretto (il caso reale più comune: si arriva quasi sempre da un link
+  // email esterno).
+  const requestedTokenRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!token || hasRequestedRef.current) {
+    if (!token || requestedTokenRef.current === token) {
       return;
     }
-    hasRequestedRef.current = true;
+    requestedTokenRef.current = token;
+    const targetToken = token;
 
-    let cancelled = false;
-
-    apiFetch(`/api/v1/utenti/verifica-email?token=${encodeURIComponent(token)}`, {
+    apiFetch(`/api/v1/utenti/verifica-email?token=${encodeURIComponent(targetToken)}`, {
       skipAuth: true,
     })
       .then(async (response) => {
-        if (cancelled) return;
+        if (requestedTokenRef.current !== targetToken) return;
         const body: ApiMessageBody = await response.json().catch(() => ({}));
         if (response.ok) {
           setStatus("success");
@@ -47,15 +60,11 @@ export function ConfirmEmailContent() {
         }
       })
       .catch(() => {
-        if (!cancelled) {
+        if (requestedTokenRef.current === targetToken) {
           setStatus("error");
           setMessage("Impossibile contattare il server. Riprova più tardi.");
         }
       });
-
-    return () => {
-      cancelled = true;
-    };
   }, [token]);
 
   if (!token) {

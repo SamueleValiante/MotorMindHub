@@ -19,6 +19,8 @@ public record ArticleDetailDTO(
         int tempoLetturaMinuti,
         long numeroVisualizzazioni,
         String dataCreazione,
-        String dataUltimoAggiornamento
+        String dataUltimoAggiornamento,
+        /** Valorizzato solo quando stato = RIFIUTATO (cfr. Articolo.rifiuta). Null altrimenti. */
+        String motivazioneRifiuto
 ) {
 }

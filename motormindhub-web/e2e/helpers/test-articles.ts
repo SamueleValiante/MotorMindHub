@@ -143,10 +143,11 @@ export async function deleteDraftArticle(
 }
 
 /**
- * Un articolo IN_ATTESA_APPROVAZIONE non è cancellabile né da deleteDraft
- * (richiede BOZZA) né da deleteArticle (richiede PUBBLICATO): per pulizia
- * nei test lo si approva prima (transizione reale, non un aggiramento) e
- * poi lo si cancella normalmente.
+ * deleteArticle accetta ormai anche IN_ATTESA_APPROVAZIONE direttamente
+ * (precondizione estesa a qualunque stato diverso da BOZZA, cfr. Editor
+ * punto 8): questo helper approva prima solo perché alcuni test lo usano
+ * per verificare lo storico di un articolo passato per la revisione, non
+ * perché sia più l'unica via di cancellazione.
  */
 export async function deletePendingArticle(
   managerEmail: string,
@@ -212,6 +213,22 @@ export async function removeSavedArticle(
   });
 }
 
+/**
+ * createCategory (POST /categorie): a differenza di createDraftArticleInternal
+ * (che crea una categoria solo come passo intermedio per una bozza), qui
+ * serve una categoria reale da selezionare nel <select> dell'Editor (punto
+ * 8) prima ancora di creare un articolo via UI.
+ */
+export async function createCategory(email: string, password: string, nome: string): Promise<number> {
+  const token = await login(email, password);
+  await fetch(`${API_BASE}/api/v1/categorie`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ nome }),
+  });
+  return getCategoryId(nome);
+}
+
 export async function getCategoryId(nome: string): Promise<number> {
   const tree: Array<{ id: number; nome: string }> = await fetch(`${API_BASE}/api/v1/categorie`).then(
     (r) => r.json()
@@ -241,25 +258,6 @@ export function getViewCount(articleId: number): number {
     .toString()
     .trim();
   return Number(output);
-}
-
-/**
- * Un articolo RIFIUTATO non è raggiungibile da NESSUN endpoint di
- * cancellazione (deleteDraft vuole BOZZA, deleteArticle vuole PUBBLICATO,
- * e non esiste modo di riportarlo a IN_ATTESA_APPROVAZIONE per poi
- * approvarlo — approveArticle/rejectArticle richiedono a loro volta
- * IN_ATTESA_APPROVAZIONE): un vicolo cieco reale, non un limite di questo
- * helper. Pulizia diretta sul DB solo per non sporcare l'ambiente di
- * sviluppo tra un test e l'altro, stesso genere di eccezione già in uso
- * in test-users.ts (operazione di igiene del test, non una feature
- * esercitata).
- */
-export function deleteRejectedArticleDirectly(articleId: number): void {
-  execSync(
-    `docker exec ${DB_CONTAINER} psql -U mmh -d motormindhub -c "` +
-      `DELETE FROM articoli_salvati WHERE articolo_id=${articleId}; ` +
-      `DELETE FROM articoli WHERE id=${articleId};"`
-  );
 }
 
 export async function deleteArticle(
