@@ -1,4 +1,5 @@
 import { RoleGuard } from "@/components/auth/RoleGuard";
+import { AutoreSidebar } from "@/components/autore/AutoreSidebar";
 
 export default function AutoreLayout({
   children,
@@ -7,7 +8,10 @@ export default function AutoreLayout({
 }) {
   return (
     <RoleGuard allowedRoles={["AUTORE", "MANAGER_AUTORI"]}>
-      {children}
+      <div className="flex min-h-screen flex-col md:flex-row">
+        <AutoreSidebar />
+        <main className="flex-1 overflow-y-auto px-6 py-8 sm:px-10">{children}</main>
+      </div>
     </RoleGuard>
   );
 }

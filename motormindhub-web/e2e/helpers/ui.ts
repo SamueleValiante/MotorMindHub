@@ -11,6 +11,15 @@ function decodeAccessTokenPayload(token: string): DecodedAccessToken {
   return JSON.parse(json);
 }
 
+// Rispecchia ROLE_HOME_PATH (lib/auth/roleRedirect.ts): il redirect post-login
+// dipende dal ruolo, non è sempre /account.
+const ROLE_HOME_PATH: Record<string, string> = {
+  ISCRITTO: "/account",
+  AUTORE: "/autore",
+  MANAGER_AUTORI: "/manager",
+  GESTORE_UTENTI: "/gestore",
+};
+
 /**
  * Login via UI. Restituisce l'uid decodificato dall'access token (utile ai
  * test che hanno bisogno del proprio id numerico, es. il caso di
@@ -36,7 +45,8 @@ export async function loginViaUi(
   const body: { accessToken: string } = await response.json();
   const decoded = decodeAccessTokenPayload(body.accessToken);
 
-  await page.waitForURL("**/account", { timeout: 10000 });
+  const homePath = ROLE_HOME_PATH[decoded.ruolo] ?? "/account";
+  await page.waitForURL(`**${homePath}`, { timeout: 10000 });
 
   return decoded;
 }

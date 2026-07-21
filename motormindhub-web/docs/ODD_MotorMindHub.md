@@ -381,7 +381,14 @@ Per ciascun sottosistema, le sezioni seguenti riportano gli invarianti di classe
 
 **Nome metodo deleteArticle(articleId: Long, callerId: Long)**
 
-**Descrizione** Elimina definitivamente un articolo pubblicato. (cfr. RF2.4, UC_19)
+**Descrizione** Elimina definitivamente un articolo pubblicato, rimuovendo esplicitamente anche gli
+eventuali salvataggi degli utenti in "Preferiti"/"Leggi più tardi" (RF1.7, RF1.8): la tabella
+`articoli_salvati` non ha ON DELETE CASCADE su `articolo_id` (vincolo di integrità referenziale
+deliberatamente nudo), quindi senza questa pulizia esplicita la cancellazione fallirebbe con una
+violazione di vincolo se l'articolo risulta ancora salvato da almeno un utente. Stesso approccio
+già adottato per CategoriaEliminataEvent: esplicito e tracciabile a livello applicativo invece che
+implicito nello schema - qui non serve un evento perché ArticoloSalvato è già di competenza dello
+stesso sottosistema (GestioneArticoli). (cfr. RF2.4, UC_19)
 
 **Pre-condizioni**
 
@@ -395,16 +402,25 @@ Per ciascun sottosistema, le sezioni seguenti riportano gli invarianti di classe
 > *context GestioneArticoli::deleteArticle(articleId: Long, callerId: Long)*
 >
 > post: not Articolo.allInstances()-\>exists(a \| a.id = articleId)
+>
+> and not ArticoloSalvato.allInstances()-\>exists(s \| s.articolo.id = articleId)
 
 **Nome metodo saveArticleToList(userId: Long, articleId: Long, tipo: TipoLista)**
 
-**Descrizione** Aggiunge un articolo a “Preferiti” o “Leggi più tardi”. (cfr. RF1.7, UC_6)
+**Descrizione** Aggiunge un articolo a “Preferiti” o “Leggi più tardi”. Solo un articolo PUBBLICATO
+può essere salvato: RF1.2/RF1.7 non prevedono che un Iscritto veda o navighi una bozza o un
+articolo in attesa di approvazione altrui, quindi il salvataggio va rifiutato esplicitamente alla
+radice invece di essere permesso e poi ripulito quando l'autore cancella l'articolo (cfr.
+deleteArticle, che invece deve ripulire perché agisce a valle su un salvataggio già esistente su un
+articolo che *era* pubblicato). (cfr. RF1.7, UC_6)
 
 **Pre-condizioni**
 
 > *context GestioneArticoli::saveArticleToList(userId: Long, articleId: Long, tipo: TipoLista)*
 >
 > pre: not ArticoloSalvato.allInstances()-\>exists(s \| s.utente.id = userId and s.articolo.id = articleId and s.tipoLista = tipo)
+>
+> and Articolo.allInstances()-\>exists(a \| a.id = articleId and a.stato = StatoArticolo::PUBBLICATO)
 
 **Post-condizioni**
 

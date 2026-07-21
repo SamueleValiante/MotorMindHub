@@ -54,7 +54,7 @@ Copre NP1/NP2 (lettura pubblica, liste salvate) e NP3 (Autore — creazione/gest
 | File | Schermata (RAD) | Rif. |
 |---|---|---|
 | `01_home.png` | Home Page | NP1 |
-| `02_esplora_articoli.png` | Esplora Articoli | RF1.2 |
+| `02_esplora_articoli.png` | Esplora Articoli | RF1.2 — i filtri "Componente" e "Tempo di lettura" del mockup non hanno corrispondenza in `searchArticles` (nessun parametro per componente o fascia di tempo di lettura) e sono stati omessi nel front-end, non riprodotti come controlli che sembrano funzionare senza effetto: stesso trattamento già dato al testo password sbagliato nei mockup 06/09 |
 | `03_dettaglio_articolo.png` | Dettaglio Articolo | RF1.1 |
 | `03b_menu_salvataggio.png` | Menu di salvataggio (Preferiti / Leggi più tardi) | RF1.7, UC_6 |
 | `17_account_salvataggi.png` | I Miei Salvataggi | RF1.8, UC_7 — vive nell'area account ma i dati/metodi (`getSavedArticles`) sono di GestioneArticoli |

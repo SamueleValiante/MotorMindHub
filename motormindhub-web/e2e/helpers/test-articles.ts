@@ -23,22 +23,20 @@ async function login(email: string, password: string): Promise<string> {
   return data.accessToken;
 }
 
-interface CreatePublishedArticleOptions {
+interface CreateArticleOptions {
   titolo: string;
   categoriaNome: string;
 }
 
-/** Restituisce l'id dell'articolo, ora in stato PUBBLICATO. */
-export async function createPublishedArticle(
-  managerEmail: string,
-  managerPassword: string,
-  { titolo, categoriaNome }: CreatePublishedArticleOptions
-): Promise<number> {
-  const token = await login(managerEmail, managerPassword);
+/** createCategory/createDraft rispondono solo con un MessageResponseDTO (nessun id): l'id va recuperato rileggendo le liste subito dopo. Condiviso da tutti gli stati (BOZZA/IN_ATTESA/PUBBLICATO). */
+async function createDraftArticleInternal(
+  authorEmail: string,
+  authorPassword: string,
+  { titolo, categoriaNome }: CreateArticleOptions
+): Promise<{ id: number; headers: Record<string, string> }> {
+  const token = await login(authorEmail, authorPassword);
   const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
 
-  // createCategory/createDraft rispondono solo con un MessageResponseDTO
-  // (nessun id): l'id va recuperato rileggendo le liste subito dopo.
   await fetch(`${API_BASE}/api/v1/categorie`, {
     method: "POST",
     headers,
@@ -67,16 +65,101 @@ export async function createPublishedArticle(
   const bozza = mieiArticoli.find((a) => a.titolo === titolo);
   if (!bozza) throw new Error(`Bozza "${titolo}" non trovata dopo la creazione`);
 
-  await fetch(`${API_BASE}/api/v1/articoli/bozze/${bozza.id}/pubblicazione`, {
-    method: "POST",
-    headers,
-  });
-  await fetch(`${API_BASE}/api/v1/autori/articoli/${bozza.id}/approvazione`, {
-    method: "POST",
-    headers,
-  });
+  return { id: bozza.id, headers };
+}
 
-  return bozza.id;
+/** Restituisce l'id dell'articolo, resta in stato BOZZA. */
+export async function createDraftArticle(
+  authorEmail: string,
+  authorPassword: string,
+  options: CreateArticleOptions
+): Promise<number> {
+  const { id } = await createDraftArticleInternal(authorEmail, authorPassword, options);
+  return id;
+}
+
+/** Restituisce l'id dell'articolo, in stato IN_ATTESA_APPROVAZIONE (pubblicato ma non ancora approvato). */
+export async function createPendingArticle(
+  authorEmail: string,
+  authorPassword: string,
+  options: CreateArticleOptions
+): Promise<number> {
+  const { id, headers } = await createDraftArticleInternal(authorEmail, authorPassword, options);
+  await fetch(`${API_BASE}/api/v1/articoli/bozze/${id}/pubblicazione`, { method: "POST", headers });
+  return id;
+}
+
+/** Restituisce l'id dell'articolo, ora in stato PUBBLICATO. */
+export async function createPublishedArticle(
+  managerEmail: string,
+  managerPassword: string,
+  options: CreateArticleOptions
+): Promise<number> {
+  const { id, headers } = await createDraftArticleInternal(managerEmail, managerPassword, options);
+  await fetch(`${API_BASE}/api/v1/articoli/bozze/${id}/pubblicazione`, { method: "POST", headers });
+  await fetch(`${API_BASE}/api/v1/autori/articoli/${id}/approvazione`, { method: "POST", headers });
+  return id;
+}
+
+/** approveArticle (POST /autori/articoli/{id}/approvazione): solo MANAGER_AUTORI, indipendente da chi ha scritto l'articolo — usato quando serve un autore diverso dal manager (es. verificare la dashboard di un Autore semplice, non anche Manager). */
+export async function approveArticle(
+  managerEmail: string,
+  managerPassword: string,
+  articleId: number
+): Promise<void> {
+  const token = await login(managerEmail, managerPassword);
+  await fetch(`${API_BASE}/api/v1/autori/articoli/${articleId}/approvazione`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+/** rejectArticle (POST /autori/articoli/{id}/rifiuto): porta l'articolo a RIFIUTATO, stato per cui non esiste alcun endpoint di modifica/cancellazione (verificato: updateDraft/deleteDraft richiedono BOZZA, updatePublishedArticle/deleteArticle richiedono PUBBLICATO). */
+export async function rejectArticle(
+  managerEmail: string,
+  managerPassword: string,
+  articleId: number,
+  motivazione = "Motivazione di test e2e."
+): Promise<void> {
+  const token = await login(managerEmail, managerPassword);
+  await fetch(`${API_BASE}/api/v1/autori/articoli/${articleId}/rifiuto`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ motivazione }),
+  });
+}
+
+/** deleteDraft (DELETE /articoli/bozze/{id}): solo per una BOZZA, deleteArticle rifiuterebbe (precondizione ODD: stato PUBBLICATO). */
+export async function deleteDraftArticle(
+  authorEmail: string,
+  authorPassword: string,
+  draftId: number
+): Promise<void> {
+  const token = await login(authorEmail, authorPassword);
+  await fetch(`${API_BASE}/api/v1/articoli/bozze/${draftId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+/**
+ * Un articolo IN_ATTESA_APPROVAZIONE non è cancellabile né da deleteDraft
+ * (richiede BOZZA) né da deleteArticle (richiede PUBBLICATO): per pulizia
+ * nei test lo si approva prima (transizione reale, non un aggiramento) e
+ * poi lo si cancella normalmente.
+ */
+export async function deletePendingArticle(
+  managerEmail: string,
+  managerPassword: string,
+  articleId: number
+): Promise<void> {
+  const token = await login(managerEmail, managerPassword);
+  const headers = { Authorization: `Bearer ${token}` };
+  await fetch(`${API_BASE}/api/v1/autori/articoli/${articleId}/approvazione`, {
+    method: "POST",
+    headers,
+  });
+  await deleteArticle(managerEmail, managerPassword, articleId);
 }
 
 /** Legge davvero da GET /articoli/salvataggi (getSavedArticles), non dallo stato della UI: per verificare che i due TipoLista siano toggle indipendenti (un articolo può stare in entrambe le liste contemporaneamente). */
@@ -158,6 +241,25 @@ export function getViewCount(articleId: number): number {
     .toString()
     .trim();
   return Number(output);
+}
+
+/**
+ * Un articolo RIFIUTATO non è raggiungibile da NESSUN endpoint di
+ * cancellazione (deleteDraft vuole BOZZA, deleteArticle vuole PUBBLICATO,
+ * e non esiste modo di riportarlo a IN_ATTESA_APPROVAZIONE per poi
+ * approvarlo — approveArticle/rejectArticle richiedono a loro volta
+ * IN_ATTESA_APPROVAZIONE): un vicolo cieco reale, non un limite di questo
+ * helper. Pulizia diretta sul DB solo per non sporcare l'ambiente di
+ * sviluppo tra un test e l'altro, stesso genere di eccezione già in uso
+ * in test-users.ts (operazione di igiene del test, non una feature
+ * esercitata).
+ */
+export function deleteRejectedArticleDirectly(articleId: number): void {
+  execSync(
+    `docker exec ${DB_CONTAINER} psql -U mmh -d motormindhub -c "` +
+      `DELETE FROM articoli_salvati WHERE articolo_id=${articleId}; ` +
+      `DELETE FROM articoli WHERE id=${articleId};"`
+  );
 }
 
 export async function deleteArticle(
