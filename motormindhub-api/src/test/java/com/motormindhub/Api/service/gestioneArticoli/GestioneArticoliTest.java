@@ -265,6 +265,52 @@ class GestioneArticoliTest {
         assertThrows(AutoreNonValidoException.class, () -> gestioneArticoli.publishArticle(10L, 2L));
     }
 
+    // --- reopenRejectedArticle -----------------------------------------------
+
+    @Test
+    void reopenRejectedArticle_riportaInBozza_quandoRifiutato() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo rifiutato = articolo(10L, autore, categoria(5L), StatoArticolo.RIFIUTATO, "Titolo");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(rifiutato));
+
+        gestioneArticoli.reopenRejectedArticle(10L, 1L);
+
+        assertThat(rifiutato.getStato()).isEqualTo(StatoArticolo.BOZZA);
+    }
+
+    @Test
+    void reopenRejectedArticle_consentito_quandoChiamanteEManagerAutoriNonProprietario() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Utente manager = utente(2L, Ruolo.MANAGER_AUTORI);
+        Articolo rifiutato = articolo(10L, autore, categoria(5L), StatoArticolo.RIFIUTATO, "Titolo");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(rifiutato));
+        when(utenteRepository.findById(2L)).thenReturn(Optional.of(manager));
+
+        gestioneArticoli.reopenRejectedArticle(10L, 2L);
+
+        assertThat(rifiutato.getStato()).isEqualTo(StatoArticolo.BOZZA);
+    }
+
+    @Test
+    void reopenRejectedArticle_lanciaEccezione_quandoNonRifiutato() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo pubblicato = articolo(10L, autore, categoria(5L), StatoArticolo.PUBBLICATO, "Titolo");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(pubblicato));
+
+        assertThrows(StatoArticoloNonValidoException.class, () -> gestioneArticoli.reopenRejectedArticle(10L, 1L));
+    }
+
+    @Test
+    void reopenRejectedArticle_lanciaEccezione_quandoChiamanteNonAutorizzato() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Utente altroAutore = utente(2L, Ruolo.AUTORE);
+        Articolo rifiutato = articolo(10L, autore, categoria(5L), StatoArticolo.RIFIUTATO, "Titolo");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(rifiutato));
+        when(utenteRepository.findById(2L)).thenReturn(Optional.of(altroAutore));
+
+        assertThrows(AutoreNonValidoException.class, () -> gestioneArticoli.reopenRejectedArticle(10L, 2L));
+    }
+
     // --- updatePublishedArticle -----------------------------------------------
 
     @Test
@@ -342,7 +388,31 @@ class GestioneArticoliTest {
     }
 
     @Test
-    void deleteArticle_lanciaEccezione_quandoNonPubblicato() {
+    void deleteArticle_eliminaArticolo_quandoInAttesaApprovazione() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo inAttesa = articolo(10L, autore, categoria(5L), StatoArticolo.IN_ATTESA_APPROVAZIONE, "Titolo");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(inAttesa));
+
+        gestioneArticoli.deleteArticle(10L, 1L);
+
+        verify(articoloSalvatoRepository).deleteByArticoloId(10L);
+        verify(articoloRepository).delete(inAttesa);
+    }
+
+    @Test
+    void deleteArticle_eliminaArticolo_quandoRifiutato() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo rifiutato = articolo(10L, autore, categoria(5L), StatoArticolo.RIFIUTATO, "Titolo");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(rifiutato));
+
+        gestioneArticoli.deleteArticle(10L, 1L);
+
+        verify(articoloSalvatoRepository).deleteByArticoloId(10L);
+        verify(articoloRepository).delete(rifiutato);
+    }
+
+    @Test
+    void deleteArticle_lanciaEccezione_quandoInBozza() {
         Utente autore = utente(1L, Ruolo.AUTORE);
         Articolo bozza = articolo(10L, autore, null, StatoArticolo.BOZZA, "Titolo");
         when(articoloRepository.findById(10L)).thenReturn(Optional.of(bozza));

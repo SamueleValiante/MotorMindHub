@@ -97,6 +97,14 @@ public class ArticoliController {
         return ResponseEntity.ok(new MessageResponseDTO("Articolo inviato in approvazione."));
     }
 
+    @PostMapping("/{articleId}/bozza")
+    @PreAuthorize("hasAnyRole('AUTORE', 'MANAGER_AUTORI')")
+    public ResponseEntity<MessageResponseDTO> reopenRejectedArticle(@AuthenticationPrincipal UserPrincipal principal,
+                                                                      @PathVariable Long articleId) {
+        gestioneArticoli.reopenRejectedArticle(articleId, principal.getId());
+        return ResponseEntity.ok(new MessageResponseDTO("Articolo riportato in bozza per la correzione."));
+    }
+
     @PutMapping("/{articleId}")
     @PreAuthorize("hasAnyRole('AUTORE', 'MANAGER_AUTORI')")
     public ResponseEntity<MessageResponseDTO> updatePublishedArticle(@AuthenticationPrincipal UserPrincipal principal,

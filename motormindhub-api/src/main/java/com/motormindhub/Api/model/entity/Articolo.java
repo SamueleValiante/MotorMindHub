@@ -114,6 +114,11 @@ public class Articolo {
         this.motivazioneRifiuto = motivazione;
     }
 
+    /** RF2.7, UC_18, UC_21 (ODD 2.2 GestioneArticoli.reopenRejectedArticle). */
+    public void riapriComeBozza() {
+        this.stato = StatoArticolo.BOZZA;
+    }
+
     public Long getId() {
         return id;
     }

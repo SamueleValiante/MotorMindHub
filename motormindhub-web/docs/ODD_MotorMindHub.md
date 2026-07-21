@@ -291,7 +291,7 @@ Per ciascun sottosistema, le sezioni seguenti riportano gli invarianti di classe
 
 **Invarianti** *self.articoli-\>select(a \| a.stato = StatoArticolo::PUBBLICATO)-\>forAll(a \| not a.categoria.oclIsUndefined()) — un articolo pubblicato deve appartenere a una categoria.*
 
-**Nota (ownership)** updateDraft, publishArticle, updatePublishedArticle, deleteDraft e deleteArticle accettano tutti un parametro callerId (il chiamante autenticato) oltre all'id dell'articolo, e condividono lo stesso vincolo, non altrimenti derivabile dai soli ruoli RBAC (@PreAuthorize verifica solo "è un Autore o un Manager Autori", non "è l'autore *di questo articolo*"): solo l'autore proprietario dell'articolo o un utente con ruolo MANAGER_AUTORI può operare su di esso, altrimenti AutoreNonValidoException. Per non ripeterlo identico cinque volte, le pre-condizioni seguenti lo esprimono con la clausola comune `and (a.autore.id = callerId or Utente.allInstances()->exists(u | u.id = callerId and u.ruolo = Ruolo::MANAGER_AUTORI))`.
+**Nota (ownership)** updateDraft, publishArticle, reopenRejectedArticle, updatePublishedArticle, deleteDraft e deleteArticle accettano tutti un parametro callerId (il chiamante autenticato) oltre all'id dell'articolo, e condividono lo stesso vincolo, non altrimenti derivabile dai soli ruoli RBAC (@PreAuthorize verifica solo "è un Autore o un Manager Autori", non "è l'autore *di questo articolo*"): solo l'autore proprietario dell'articolo o un utente con ruolo MANAGER_AUTORI può operare su di esso, altrimenti AutoreNonValidoException. Per non ripeterlo identico sei volte, le pre-condizioni seguenti lo esprimono con la clausola comune `and (a.autore.id = callerId or Utente.allInstances()->exists(u | u.id = callerId and u.ruolo = Ruolo::MANAGER_AUTORI))`.
 
 **Nome metodo createDraft(authorId: Long, dto: ArticleDraftDTO)**
 
@@ -343,6 +343,29 @@ Per ciascun sottosistema, le sezioni seguenti riportano gli invarianti di classe
 >
 > post: Articolo.allInstances()-\>select(a \| a.id = articleId).stato = StatoArticolo::IN_ATTESA_APPROVAZIONE
 
+**Nome metodo reopenRejectedArticle(articleId: Long, callerId: Long)**
+
+**Descrizione** Riporta in stato BOZZA un articolo RIFIUTATO, permettendo all'autore di correggerlo
+prima di rinviarlo in approvazione con publishArticle. Colma una lacuna del ciclo di vita originale:
+prima di questo metodo un articolo RIFIUTATO non aveva alcun percorso di modifica o cancellazione
+(updateDraft/deleteDraft richiedono BOZZA, updatePublishedArticle/deleteArticle richiedevano
+PUBBLICATO). Chi non intende correggere l'articolo puo' invece eliminarlo direttamente con
+deleteArticle (cfr. sotto), la cui pre-condizione e' stata estesa a qualunque stato diverso da
+BOZZA. (cfr. RF2.7, UC_18, UC_21)
+
+**Pre-condizioni**
+
+> *context GestioneArticoli::reopenRejectedArticle(articleId: Long, callerId: Long)*
+>
+> pre: Articolo.allInstances()-\>exists(a \| a.id = articleId and a.stato = StatoArticolo::RIFIUTATO
+> and (a.autore.id = callerId or Utente.allInstances()-\>exists(u \| u.id = callerId and u.ruolo = Ruolo::MANAGER_AUTORI)))
+
+**Post-condizioni**
+
+> *context GestioneArticoli::reopenRejectedArticle(articleId: Long, callerId: Long)*
+>
+> post: Articolo.allInstances()-\>select(a \| a.id = articleId).stato = StatoArticolo::BOZZA
+
 **Nome metodo updatePublishedArticle(articleId: Long, callerId: Long, dto: ArticleUpdateDTO)**
 
 **Descrizione** Corregge un articolo già pubblicato; le modifiche sono immediatamente visibili. (cfr. RF2.3, UC_20)
@@ -381,20 +404,25 @@ Per ciascun sottosistema, le sezioni seguenti riportano gli invarianti di classe
 
 **Nome metodo deleteArticle(articleId: Long, callerId: Long)**
 
-**Descrizione** Elimina definitivamente un articolo pubblicato, rimuovendo esplicitamente anche gli
-eventuali salvataggi degli utenti in "Preferiti"/"Leggi più tardi" (RF1.7, RF1.8): la tabella
-`articoli_salvati` non ha ON DELETE CASCADE su `articolo_id` (vincolo di integrità referenziale
-deliberatamente nudo), quindi senza questa pulizia esplicita la cancellazione fallirebbe con una
-violazione di vincolo se l'articolo risulta ancora salvato da almeno un utente. Stesso approccio
-già adottato per CategoriaEliminataEvent: esplicito e tracciabile a livello applicativo invece che
-implicito nello schema - qui non serve un evento perché ArticoloSalvato è già di competenza dello
-stesso sottosistema (GestioneArticoli). (cfr. RF2.4, UC_19)
+**Descrizione** Elimina definitivamente un articolo in un qualunque stato diverso da BOZZA
+(PUBBLICATO, IN_ATTESA_APPROVAZIONE o RIFIUTATO) - una bozza si elimina con deleteDraft. La
+copertura di IN_ATTESA_APPROVAZIONE permette all'autore il ritiro di un articolo prima che un
+Manager Autori lo revisioni; quella di RIFIUTATO copre il caso in cui l'autore non intenda
+correggerlo (cfr. reopenRejectedArticle, sopra, per chi invece vuole correggerlo). Rimuove
+esplicitamente anche gli eventuali salvataggi degli utenti in "Preferiti"/"Leggi più tardi" (RF1.7,
+RF1.8): la tabella `articoli_salvati` non ha ON DELETE CASCADE su `articolo_id` (vincolo di
+integrità referenziale deliberatamente nudo), quindi senza questa pulizia esplicita la cancellazione
+fallirebbe con una violazione di vincolo se l'articolo risulta ancora salvato da almeno un utente
+(possibile solo per un articolo che *era* PUBBLICATO). Stesso approccio già adottato per
+CategoriaEliminataEvent: esplicito e tracciabile a livello applicativo invece che implicito nello
+schema - qui non serve un evento perché ArticoloSalvato è già di competenza dello stesso
+sottosistema (GestioneArticoli). (cfr. RF2.4, RF2.7, UC_18, UC_19, UC_21)
 
 **Pre-condizioni**
 
 > *context GestioneArticoli::deleteArticle(articleId: Long, callerId: Long)*
 >
-> pre: Articolo.allInstances()-\>exists(a \| a.id = articleId and a.stato = StatoArticolo::PUBBLICATO
+> pre: Articolo.allInstances()-\>exists(a \| a.id = articleId and a.stato \<\> StatoArticolo::BOZZA
 > and (a.autore.id = callerId or Utente.allInstances()-\>exists(u \| u.id = callerId and u.ruolo = Ruolo::MANAGER_AUTORI)))
 
 **Post-condizioni**

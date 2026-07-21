@@ -147,6 +147,23 @@ public class GestioneArticoli {
     }
 
     /**
+     * pre: exists a | a.id = articleId and a.stato = RIFIUTATO
+     * post: a.stato = BOZZA
+     * (ODD 2.2, RF2.7, UC_18, UC_21)
+     */
+    @Transactional
+    public void reopenRejectedArticle(Long articleId, Long callerId) {
+        Articolo articolo = trovaArticoloOLancia(articleId);
+        verificaAutoreOManager(articolo, callerId);
+
+        if (articolo.getStato() != StatoArticolo.RIFIUTATO) {
+            throw new StatoArticoloNonValidoException("Solo un articolo rifiutato puo' tornare in stato di bozza.");
+        }
+
+        articolo.riapriComeBozza();
+    }
+
+    /**
      * pre: exists a | a.id = draftId and a.stato = BOZZA
      * post: not exists a | a.id = draftId
      * (ODD 2.2, RF2.7, UC_18)
@@ -158,18 +175,18 @@ public class GestioneArticoli {
     }
 
     /**
-     * pre: exists a | a.id = articleId and a.stato = PUBBLICATO
+     * pre: exists a | a.id = articleId and a.stato != BOZZA
      * post: not exists a | a.id = articleId
      * and not exists s | s.articolo.id = articleId
-     * (ODD 2.2, RF2.4, UC_19)
+     * (ODD 2.2, RF2.4, RF2.7, UC_18, UC_19, UC_21)
      */
     @Transactional
     public void deleteArticle(Long articleId, Long callerId) {
         Articolo articolo = trovaArticoloOLancia(articleId);
         verificaAutoreOManager(articolo, callerId);
 
-        if (articolo.getStato() != StatoArticolo.PUBBLICATO) {
-            throw new StatoArticoloNonValidoException("Solo un articolo pubblicato puo' essere eliminato con questa operazione.");
+        if (articolo.getStato() == StatoArticolo.BOZZA) {
+            throw new StatoArticoloNonValidoException("Una bozza si elimina con l'operazione dedicata (deleteDraft).");
         }
         // Rimozione esplicita dei salvataggi (RF1.7/RF1.8) prima della cancellazione dell'articolo:
         // articoli_salvati.articolo_id non ha ON DELETE CASCADE (vincolo di integrita' referenziale
