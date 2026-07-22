@@ -60,7 +60,17 @@ test.describe("Gestione Categorie (Manager)", () => {
     }
   });
 
-  test("elimina bloccata da sottocategorie: mostra l'errore del backend, il modale resta aperto per riprovare", async ({
+  /**
+   * La regola di dominio (409 se la categoria ha sottocategorie) è già
+   * coperta lato backend da
+   * GestioneCategorieTest.deleteCategory_lanciaEccezione_quandoLaCategoriaHaSottocategorie
+   * — qui si verifica solo la prevenzione lato UI (CategoryTable, prop
+   * hasFigli): il cestino è disabilitato con un tooltip esplicativo per
+   * chi ha figli, resta invece cliccabile normalmente per una foglia. Il
+   * backend rimane comunque l'autorità finale se qualcosa sfuggisse a
+   * questa prevenzione (vedi commento in ReassignCategoryModal).
+   */
+  test("cestino disabilitato con tooltip per una categoria con sottocategorie, invariato per una foglia", async ({
     page,
     testUsers,
   }) => {
@@ -68,26 +78,46 @@ test.describe("Gestione Categorie (Manager)", () => {
     const stamp = Date.now();
     const padreNome = `Categoria e2e padre bloccata ${stamp}`;
     const figliaNome = `Categoria e2e figlia bloccata ${stamp}`;
-    const altraNome = `Categoria e2e altra ${stamp}`;
     const padreId = await createCategory(manager.email, manager.password, padreNome);
     await createSubcategory(manager.email, manager.password, figliaNome, padreId);
-    await createCategory(manager.email, manager.password, altraNome);
 
     await loginViaUi(page, manager.email, manager.password);
     await page.goto("/manager/categorie");
+
     await page.getByLabel("Cerca categoria").fill(padreNome);
-    await page.getByRole("button", { name: `Elimina ${padreNome}` }).click();
+    const eliminaPadre = page.getByRole("button", { name: `Elimina ${padreNome}` });
+    await expect(eliminaPadre).toBeDisabled();
+    await expect(eliminaPadre).toHaveAttribute("title", "Contiene sottocategorie, elimina prima quelle");
 
-    await expect(page.getByRole("heading", { name: `Elimina "${padreNome}"` })).toBeVisible();
-    await page.getByLabel("Riassegna articoli a").selectOption({ label: altraNome });
-    await page.getByRole("button", { name: "Elimina definitivamente" }).click();
+    await page.getByLabel("Cerca categoria").fill(figliaNome);
+    const eliminaFiglia = page.getByRole("button", { name: `Elimina ${figliaNome}` });
+    await expect(eliminaFiglia).toBeEnabled();
+    await expect(eliminaFiglia).not.toHaveAttribute("title");
+  });
 
-    await expect(
-      page.getByText("Impossibile eliminare una categoria che contiene sottocategorie")
-    ).toBeVisible();
-    // Il modale resta aperto (UC_13.2 style, nessun redirect/chiusura su errore): si può annullare o riprovare.
-    await expect(page.getByRole("heading", { name: `Elimina "${padreNome}"` })).toBeVisible();
-    await page.getByRole("button", { name: "Annulla" }).click();
-    await expect(page.getByRole("heading", { name: `Elimina "${padreNome}"` })).not.toBeVisible();
+  test("responsive: tabella e azioni (inclusa eliminazione) restano usabili su viewport mobile", async ({
+    page,
+    testUsers,
+  }) => {
+    const manager = await testUsers.create({ ruolo: "MANAGER_AUTORI" });
+    const stamp = Date.now();
+    const nome = `Mobile categoria manager ${stamp}`;
+    await createCategory(manager.email, manager.password, nome);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await loginViaUi(page, manager.email, manager.password);
+    await page.goto("/manager/categorie");
+
+    await expect(page.getByRole("heading", { name: "Gestione Categorie" })).toBeVisible();
+    await page.getByLabel("Cerca categoria").fill(nome);
+    await expect(page.locator("table tbody tr")).toHaveCount(1);
+    await expect(page.getByRole("button", { name: `Modifica ${nome}` })).toBeVisible();
+
+    const eliminaButton = page.getByRole("button", { name: `Elimina ${nome}` });
+    await expect(eliminaButton).toBeVisible();
+    await expect(eliminaButton).toBeEnabled();
+    await eliminaButton.click();
+    await expect(page.getByRole("heading", { name: `Elimina "${nome}"` })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Elimina definitivamente" })).toBeVisible();
   });
 });

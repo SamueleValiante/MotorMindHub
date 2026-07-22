@@ -21,12 +21,13 @@ interface ReassignCategoryModalProps {
  * categoria, il backend non espone questo dato oggi.
  *
  * Se la categoria ha sottocategorie, deleteCategory risponde 409
- * ("Impossibile eliminare una categoria che contiene sottocategorie") —
- * gestito in modo reattivo tramite il toast d'errore di deleteCategory,
- * nessuna disabilitazione proattiva del cestino: non esiste modo di
- * spostare una sottocategoria sotto un altro padre (updateCategory applica
- * solo descrizione), quindi il messaggio del backend è l'unica spiegazione
- * utile in questo caso.
+ * ("Impossibile eliminare una categoria che contiene sottocategorie"):
+ * CategoryTable disabilita già il cestino in quel caso (hasFigli), ma
+ * questo modale resta pronto a mostrare l'errore del backend via toast se
+ * qualcosa sfugge alla prevenzione lato UI (il backend resta comunque
+ * l'autorità finale) — non esiste modo di spostare una sottocategoria
+ * sotto un altro padre (updateCategory applica solo descrizione), quindi
+ * il messaggio del backend resta l'unica spiegazione utile in quel caso.
  */
 export function ReassignCategoryModal({
   tree,

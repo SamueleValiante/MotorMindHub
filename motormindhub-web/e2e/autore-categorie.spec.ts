@@ -95,4 +95,27 @@ test.describe("Categorie (Autore)", () => {
     await page.getByRole("button", { name: `Modifica ${nome}` }).click();
     await expect(page.getByLabel("Descrizione")).toHaveValue("Descrizione aggiornata via e2e.");
   });
+
+  test("responsive: ricerca, tabella e form restano usabili su viewport mobile", async ({
+    page,
+    testUsers,
+  }) => {
+    const autore = await testUsers.create({ ruolo: "AUTORE" });
+    const stamp = Date.now();
+    const nome = `Mobile categoria autore ${stamp}`;
+    await createCategory(autore.email, autore.password, nome);
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await loginViaUi(page, autore.email, autore.password);
+    await page.goto("/autore/categorie");
+
+    await expect(page.getByRole("heading", { name: "Categorie" })).toBeVisible();
+    await page.getByLabel("Cerca categoria").fill(nome);
+    await expect(page.locator("table tbody tr")).toHaveCount(1);
+    await expect(page.getByRole("button", { name: `Modifica ${nome}` })).toBeVisible();
+
+    await page.getByRole("button", { name: `Modifica ${nome}` }).click();
+    await expect(page.getByRole("heading", { name: "Modifica categoria" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Aggiorna categoria" })).toBeVisible();
+  });
 });

@@ -94,8 +94,10 @@ export function CategoryTable({ tree, canDelete, onEdit, onDelete }: CategoryTab
                         <button
                           type="button"
                           onClick={() => onDelete?.(row)}
+                          disabled={row.hasFigli}
                           aria-label={`Elimina ${row.nome}`}
-                          className="flex h-9 w-9 items-center justify-center rounded-md bg-asphalt/80 text-chrome hover:text-ember"
+                          title={row.hasFigli ? "Contiene sottocategorie, elimina prima quelle" : undefined}
+                          className="flex h-9 w-9 items-center justify-center rounded-md bg-asphalt/80 text-chrome hover:text-ember disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:text-chrome"
                         >
                           <TrashIcon className="h-4 w-4" />
                         </button>
