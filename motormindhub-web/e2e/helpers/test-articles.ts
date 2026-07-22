@@ -229,11 +229,50 @@ export async function createCategory(email: string, password: string, nome: stri
   return getCategoryId(nome);
 }
 
+/**
+ * Come createCategory, ma con un padre esplicito — serve ai test che
+ * verificano che deleteCategory rifiuti (409) una categoria che ha
+ * sottocategorie (GestioneCategorie.deleteCategory).
+ */
+export async function createSubcategory(
+  email: string,
+  password: string,
+  nome: string,
+  categoriaPadreId: number
+): Promise<number> {
+  const token = await login(email, password);
+  await fetch(`${API_BASE}/api/v1/categorie`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ nome, categoriaPadreId }),
+  });
+  return getCategoryId(nome);
+}
+
+interface CategoryTreeNode {
+  id: number;
+  nome: string;
+  figlie: CategoryTreeNode[];
+}
+
+function findCategoryByName(nodes: CategoryTreeNode[], nome: string): CategoryTreeNode | undefined {
+  for (const node of nodes) {
+    if (node.nome === nome) return node;
+    const found = findCategoryByName(node.figlie, nome);
+    if (found) return found;
+  }
+  return undefined;
+}
+
+/**
+ * getCategoryTree restituisce un albero vero (figlie annidate, cfr.
+ * CategoryTreeNodeDTO): una sottocategoria non è mai un elemento di primo
+ * livello, va cercata ricorsivamente — altrimenti createSubcategory non
+ * troverebbe mai l'id appena creato.
+ */
 export async function getCategoryId(nome: string): Promise<number> {
-  const tree: Array<{ id: number; nome: string }> = await fetch(`${API_BASE}/api/v1/categorie`).then(
-    (r) => r.json()
-  );
-  const categoria = tree.find((c) => c.nome === nome);
+  const tree: CategoryTreeNode[] = await fetch(`${API_BASE}/api/v1/categorie`).then((r) => r.json());
+  const categoria = findCategoryByName(tree, nome);
   if (!categoria) throw new Error(`Categoria "${nome}" non trovata`);
   return categoria.id;
 }

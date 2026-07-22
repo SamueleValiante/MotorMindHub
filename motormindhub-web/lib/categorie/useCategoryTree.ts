@@ -7,9 +7,15 @@ type State =
   | { status: "ready"; tree: CategoryTreeNode[] }
   | { status: "error" };
 
-/** GET /api/v1/categorie — pubblico (permitAll in SecurityConfig), niente token da allegare. */
-export function useCategoryTree(): State {
+/**
+ * GET /api/v1/categorie — pubblico (permitAll in SecurityConfig), niente
+ * token da allegare. `refetch` ricarica l'albero (usato dalle pagine di
+ * gestione categorie dopo create/update/delete, dove la UI non è di sola
+ * lettura come in Esplora/Editor articolo).
+ */
+export function useCategoryTree(): State & { refetch: () => void } {
   const [state, setState] = useState<State>({ status: "loading" });
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -30,9 +36,14 @@ export function useCategoryTree(): State {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [reloadKey]);
 
-  return state;
+  const refetch = () => {
+    setState({ status: "loading" });
+    setReloadKey((key) => key + 1);
+  };
+
+  return { ...state, refetch };
 }
 
 /** Conta tutti i nodi dell'albero (radici + discendenti), usata per la stat "categorie tecniche" in Home. */
