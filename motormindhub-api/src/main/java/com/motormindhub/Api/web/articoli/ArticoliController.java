@@ -57,8 +57,10 @@ public class ArticoliController {
     }
 
     @GetMapping("/{articleId:[0-9]+}")
-    public ResponseEntity<ArticleDetailDTO> getArticleById(@PathVariable Long articleId) {
-        return ResponseEntity.ok(gestioneArticoli.getArticleById(articleId));
+    public ResponseEntity<ArticleDetailDTO> getArticleById(@AuthenticationPrincipal UserPrincipal principal,
+                                                             @PathVariable Long articleId) {
+        Long callerId = principal == null ? null : principal.getId();
+        return ResponseEntity.ok(gestioneArticoli.getArticleById(articleId, callerId));
     }
 
     @GetMapping("/me")

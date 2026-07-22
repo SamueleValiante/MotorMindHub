@@ -261,12 +261,20 @@ public class GestioneArticoli {
 
     /**
      * Query di sola lettura (RF1.1) - nessun contratto OCL formale. Incrementa il contatore
-     * "letture" mostrato nel mockup 22_autore_articoli.png.
+     * "letture" mostrato nel mockup 22_autore_articoli.png, tranne quando a chiamare e' l'autore
+     * stesso dell'articolo (es. lo riapre dall'Editor per correggerlo): altrimenti le proprie
+     * riletture in fase di editing gonfierebbero "Letture totali" nella Dashboard Autore e
+     * l'ordinamento "Più lette" in Esplora. callerId e' null per un chiamante non autenticato
+     * (Guest) - in quel caso non puo' mai coincidere con l'autore, quindi il contatore incrementa
+     * normalmente. Endpoint pubblico invariato: JwtAuthenticationFilter valorizza comunque il
+     * principal se il chiamante e' autenticato, anche su un path permitAll (SecurityConfig).
      */
     @Transactional
-    public ArticleDetailDTO getArticleById(Long articleId) {
+    public ArticleDetailDTO getArticleById(Long articleId, Long callerId) {
         Articolo articolo = trovaArticoloOLancia(articleId);
-        articolo.incrementaVisualizzazioni();
+        if (callerId == null || !articolo.getAutore().getId().equals(callerId)) {
+            articolo.incrementaVisualizzazioni();
+        }
         return mappaDettaglio(articolo);
     }
 

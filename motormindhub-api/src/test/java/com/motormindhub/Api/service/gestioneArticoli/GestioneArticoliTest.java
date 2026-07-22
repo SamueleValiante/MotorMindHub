@@ -488,12 +488,12 @@ class GestioneArticoliTest {
     // --- query: getArticleById -----------------------------------------------------
 
     @Test
-    void getArticleById_restituisceDettaglioEIncrementaVisualizzazioni() {
+    void getArticleById_restituisceDettaglioEIncrementaVisualizzazioni_quandoLettorePubblico() {
         Utente autore = utente(1L, Ruolo.AUTORE);
         Articolo pubblicato = articolo(10L, autore, categoria(5L), StatoArticolo.PUBBLICATO, "Dischi freno forati vs baffati");
         when(articoloRepository.findById(10L)).thenReturn(Optional.of(pubblicato));
 
-        ArticleDetailDTO dettaglio = gestioneArticoli.getArticleById(10L);
+        ArticleDetailDTO dettaglio = gestioneArticoli.getArticleById(10L, null);
 
         assertThat(dettaglio.titolo()).isEqualTo("Dischi freno forati vs baffati");
         assertThat(dettaglio.tag()).containsExactly("freni", "manutenzione");
@@ -501,10 +501,34 @@ class GestioneArticoliTest {
     }
 
     @Test
+    void getArticleById_incrementaVisualizzazioni_quandoAutoreSuArticoloAltrui() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo pubblicato = articolo(10L, autore, categoria(5L), StatoArticolo.PUBBLICATO, "Titolo");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(pubblicato));
+
+        gestioneArticoli.getArticleById(10L, 2L);
+
+        assertThat(pubblicato.getNumeroVisualizzazioni()).isEqualTo(1L);
+    }
+
+    @Test
+    void getArticleById_nonIncrementaVisualizzazioni_quandoChiamanteEAutoreDellArticolo() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo pubblicato = articolo(10L, autore, categoria(5L), StatoArticolo.PUBBLICATO, "Titolo");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(pubblicato));
+
+        gestioneArticoli.getArticleById(10L, 1L);
+        gestioneArticoli.getArticleById(10L, 1L);
+        gestioneArticoli.getArticleById(10L, 1L);
+
+        assertThat(pubblicato.getNumeroVisualizzazioni()).isZero();
+    }
+
+    @Test
     void getArticleById_lanciaEccezione_quandoInesistente() {
         when(articoloRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThrows(ArticoloNonTrovatoException.class, () -> gestioneArticoli.getArticleById(99L));
+        assertThrows(ArticoloNonTrovatoException.class, () -> gestioneArticoli.getArticleById(99L, null));
     }
 
     // --- query: getArticlesByAuthor -----------------------------------------------------
