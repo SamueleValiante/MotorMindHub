@@ -18,12 +18,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mail.MailSendException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -176,6 +179,27 @@ class GestioneNotificheTest {
         MimeMultipart contenuto = (MimeMultipart) inviato.getContent();
         assertThat(contenuto.getCount()).isEqualTo(2); // corpo testuale + allegato
         assertThat(contenuto.getBodyPart(1).getFileName()).isEqualTo("dati-motormindhub.json");
+    }
+
+    @Test
+    void invia_nonPropagaEccezione_quandoLinvioSmtpFallisce() {
+        doThrow(new MailSendException("SMTP non raggiungibile")).when(mailSender).send(any(SimpleMailMessage.class));
+
+        assertThatCode(() -> gestioneNotifiche.onUserRegistered(
+                new UtenteRegistratoEvent(1L, "marco@provider.it", "Marco", "tok-verifica")))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void onAccountCancellato_inviaComunqueLaCopiaInternaAlGestore_quandoLinvioAllUtenteFallisce() {
+        doThrow(new MailSendException("SMTP non raggiungibile"))
+                .doNothing()
+                .when(mailSender).send(any(SimpleMailMessage.class));
+
+        assertThatCode(() -> gestioneNotifiche.onAccountCancellato(new AccountCancellatoEvent(7L, "email-originale@provider.it")))
+                .doesNotThrowAnyException();
+
+        verify(mailSender, times(2)).send(any(SimpleMailMessage.class));
     }
 
     // --- helper privati -----------------------------------------------------

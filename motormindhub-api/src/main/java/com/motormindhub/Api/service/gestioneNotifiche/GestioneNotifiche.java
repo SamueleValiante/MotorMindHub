@@ -12,9 +12,12 @@ import com.motormindhub.Api.events.RichiestaModificaProfiloEvent;
 import com.motormindhub.Api.events.UtenteRegistratoEvent;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -37,6 +40,8 @@ import java.nio.charset.StandardCharsets;
  */
 @Service
 public class GestioneNotifiche {
+
+    private static final Logger log = LoggerFactory.getLogger(GestioneNotifiche.class);
 
     private static final int GIORNI_SCADENZA_LINK_SENSIBILI = 1; // RNF9.3: "es. 24 ore"
 
@@ -206,7 +211,9 @@ public class GestioneNotifiche {
                     new ByteArrayResource(evento.datiEsportati().getBytes(StandardCharsets.UTF_8)));
             mailSender.send(mimeMessage);
         } catch (MessagingException e) {
-            throw new IllegalStateException("Impossibile costruire l'email di esportazione dati.", e);
+            log.error("Impossibile costruire l'email di esportazione dati per {}", evento.email(), e);
+        } catch (MailException e) {
+            log.error("Invio dell'email di esportazione dati a {} fallito", evento.email(), e);
         }
     }
 
@@ -262,12 +269,25 @@ public class GestioneNotifiche {
 
     // --- helper privati -----------------------------------------------------
 
+    /**
+     * Un invio fallito (es. timeout SMTP, cfr. spring.mail.properties.mail.smtp.* in
+     * application.properties) viene loggato e non ripropagato: un listener come
+     * onAccountCancellato invoca invia() più volte per destinatari indipendenti (utente + copia
+     * interna al Gestore Utenti) e il fallimento del primo non deve impedire il secondo. Essendo
+     * @Async, un'eccezione qui non bloccherebbe comunque il chiamante, ma verrebbe solo loggata
+     * dall'AsyncUncaughtExceptionHandler di default - la logghiamo esplicitamente qui per
+     * mantenere questo comportamento indipendentemente da come Async e' configurato.
+     */
     private void invia(String destinatario, String oggetto, String corpo) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(mittente);
         message.setTo(destinatario);
         message.setSubject(oggetto);
         message.setText(corpo);
-        mailSender.send(message);
+        try {
+            mailSender.send(message);
+        } catch (MailException e) {
+            log.error("Invio email a {} fallito (oggetto: '{}')", destinatario, oggetto, e);
+        }
     }
 }

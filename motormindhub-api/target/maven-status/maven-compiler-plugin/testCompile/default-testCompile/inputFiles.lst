@@ -14,6 +14,7 @@
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/service/gestioneAutori/GestioneAutoriTest.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/service/gestioneCategorie/GestioneCategorieTest.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/service/gestioneNotifiche/GestioneNotificheTest.java
+/home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/service/gestioneNotifiche/MailSmtpTimeoutIntegrationTest.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/service/gestioneUtenti/GestioneUtentiTest.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/utility/constraints/EmailUnivocaValidatorTest.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/test/java/com/motormindhub/Api/utility/constraints/PasswordSicuraValidatorTest.java
