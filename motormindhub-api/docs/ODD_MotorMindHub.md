@@ -602,6 +602,8 @@ articolo che *era* pubblicato). (cfr. RF1.7, UC_6)
 >
 > post: InvitoAutore.allInstances()-\>select(i \| i.token = token).stato = StatoInvito::RIFIUTATO
 
+**Nota (limitazione nota)** Non esiste un metodo di sola lettura per consultare i dettagli di un InvitoAutore (mittente, ruolo proposto) a partire dal token, prima che l'invitato agisca con acceptInvite/declineInvite. Il mockup 33_invito_accettazione.png presuppone che la pagina web mostri questo contesto all'invitato; senza un endpoint dedicato, l'unica fonte per queste informazioni resta il testo dell'email di invito stessa (inviata da onAuthorInvited, cfr. GestioneNotifiche). Non un'omissione bloccante — il flusso resta corretto — ma un gap del contratto che una futura iterazione potrebbe colmare con una query getInviteDetails(token: String).
+
 **Nome metodo removeAuthor(authorId: Long, dto: RemoveAuthorPolicyDTO)**
 
 **Descrizione** Revoca i permessi di un autore, con opzione di mantenere o eliminare i suoi articoli pregressi. (cfr. RF3.4, UC_11)

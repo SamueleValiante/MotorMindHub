@@ -287,6 +287,7 @@ public class GestioneAmministrazioneUtenti {
                         || l.getUtenteTarget().getCognome().toLowerCase().contains(query)
                         || (l.getDettaglio() != null && l.getDettaglio().toLowerCase().contains(query)))
                 .map(l -> new AdministrativeActionLogEntryDTO(l.getDataAzione(), l.getTipoAzione(),
+                        l.getUtenteTarget().getId(),
                         l.getUtenteTarget().getNome() + " " + l.getUtenteTarget().getCognome(), l.getDettaglio()))
                 .toList();
     }

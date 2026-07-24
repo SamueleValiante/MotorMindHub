@@ -8,6 +8,7 @@ import java.time.Instant;
 public record AdministrativeActionLogEntryDTO(
         Instant dataAzione,
         TipoAzioneAmministrativa tipoAzione,
+        Long utenteTargetId,
         String utenteTargetNome,
         String dettaglio
 ) {
