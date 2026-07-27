@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "motormindhub-api/**"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "motormindhub-api/**"
+      - ".github/workflows/ci.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: motormindhub-api
+
+    # Stessa immagine e credenziali di docker-compose.yml (uso locale): application.properties
+    # risolve spring.datasource.* su localhost:5432/mmh/mmh di default (${DB_URL:...},
+    # ${DB_USERNAME:mmh}, ${DB_PASSWORD:mmh}) - un service container di GitHub Actions, quando il
+    # job non gira dentro un "container:", e' raggiungibile dai passi del job su localhost, quindi
+    # bastano questi default: nessuna variabile d'ambiente o application-ci.properties da aggiungere.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: motormindhub
+          POSTGRES_USER: mmh
+          POSTGRES_PASSWORD: mmh
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      # GestioneNotifiche non richiede un vero server SMTP raggiungibile in CI: GestioneNotificheTest
+      # mocka JavaMailSender, MailSmtpTimeoutIntegrationTest punta a un ServerSocket locale creato dal
+      # test stesso, e ogni listener @Async cattura MailException internamente (logga e basta,
+      # cfr. GestioneNotifiche.invia) - nessun test fallisce se localhost:1025 non ha nulla in ascolto.
+      - name: Run tests
+        run: ./mvnw --batch-mode test
