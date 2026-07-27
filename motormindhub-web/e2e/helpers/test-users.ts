@@ -154,6 +154,11 @@ export function deleteTestUser(email: string): void {
       // utente di test che ha salvato un articolo durante il test bloccherebbe
       // altrimenti la DELETE su utenti con una violazione di foreign key.
       `DELETE FROM articoli_salvati WHERE utente_id = (SELECT id FROM utenti WHERE email='${email}'); ` +
+      // log_azioni_amministrative: introdotta da GestioneAmministrazioneUtenti
+      // (sospendi/riattiva/cancella/esporta) — un utente target di un'azione
+      // amministrativa durante il test bloccherebbe altrimenti la DELETE su
+      // utenti con una violazione di foreign key (utente_target_id).
+      `DELETE FROM log_azioni_amministrative WHERE utente_target_id = (SELECT id FROM utenti WHERE email='${email}'); ` +
       `DELETE FROM utenti WHERE email='${email}';"`
   );
 }

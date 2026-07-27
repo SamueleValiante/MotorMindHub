@@ -248,10 +248,14 @@ public class GestioneAmministrazioneUtenti {
         return new UserManagementDashboardDTO(utentiRegistrati, segnalazioniAperte, richiesteInCoda);
     }
 
-    /** RF4.2, UC_22 - mockup 39_gestore_gestione_account.png. */
+    /**
+     * RF4.2, UC_22 - mockup 39_gestore_gestione_account.png. query normalizzata a "" quando assente:
+     * UtenteRepository.search non accetta piu' null (cfr. commento li').
+     */
     @Transactional(readOnly = true)
     public List<UserSummaryDTO> searchUsers(UserSearchCriteriaDTO criteria) {
-        return utenteRepository.search(criteria.query(), criteria.stato()).stream()
+        String query = criteria.query() == null ? "" : criteria.query();
+        return utenteRepository.search(query, criteria.stato()).stream()
                 .map(u -> new UserSummaryDTO(u.getId(), u.getNome(), u.getCognome(), u.getEmail(),
                         u.getStato(), u.getDataRegistrazione()))
                 .toList();

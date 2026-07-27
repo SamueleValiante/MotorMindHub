@@ -24,6 +24,10 @@ export default async function globalTeardown(): Promise<void> {
         `DELETE FROM articoli_salvati WHERE utente_id IN (SELECT id FROM utenti WHERE email LIKE 'e2e-%'); ` +
         `DELETE FROM articoli_salvati WHERE articolo_id IN (SELECT id FROM articoli WHERE autore_id IN (SELECT id FROM utenti WHERE email LIKE 'e2e-%')); ` +
         `DELETE FROM articoli WHERE autore_id IN (SELECT id FROM utenti WHERE email LIKE 'e2e-%'); ` +
+        // GestioneAmministrazioneUtenti: un utente e2e target di sospendi/
+        // riattiva/cancella/esporta lascia una riga in log_azioni_amministrative
+        // che violerebbe altrimenti la DELETE su utenti (utente_target_id).
+        `DELETE FROM log_azioni_amministrative WHERE utente_target_id IN (SELECT id FROM utenti WHERE email LIKE 'e2e-%'); ` +
         `DELETE FROM utenti WHERE email LIKE 'e2e-%';"`
     );
   } catch (error) {

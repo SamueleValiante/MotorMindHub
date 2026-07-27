@@ -1,5 +1,6 @@
 com/motormindhub/Api/web/SelfServiceAuthorizationIntegrationTest.class
 com/motormindhub/Api/service/gestioneArticoli/CategoriaEliminataListenerTest.class
+com/motormindhub/Api/web/amministrazioneUtenti/SearchUsersIntegrationTest.class
 com/motormindhub/Api/service/gestioneNotifiche/MailSmtpTimeoutIntegrationTest.class
 com/motormindhub/Api/ApiApplicationTests.class
 com/motormindhub/Api/security/LoginLockoutIntegrationTest.class

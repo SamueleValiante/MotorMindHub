@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ensureFreshAccessToken } from "./refresh";
+import { ensureFreshAccessToken, __resetRefreshStateForTests } from "./refresh";
 import { useAuthStore } from "./store";
 import { apiFetch } from "@/lib/http/client";
 
@@ -21,11 +21,13 @@ function buildAccessToken(ruolo: string): string {
 
 describe("ensureFreshAccessToken", () => {
   beforeEach(() => {
+    __resetRefreshStateForTests();
     useAuthStore.setState({
       status: "loading",
       accessToken: null,
       uid: null,
       ruolo: null,
+      sessionEstablishedAt: null,
     });
   });
 
@@ -93,7 +95,13 @@ describe("ensureFreshAccessToken", () => {
     expect(useAuthStore.getState().status).toBe("anonymous");
   });
 
-  it("avvia una nuova richiesta per un refresh successivo al precedente già concluso", async () => {
+  it("un secondo refresh ravvicinato nel tempo (non concorrente) riusa il token appena ottenuto, senza rete", async () => {
+    // Regressione: AuthProvider può rimontare una seconda volta a poca
+    // distanza dalla prima (osservato in dev, cfr. commento in refresh.ts) —
+    // senza questa cache breve, la seconda chiamata ruoterebbe di nuovo il
+    // refresh token; se una navigazione la abbandona prima che il nuovo
+    // cookie venga applicato, il refresh successivo arriva con un token già
+    // ruotato e la reuse detection del backend revoca l'intera famiglia.
     let callCount = 0;
     const freshToken = buildAccessToken("ISCRITTO");
     vi.stubGlobal(
@@ -109,17 +117,43 @@ describe("ensureFreshAccessToken", () => {
     await ensureFreshAccessToken();
     await ensureFreshAccessToken();
 
+    expect(callCount).toBe(1);
+  });
+
+  it("avvia una nuova richiesta di rete una volta scaduta la finestra di cache breve", async () => {
+    vi.useFakeTimers();
+    let callCount = 0;
+    const freshToken = buildAccessToken("ISCRITTO");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        callCount += 1;
+        return new Response(JSON.stringify({ accessToken: freshToken }), {
+          status: 200,
+        });
+      })
+    );
+
+    await ensureFreshAccessToken();
+    await vi.advanceTimersByTimeAsync(6000);
+    await ensureFreshAccessToken();
+
     expect(callCount).toBe(2);
+    vi.useRealTimers();
   });
 });
 
 describe("apiFetch", () => {
   beforeEach(() => {
+    __resetRefreshStateForTests();
     useAuthStore.setState({
       status: "authenticated",
       accessToken: buildAccessToken("ISCRITTO"),
       uid: 1,
       ruolo: "ISCRITTO",
+      // null, non "appena stabilita": questi test verificano il retry su
+      // 401/403 di apiFetch, non la cache breve di ensureFreshAccessToken.
+      sessionEstablishedAt: null,
     });
   });
 

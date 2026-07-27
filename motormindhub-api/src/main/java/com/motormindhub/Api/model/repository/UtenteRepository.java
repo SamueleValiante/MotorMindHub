@@ -35,12 +35,18 @@ public interface UtenteRepository extends JpaRepository<Utente, Long> {
      * e' null): un account anonimizzato da processAccountDeletion (ODD 2.5) non e' piu' un "utente
      * registrato" nel senso di RF4.2 - RF4.2 stessa elenca solo tre stati visualizzabili (attivo,
      * sospeso, in cancellazione), CANCELLATO non compare tra questi.
+     *
+     * "query" e' sempre una stringa (mai null, cfr. GestioneAmministrazioneUtenti.searchUsers che
+     * normalizza a "" prima di chiamare questo metodo): un parametro nullo dentro LOWER(...) non ha
+     * un tipo SQL inferibile in modo affidabile da Hibernate/PostgreSQL in questo contesto (bindato
+     * come bytea invece che text, "function lower(bytea) does not exist", 500 su ogni chiamata senza
+     * query esplicita - riprodotto dal vivo). Una stringa vuota in LIKE '%%' combacia comunque con
+     * tutto, quindi il ramo ":query IS NULL OR" non serve piu'.
      */
     @Query("""
             SELECT u FROM Utente u
             WHERE u.stato <> com.motormindhub.Api.model.entity.StatoUtente.CANCELLATO
-              AND (:query IS NULL
-                    OR LOWER(u.nome) LIKE LOWER(CONCAT('%', :query, '%'))
+              AND (LOWER(u.nome) LIKE LOWER(CONCAT('%', :query, '%'))
                     OR LOWER(u.cognome) LIKE LOWER(CONCAT('%', :query, '%'))
                     OR LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%')))
               AND (:stato IS NULL OR u.stato = :stato)
