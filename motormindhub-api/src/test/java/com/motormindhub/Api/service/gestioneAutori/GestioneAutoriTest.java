@@ -12,6 +12,7 @@ import com.motormindhub.Api.model.entity.StatoUtente;
 import com.motormindhub.Api.model.entity.Utente;
 import com.motormindhub.Api.model.repository.ArticoloRepository;
 import com.motormindhub.Api.model.repository.CategoriaRepository;
+import com.motormindhub.Api.model.repository.ConteggioArticoliPerAutore;
 import com.motormindhub.Api.model.repository.InvitoAutoreRepository;
 import com.motormindhub.Api.model.repository.UtenteRepository;
 import com.motormindhub.Api.service.gestioneAutori.dto.AuthorSummaryDTO;
@@ -46,6 +47,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -369,13 +371,28 @@ class GestioneAutoriTest {
     void listAuthors_restituisceAutoriConConteggioArticoli() {
         Utente autore = utente(1L, Ruolo.AUTORE);
         when(utenteRepository.findByRuolo(Ruolo.AUTORE)).thenReturn(List.of(autore));
-        when(articoloRepository.countByAutoreId(1L)).thenReturn(64L);
+        ConteggioArticoliPerAutore conteggio = mock(ConteggioArticoliPerAutore.class);
+        when(conteggio.getAutoreId()).thenReturn(1L);
+        when(conteggio.getConteggio()).thenReturn(64L);
+        when(articoloRepository.countByAutoreIdIn(List.of(1L))).thenReturn(List.of(conteggio));
 
         List<AuthorSummaryDTO> risultato = gestioneAutori.listAuthors();
 
         assertThat(risultato).hasSize(1);
         assertThat(risultato.get(0).numeroArticoli()).isEqualTo(64L);
         assertThat(risultato.get(0).stato()).isEqualTo(StatoUtente.ATTIVO);
+    }
+
+    @Test
+    void listAuthors_restituisceZeroArticoli_quandoLAutoreNonHaNessunArticolo() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        when(utenteRepository.findByRuolo(Ruolo.AUTORE)).thenReturn(List.of(autore));
+        when(articoloRepository.countByAutoreIdIn(List.of(1L))).thenReturn(List.of());
+
+        List<AuthorSummaryDTO> risultato = gestioneAutori.listAuthors();
+
+        assertThat(risultato).hasSize(1);
+        assertThat(risultato.get(0).numeroArticoli()).isEqualTo(0L);
     }
 
     // --- query: getPendingArticles -----------------------------------------------------

@@ -45,6 +45,14 @@ public interface ArticoloRepository extends JpaRepository<Articolo, Long> {
 
     long countByAutoreId(Long autoreId);
 
+    /**
+     * Conteggio aggregato per listAuthors (RF3.2, UC_8): una sola query invece di una countByAutoreId
+     * per autore dentro un .map() (N+1 esplicito, non lazy-loading - trovato durante l'audit di
+     * sicurezza sulla paginazione/N+1 di tutti gli endpoint che restituiscono liste).
+     */
+    @Query("SELECT a.autore.id AS autoreId, COUNT(a) AS conteggio FROM Articolo a WHERE a.autore.id IN :autoreIds GROUP BY a.autore.id")
+    List<ConteggioArticoliPerAutore> countByAutoreIdIn(@Param("autoreIds") List<Long> autoreIds);
+
     boolean existsByAutoreIdAndStato(Long autoreId, StatoArticolo stato);
 
     void deleteByAutoreId(Long autoreId);

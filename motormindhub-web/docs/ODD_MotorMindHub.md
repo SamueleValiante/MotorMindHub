@@ -855,3 +855,17 @@ I contratti seguenti sono espressi in forma sintetica, in quanto ciascun listene
 > pre: evento BruteForceLockoutEvent pubblicato
 >
 > post: email di conferma sblocco inviata
+
+> **2.7 Debito tecnico noto — paginazione e query N+1**
+
+Nota trasversale (non un contratto di un singolo metodo) emersa da un audit di sicurezza sull'intera superficie REST: a parte la ricerca pubblica degli articoli (GestioneArticoli::searchArticles, l'unica query realmente paginata dell'intero backend), ogni altro metodo di sola lettura che restituisce una lista scarica l'intero risultato senza `LIMIT`. GestioneAutori::listAuthors (N+1 esplicito: una `countByAutoreId` per autore dentro il `.map()`) è stato corretto con un'unica query aggregata (`ArticoloRepository.countByAutoreIdIn`, GROUP BY). Le occorrenze seguenti restano invece debito tecnico noto, non ancora corrette:
+
+> - GestioneAmministrazioneUtenti::getReportsQueue — nessuna paginazione; N+1 su `Segnalazione.segnalato` (relazione lazy, diversa per riga).
+> - GestioneAmministrazioneUtenti::getDeletionRequestsQueue — nessuna paginazione; N+1 su `RichiestaCancellazione.utente` (idem).
+> - GestioneAmministrazioneUtenti::getAdministrativeActionLog — nessuna paginazione; N+1 su `LogAzioneAmministrativa.utenteTarget`; il filtro testuale `query` è applicato in Java dopo aver caricato tutte le righe (non in SQL) — il caso peggiore dei tre, aggravato dall'assenza di `LIMIT`.
+> - GestioneArticoli::getSavedArticles — nessuna paginazione; N+1 pieno su `ArticoloSalvato.articolo` (sia `categoria` sia `autore` variano per riga).
+> - GestioneAutori::getPendingArticles — nessuna paginazione; stesso N+1 pieno di getSavedArticles (categoria e autore variano per riga).
+> - GestioneArticoli::getArticlesByAuthor — nessuna paginazione; N+1 parziale (solo su `categoria` — `autore` è lo stesso per ogni riga, quindi in cache L1 dopo la prima).
+> - GestioneCategorie::getCategoryTree — `findAll()` senza `LIMIT`, ma nessun N+1 (l'albero è costruito in memoria da un'unica query, senza query ricorsive per nodo).
+
+Nessuna di queste è stata corretta in questa sessione: il volume di dati coinvolto oggi (segnalazioni, richieste di cancellazione, cronologia azioni, salvataggi, categorie) resta contenuto, quindi il rischio immediato è basso — ma va tenuto presente prima di un'eventuale scala d'uso più ampia.

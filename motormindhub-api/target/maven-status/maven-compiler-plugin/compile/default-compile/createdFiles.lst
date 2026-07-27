@@ -28,6 +28,7 @@ com/motormindhub/Api/model/entity/RichiestaCancellazione.class
 com/motormindhub/Api/events/AccountRiattivatoEvent.class
 com/motormindhub/Api/security/RefreshTokenService.class
 com/motormindhub/Api/service/gestioneNotifiche/GestioneNotifiche.class
+com/motormindhub/Api/model/repository/ConteggioArticoliPerAutore.class
 com/motormindhub/Api/service/gestioneArticoli/dto/ArticleSummaryDTO.class
 com/motormindhub/Api/model/repository/RichiestaCancellazioneRepository.class
 com/motormindhub/Api/service/gestioneAmministrazioneUtenti/dto/MotivazioneSospensione.class
@@ -144,3 +145,4 @@ com/motormindhub/Api/web/auth/RefreshTokenRequestDTO.class
 com/motormindhub/Api/service/gestioneAutori/dto/InviteAuthorDTO.class
 com/motormindhub/Api/service/gestioneAmministrazioneUtenti/exception/RegolaDiDominioViolataException.class
 com/motormindhub/Api/security/RestAuthenticationEntryPoint.class
+com/motormindhub/Api/service/gestioneAmministrazioneUtenti/exception/GestoreNonAutorizzatoException.class

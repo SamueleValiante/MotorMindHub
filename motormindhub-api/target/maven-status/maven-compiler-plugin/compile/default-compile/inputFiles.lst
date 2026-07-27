@@ -33,6 +33,7 @@
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/model/repository/ArticoloRepository.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/model/repository/ArticoloSalvatoRepository.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/model/repository/CategoriaRepository.java
+/home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/model/repository/ConteggioArticoliPerAutore.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/model/repository/InvitoAutoreRepository.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/model/repository/LogAzioneAmministrativaRepository.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/model/repository/RefreshTokenRepository.java
@@ -62,6 +63,7 @@
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/service/gestioneAmministrazioneUtenti/dto/UserSearchCriteriaDTO.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/service/gestioneAmministrazioneUtenti/dto/UserSummaryDTO.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/service/gestioneAmministrazioneUtenti/exception/ContenutiInSospesoException.java
+/home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/service/gestioneAmministrazioneUtenti/exception/GestoreNonAutorizzatoException.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/service/gestioneAmministrazioneUtenti/exception/RegolaDiDominioViolataException.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/service/gestioneAmministrazioneUtenti/exception/RichiestaCancellazioneNonTrovataException.java
 /home/samuele/Desktop/MotorMindHub/motormindhub-api/src/main/java/com/motormindhub/Api/service/gestioneAmministrazioneUtenti/exception/SegnalazioneNonTrovataException.java

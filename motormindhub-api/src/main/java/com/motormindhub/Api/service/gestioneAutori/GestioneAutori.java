@@ -12,6 +12,7 @@ import com.motormindhub.Api.model.entity.StatoUtente;
 import com.motormindhub.Api.model.entity.Utente;
 import com.motormindhub.Api.model.repository.ArticoloRepository;
 import com.motormindhub.Api.model.repository.CategoriaRepository;
+import com.motormindhub.Api.model.repository.ConteggioArticoliPerAutore;
 import com.motormindhub.Api.model.repository.InvitoAutoreRepository;
 import com.motormindhub.Api.model.repository.UtenteRepository;
 import com.motormindhub.Api.service.gestioneAutori.dto.AuthorSummaryDTO;
@@ -37,7 +38,9 @@ import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Facade del sottosistema GestioneAutori (SDD 3.1, ODD 2.4): inviti, revoca e coordinamento del
@@ -197,12 +200,25 @@ public class GestioneAutori {
                 articolo.getAutore().getEmail(), false, dto.motivazione()));
     }
 
-    /** Query di sola lettura (RF3.2, UC_8) - nessun contratto OCL formale. */
+    /**
+     * Query di sola lettura (RF3.2, UC_8) - nessun contratto OCL formale. Il conteggio articoli per
+     * autore e' una singola query aggregata (GROUP BY) sull'insieme degli id, non una countByAutoreId
+     * per autore dentro il .map() - quest'ultima era un N+1 esplicito (una query per riga, non
+     * lazy-loading), trovato durante l'audit di sicurezza sulla paginazione/N+1 di tutti gli endpoint
+     * che restituiscono liste.
+     */
     @Transactional(readOnly = true)
     public List<AuthorSummaryDTO> listAuthors() {
-        return utenteRepository.findByRuolo(Ruolo.AUTORE).stream()
+        List<Utente> autori = utenteRepository.findByRuolo(Ruolo.AUTORE);
+        List<Long> autoreIds = autori.stream().map(Utente::getId).toList();
+        Map<Long, Long> conteggiPerAutore = autoreIds.isEmpty()
+                ? Map.of()
+                : articoloRepository.countByAutoreIdIn(autoreIds).stream()
+                        .collect(Collectors.toMap(ConteggioArticoliPerAutore::getAutoreId, ConteggioArticoliPerAutore::getConteggio));
+
+        return autori.stream()
                 .map(u -> new AuthorSummaryDTO(u.getId(), u.getNome(), u.getCognome(), u.getEmail(),
-                        articoloRepository.countByAutoreId(u.getId()), u.getStato()))
+                        conteggiPerAutore.getOrDefault(u.getId(), 0L), u.getStato()))
                 .toList();
     }
 

@@ -1,6 +1,7 @@
 package com.motormindhub.Api.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.motormindhub.Api.model.entity.Ruolo;
 import com.motormindhub.Api.model.entity.StatoUtente;
 import com.motormindhub.Api.model.entity.Utente;
 import com.motormindhub.Api.model.repository.UtenteRepository;
@@ -204,6 +205,43 @@ class RefreshTokenIntegrationTest {
         // controllo di ownership tra Gestori non scatta indipendentemente dal valore qui passato.
         gestioneAmministrazioneUtenti.suspendAccount(userId,
                 new SuspensionDTO(MotivazioneSospensione.ALTRO, "sospeso durante il test", null), -1L);
+
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new RefreshTokenRequestDTO(refreshToken))))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.accessToken").doesNotExist())
+                .andExpect(jsonPath("$.refreshToken").doesNotExist());
+    }
+
+    /**
+     * suspendAccount ora rifiuta un Gestore Utenti che sospende un altro Gestore Utenti diverso da
+     * se stesso (GestoreNonAutorizzatoException, aggiunta dopo l'audit di sicurezza): l'auto-sospensione
+     * resta l'UNICO modo legittimo per sospendere un target GESTORE_UTENTI (un secondo Gestore reale
+     * come chiamante verrebbe sempre rifiutato dal guard, indipendentemente da chi sia). Questo test
+     * verifica che, con quell'unico percorso legittimo, il refresh fallisca in modo identico al caso
+     * con target ISCRITTO sopra - la garanzia di RefreshTokenService.rotate() (stato != ATTIVO) non
+     * e' condizionata al ruolo del target.
+     */
+    @Test
+    void refresh_fallisce_seAccountVieneSospesoDopoLEmissioneDelRefreshToken_ancheQuandoIlTargetEUnGestoreUtenti() throws Exception {
+        String emailGestore = "gestore-target@provider.it";
+        Utente gestore = new Utente("Gestore", "Target", emailGestore, passwordEncoder.encode(PASSWORD), null, null, true, null);
+        gestore.setStato(StatoUtente.ATTIVO);
+        gestore.setRuolo(Ruolo.GESTORE_UTENTI);
+        utenteRepository.saveAndFlush(gestore);
+
+        MvcResult loginResult = mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType("application/json")
+                        .content(objectMapper.writeValueAsString(new LoginRequestDTO(emailGestore, PASSWORD))))
+                .andExpect(status().isOk())
+                .andReturn();
+        String refreshToken = campoJson(loginResult, "refreshToken");
+
+        // Auto-sospensione: callerId = l'id del Gestore stesso, l'unico caso permesso dal guard
+        // quando il target e' un GESTORE_UTENTI.
+        gestioneAmministrazioneUtenti.suspendAccount(gestore.getId(),
+                new SuspensionDTO(MotivazioneSospensione.ALTRO, "sospeso durante il test", null), gestore.getId());
 
         mockMvc.perform(post("/api/v1/auth/refresh")
                         .contentType("application/json")
