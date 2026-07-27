@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/auth/store";
+import { ROLE_HOME_PATH } from "@/lib/auth/roleRedirect";
 import type { Ruolo } from "@/lib/auth/jwt";
 
 interface RoleGuardProps {
@@ -20,7 +21,12 @@ interface RoleGuardProps {
  *
  * "loading" -> stato di attesa, nessun redirect, nessun contenuto protetto
  * renderizzato. "anonymous" -> redirect a /login. Ruolo non ammesso ->
- * redirect alla home. Altrimenti renderizza i children.
+ * redirect alla home DEL RUOLO autenticato (ROLE_HOME_PATH, la stessa
+ * mappa usata dopo il login in lib/auth/login.ts), non alla home pubblica
+ * generica: un utente già autenticato che finisce su una route del ruolo
+ * sbagliato (es. link salvato, digitazione diretta) va rimandato alla
+ * propria area, non buttato fuori verso "/". Altrimenti renderizza i
+ * children.
  */
 export function RoleGuard({ allowedRoles, children }: RoleGuardProps) {
   const router = useRouter();
@@ -32,10 +38,10 @@ export function RoleGuard({ allowedRoles, children }: RoleGuardProps) {
   useEffect(() => {
     if (status === "anonymous") {
       router.replace("/login");
-    } else if (status === "authenticated" && !isAllowed) {
-      router.replace("/");
+    } else if (status === "authenticated" && !isAllowed && ruolo) {
+      router.replace(ROLE_HOME_PATH[ruolo]);
     }
-  }, [status, isAllowed, router]);
+  }, [status, isAllowed, ruolo, router]);
 
   if (status === "loading") {
     // Placeholder minimale: sostituito da un componente condiviso quando
