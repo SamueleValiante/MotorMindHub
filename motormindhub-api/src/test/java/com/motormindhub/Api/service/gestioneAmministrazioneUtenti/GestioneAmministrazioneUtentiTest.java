@@ -7,6 +7,7 @@ import com.motormindhub.Api.events.DataExportReadyEvent;
 import com.motormindhub.Api.events.RichiestaModificaProfiloEvent;
 import com.motormindhub.Api.model.entity.LogAzioneAmministrativa;
 import com.motormindhub.Api.model.entity.RichiestaCancellazione;
+import com.motormindhub.Api.model.entity.Ruolo;
 import com.motormindhub.Api.model.entity.Segnalazione;
 import com.motormindhub.Api.model.entity.StatoArticolo;
 import com.motormindhub.Api.model.entity.StatoRichiestaCancellazione;
@@ -25,6 +26,7 @@ import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.ReportReso
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.SuspensionDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.UserSearchCriteriaDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.exception.ContenutiInSospesoException;
+import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.exception.GestoreNonAutorizzatoException;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.exception.RegolaDiDominioViolataException;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.exception.RichiestaCancellazioneNonTrovataException;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.exception.SegnalazioneNonTrovataException;
@@ -79,9 +81,14 @@ class GestioneAmministrazioneUtentiTest {
     }
 
     private static Utente utente(Long id, String email, StatoUtente stato) {
+        return utente(id, email, stato, Ruolo.ISCRITTO);
+    }
+
+    private static Utente utente(Long id, String email, StatoUtente stato, Ruolo ruolo) {
         Utente u = new Utente("Paolo", "Bianchi", email, "hash", null, null, true, null);
         ReflectionTestUtils.setField(u, "id", id);
         u.setStato(stato);
+        ReflectionTestUtils.setField(u, "ruolo", ruolo);
         return u;
     }
 
@@ -108,7 +115,7 @@ class GestioneAmministrazioneUtentiTest {
         when(utenteRepository.findById(1L)).thenReturn(Optional.of(utente));
         SuspensionDTO dto = new SuspensionDTO(MotivazioneSospensione.CONTENUTI_INAPPROPRIATI, null, 30);
 
-        gestione.suspendAccount(1L, dto);
+        gestione.suspendAccount(1L, dto, 2L);
 
         assertThat(utente.getStato()).isEqualTo(StatoUtente.SOSPESO);
         ArgumentCaptor<LogAzioneAmministrativa> logCaptor = ArgumentCaptor.forClass(LogAzioneAmministrativa.class);
@@ -127,7 +134,7 @@ class GestioneAmministrazioneUtentiTest {
         when(utenteRepository.findById(1L)).thenReturn(Optional.of(utente));
         SuspensionDTO dto = new SuspensionDTO(MotivazioneSospensione.ALTRO, "Foto profilo con contenuti non pertinenti", null);
 
-        gestione.suspendAccount(1L, dto);
+        gestione.suspendAccount(1L, dto, 2L);
 
         ArgumentCaptor<AccountSospesoEvent> eventCaptor = ArgumentCaptor.forClass(AccountSospesoEvent.class);
         verify(eventPublisher).publishEvent(eventCaptor.capture());
@@ -140,7 +147,7 @@ class GestioneAmministrazioneUtentiTest {
         when(utenteRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThrows(UtenteNonTrovatoException.class,
-                () -> gestione.suspendAccount(99L, new SuspensionDTO(MotivazioneSospensione.SPAM, null, null)));
+                () -> gestione.suspendAccount(99L, new SuspensionDTO(MotivazioneSospensione.SPAM, null, null), 2L));
     }
 
     @Test
@@ -149,7 +156,7 @@ class GestioneAmministrazioneUtentiTest {
         when(utenteRepository.findById(1L)).thenReturn(Optional.of(utente));
 
         assertThrows(StatoAccountNonValidoException.class,
-                () -> gestione.suspendAccount(1L, new SuspensionDTO(MotivazioneSospensione.SPAM, null, null)));
+                () -> gestione.suspendAccount(1L, new SuspensionDTO(MotivazioneSospensione.SPAM, null, null), 2L));
         verify(eventPublisher, never()).publishEvent(any());
     }
 
@@ -159,8 +166,30 @@ class GestioneAmministrazioneUtentiTest {
         when(utenteRepository.findById(1L)).thenReturn(Optional.of(utente));
 
         assertThrows(RegolaDiDominioViolataException.class,
-                () -> gestione.suspendAccount(1L, new SuspensionDTO(null, null, null)));
+                () -> gestione.suspendAccount(1L, new SuspensionDTO(null, null, null), 2L));
         assertThat(utente.getStato()).isEqualTo(StatoUtente.ATTIVO);
+    }
+
+    @Test
+    void suspendAccount_lanciaEccezione_quandoUnGestoreProvaASospendereUnAltroGestore() {
+        Utente bersaglio = utente(1L, "gestore-bersaglio@provider.it", StatoUtente.ATTIVO, Ruolo.GESTORE_UTENTI);
+        when(utenteRepository.findById(1L)).thenReturn(Optional.of(bersaglio));
+
+        assertThrows(GestoreNonAutorizzatoException.class,
+                () -> gestione.suspendAccount(1L, new SuspensionDTO(MotivazioneSospensione.SPAM, null, null), 2L));
+        assertThat(bersaglio.getStato()).isEqualTo(StatoUtente.ATTIVO);
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void suspendAccount_permetteAutoSospensione_quandoUnGestoreSospendeSeStesso() {
+        Utente sestesso = utente(1L, "gestore@provider.it", StatoUtente.ATTIVO, Ruolo.GESTORE_UTENTI);
+        when(utenteRepository.findById(1L)).thenReturn(Optional.of(sestesso));
+
+        gestione.suspendAccount(1L, new SuspensionDTO(MotivazioneSospensione.SPAM, null, null), 1L);
+
+        assertThat(sestesso.getStato()).isEqualTo(StatoUtente.SOSPESO);
+        verify(eventPublisher).publishEvent(any(AccountSospesoEvent.class));
     }
 
     // --- reactivateAccount ----------------------------------------------------

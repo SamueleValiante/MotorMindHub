@@ -7,6 +7,7 @@ import com.motormindhub.Api.events.DataExportReadyEvent;
 import com.motormindhub.Api.events.RichiestaModificaProfiloEvent;
 import com.motormindhub.Api.model.entity.LogAzioneAmministrativa;
 import com.motormindhub.Api.model.entity.RichiestaCancellazione;
+import com.motormindhub.Api.model.entity.Ruolo;
 import com.motormindhub.Api.model.entity.Segnalazione;
 import com.motormindhub.Api.model.entity.StatoArticolo;
 import com.motormindhub.Api.model.entity.StatoRichiestaCancellazione;
@@ -30,6 +31,7 @@ import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.UserManage
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.UserSearchCriteriaDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.UserSummaryDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.exception.ContenutiInSospesoException;
+import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.exception.GestoreNonAutorizzatoException;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.exception.RegolaDiDominioViolataException;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.exception.RichiestaCancellazioneNonTrovataException;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.exception.SegnalazioneNonTrovataException;
@@ -76,12 +78,13 @@ public class GestioneAmministrazioneUtenti {
     /**
      * pre: Utente.allInstances()-&gt;exists(u | u.id = userId and u.stato = StatoUtente::ATTIVO)
      * and dto.motivazione &lt;&gt; null
+     * and (Utente.allInstances()-&gt;select(u | u.id = userId).ruolo &lt;&gt; Ruolo::GESTORE_UTENTI or userId = callerId)
      * post: Utente.allInstances()-&gt;select(u | u.id = userId).stato = StatoUtente::SOSPESO
      * and LogAzioneAmministrativa.allInstances()-&gt;exists(l | l.utenteTarget.id = userId and l.tipoAzione = TipoAzioneAmministrativa::SOSPENSIONE)
      * (ODD 2.5, RF4.3, UC_23)
      */
     @Transactional
-    public void suspendAccount(Long userId, SuspensionDTO dto) {
+    public void suspendAccount(Long userId, SuspensionDTO dto, Long callerId) {
         Utente utente = utenteRepository.findById(userId)
                 .orElseThrow(() -> new UtenteNonTrovatoException("Utente non trovato."));
 
@@ -93,6 +96,13 @@ public class GestioneAmministrazioneUtenti {
             // service non deve dipendere da un livello di validazione esterno per restare corretto
             // se invocato direttamente (stesso pattern di GestioneUtenti.reportUser).
             throw new RegolaDiDominioViolataException("E' necessario selezionare una motivazione per procedere con la sospensione.");
+        }
+        // Ownership tra pari (non specificato dall'OCL, cfr. GestoreNonAutorizzatoException): un
+        // Gestore Utenti compromesso o malevolo non deve poter disattivare la moderazione di un
+        // collega. L'auto-sospensione resta permessa - non e' un vettore di sicurezza, solo un
+        // incidente recuperabile da un altro Gestore.
+        if (utente.getRuolo() == Ruolo.GESTORE_UTENTI && !utente.getId().equals(callerId)) {
+            throw new GestoreNonAutorizzatoException("Un Gestore Utenti non puo' sospendere un altro Gestore Utenti.");
         }
 
         utente.setStato(StatoUtente.SOSPESO);

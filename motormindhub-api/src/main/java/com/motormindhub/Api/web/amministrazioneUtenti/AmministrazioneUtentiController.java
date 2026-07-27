@@ -2,6 +2,7 @@ package com.motormindhub.Api.web.amministrazioneUtenti;
 
 import com.motormindhub.Api.model.entity.StatoUtente;
 import com.motormindhub.Api.model.entity.TipoAzioneAmministrativa;
+import com.motormindhub.Api.security.UserPrincipal;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.GestioneAmministrazioneUtenti;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.AdministrativeActionLogEntryDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.AdministrativeActionLogFiltersDTO;
@@ -16,6 +17,7 @@ import com.motormindhub.Api.web.MessageResponseDTO;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -55,9 +57,10 @@ public class AmministrazioneUtentiController {
 
     @PostMapping("/utenti/{userId}/sospensione")
     @PreAuthorize("hasRole('GESTORE_UTENTI')")
-    public ResponseEntity<MessageResponseDTO> suspendAccount(@PathVariable Long userId,
+    public ResponseEntity<MessageResponseDTO> suspendAccount(@AuthenticationPrincipal UserPrincipal principal,
+                                                               @PathVariable Long userId,
                                                                @Valid @RequestBody SuspensionDTO dto) {
-        gestioneAmministrazioneUtenti.suspendAccount(userId, dto);
+        gestioneAmministrazioneUtenti.suspendAccount(userId, dto, principal.getId());
         return ResponseEntity.ok(new MessageResponseDTO("Account sospeso con successo."));
     }
 

@@ -671,21 +671,23 @@ Nota di collaborazione tra sottosistemi: acceptInvite crea un nuovo record Utent
 
 **Invarianti** *not RichiestaCancellazione.allInstances()-\>exists(r1, r2 \| r1 \<\> r2 and r1.utente = r2.utente and r1.stato = StatoRichiestaCancellazione::IN_CODA and r2.stato = StatoRichiestaCancellazione::IN_CODA) — un utente non può avere più di una richiesta di cancellazione attiva contemporaneamente.*
 
-**Nome metodo suspendAccount(userId: Long, dto: SuspensionDTO)**
+**Nome metodo suspendAccount(userId: Long, dto: SuspensionDTO, callerId: Long)**
 
-**Descrizione** Sospende un account specificando motivazione e durata; pubblica l'evento di notifica. (cfr. RF4.3, UC_23)
+**Descrizione** Sospende un account specificando motivazione e durata; pubblica l'evento di notifica. (cfr. RF4.3, UC_23) callerId identifica il Gestore Utenti chiamante (RBAC via @PreAuthorize garantisce gia' che sia un GESTORE_UTENTI): non specificato esplicitamente da RAD/RF4.3, ma necessario per il controllo di ownership tra pari sotto — un Gestore compromesso o malevolo non deve poter disattivare la moderazione di un collega sospendendone l'account. L'auto-sospensione resta permessa (callerId = userId): non e' un vettore di sicurezza, solo un incidente recuperabile da un altro Gestore.
 
 **Pre-condizioni**
 
-> *context GestioneAmministrazioneUtenti::suspendAccount(userId: Long, dto: SuspensionDTO)*
+> *context GestioneAmministrazioneUtenti::suspendAccount(userId: Long, dto: SuspensionDTO, callerId: Long)*
 >
 > pre: Utente.allInstances()-\>exists(u \| u.id = userId and u.stato = StatoUtente::ATTIVO)
 >
 > and dto.motivazione.size() \> 0
+>
+> and (Utente.allInstances()-\>select(u \| u.id = userId).ruolo \<\> Ruolo::GESTORE_UTENTI or userId = callerId)
 
 **Post-condizioni**
 
-> *context GestioneAmministrazioneUtenti::suspendAccount(userId: Long, dto: SuspensionDTO)*
+> *context GestioneAmministrazioneUtenti::suspendAccount(userId: Long, dto: SuspensionDTO, callerId: Long)*
 >
 > post: Utente.allInstances()-\>select(u \| u.id = userId).stato = StatoUtente::SOSPESO
 >

@@ -80,6 +80,12 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponseDTO.of(HttpStatus.FORBIDDEN.value(), "Forbidden", ex.getMessage()));
     }
 
+    @ExceptionHandler(com.motormindhub.Api.service.gestioneAmministrazioneUtenti.exception.GestoreNonAutorizzatoException.class)
+    public ResponseEntity<ErrorResponseDTO> handleGestoreNonAutorizzato(RuntimeException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponseDTO.of(HttpStatus.FORBIDDEN.value(), "Forbidden", ex.getMessage()));
+    }
+
     @ExceptionHandler({
             com.motormindhub.Api.service.gestioneUtenti.exception.RegolaDiDominioViolataException.class,
             com.motormindhub.Api.service.gestioneCategorie.exception.RegolaDiDominioViolataException.class,

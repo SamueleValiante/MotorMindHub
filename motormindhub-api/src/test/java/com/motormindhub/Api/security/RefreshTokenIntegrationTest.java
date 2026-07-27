@@ -200,8 +200,10 @@ class RefreshTokenIntegrationTest {
         String refreshToken = campoJson(loginResult, "refreshToken");
 
         Long userId = utenteRepository.findByEmail(EMAIL).orElseThrow().getId();
+        // callerId placeholder: il target e' un ISCRITTO, non un GESTORE_UTENTI, quindi il
+        // controllo di ownership tra Gestori non scatta indipendentemente dal valore qui passato.
         gestioneAmministrazioneUtenti.suspendAccount(userId,
-                new SuspensionDTO(MotivazioneSospensione.ALTRO, "sospeso durante il test", null));
+                new SuspensionDTO(MotivazioneSospensione.ALTRO, "sospeso durante il test", null), -1L);
 
         mockMvc.perform(post("/api/v1/auth/refresh")
                         .contentType("application/json")
