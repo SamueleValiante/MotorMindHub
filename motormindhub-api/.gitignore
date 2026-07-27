@@ -1,0 +1,17 @@
+# Build output (Maven)
+target/
+*.class
+
+# IDE (JetBrains)
+.idea/
+*.iml
+
+# Log/OS
+*.log
+.DS_Store
+
+# Override locale non committabile: se in futuro serve testare con un
+# JWT_SECRET (o altro) reale in locale, va qui - mai nel application.properties
+# tracciato.
+application-local.properties
+.env
