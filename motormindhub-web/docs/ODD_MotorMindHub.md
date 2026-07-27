@@ -842,11 +842,13 @@ I contratti seguenti sono espressi in forma sintetica, in quanto ciascun listene
 
 **Nome metodo onDataExportReady(evt: DataExportReadyEvent)**
 
-**Descrizione** Invia il link sicuro e a scadenza per il download dei dati esportati. (cfr. RF1.10, RF4.7)
+**Descrizione** Invia i dati esportati come allegato JSON diretto via email. (cfr. RF1.10, RF4.7)
 
 > pre: evento DataExportReadyEvent pubblicato
 >
-> post: email con link di download (one-time, RNF9.3) inviata
+> post: email con i dati esportati allegati in formato JSON inviata
+
+**Nota (deviazione da RNF9.3)** RNF9.3 richiede un "link di download sicuro e a scadenza". L'evento, così come pubblicato da GestioneUtenti.requestAccountDataExport e GestioneAmministrazioneUtenti.exportUserDataAssisted (ODD 2.1/2.5), trasporta già il contenuto esportato come stringa JSON, non un token da risolvere in un link temporaneo — non esiste nell'Object Model (RAD 3.4.4) un'entità per un download token con scadenza. Il file viene quindi allegato direttamente all'email invece che linkato: soddisfa comunque "l'utente riceve il link di download" (UC_27) nella sostanza (i dati arrivano via email allo stesso indirizzo verificato), ma non l'aspetto "one-time/a scadenza" della RNF, che richiederebbe un'infrastruttura di storage temporaneo fuori dallo scope di questo sottosistema.
 
 **Nome metodo onBruteForceLockout(evt: BruteForceLockoutEvent)**
 
@@ -869,3 +871,25 @@ Nota trasversale (non un contratto di un singolo metodo) emersa da un audit di s
 > - GestioneCategorie::getCategoryTree — `findAll()` senza `LIMIT`, ma nessun N+1 (l'albero è costruito in memoria da un'unica query, senza query ricorsive per nodo).
 
 Nessuna di queste è stata corretta in questa sessione: il volume di dati coinvolto oggi (segnalazioni, richieste di cancellazione, cronologia azioni, salvataggi, categorie) resta contenuto, quindi il rischio immediato è basso — ma va tenuto presente prima di un'eventuale scala d'uso più ampia.
+
+> **2.8 Debito tecnico noto — frontend (motormindhub-web)**
+
+Nota trasversale emersa da un audit del frontend (gestione errori nelle mutation, copertura e2e responsive), non un contratto di un singolo componente. Solo tracciamento: nessuna correzione applicata insieme a questa nota.
+
+**Gestione errori duplicata nelle funzioni di mutation.** Due assi distinti:
+
+> - `extractErrorMessage()` (estrae `messages[0]` da un corpo di errore JSON, con fallback) è ridefinita identica in 7 file invece di vivere in un modulo condiviso: `lib/articoli/articleEditor.ts`, `lib/autori/authorMutations.ts`, `lib/autori/inviteResponse.ts`, `lib/categorie/categoryMutations.ts`, `lib/amministrazioneUtenti/{deletionMutations,reportMutations,userMutations}.ts`.
+> - 5 file non usano nemmeno quella funzione: reimplementano lo stesso try/catch inline, senza un motivo documentato che lo giustifichi (a differenza di `lib/auth/login.ts`, che estrae anche `errorCode`, e di `lib/auth/register.ts`, che mostra tutti i messaggi non solo il primo — questi due restano intenzionalmente diversi). Le 5 occorrenze non giustificate: `lib/auth/updateProfile.ts`, `lib/auth/accountDeletion.ts`, `lib/auth/dataExport.ts`, `lib/auth/passwordReset.ts` (entrambe le funzioni), `lib/report/reportUser.ts`.
+
+**Route senza test e2e responsive.** Il progetto ha accumulato un'incoerenza già corretta una volta (GestioneCategorie) e da allora ripresentatasi altrove: pagine reali, con logica non banale, senza alcuna verifica `setViewportSize` mobile. Corretto per `/gestore/segnalazioni` e `/gestore/segnalazioni/[reportId]` in questa sessione (`e2e/gestore-segnalazioni.spec.ts`); restano scoperte:
+
+> - `/autore/articoli/nuovo`, `/autore/articoli/[articleId]/modifica` — Editor articolo, la pagina con più form dell'intero progetto (`e2e/autore-editor.spec.ts`, nessun test mobile).
+> - `/autore/bozze` — Le Mie Bozze (`e2e/autore-bozze.spec.ts`).
+> - `/account`, `/account/impostazioni` — Panoramica (`e2e/account-panoramica.spec.ts`).
+> - `/account/dati`, `/account/elimina` — I Miei Dati / Elimina Account (`e2e/account-data.spec.ts`).
+> - Home pubblica (`e2e/home.spec.ts`).
+> - Pagine legali statiche: accessibilità, chi siamo, cookie policy, termini (`e2e/legal-pages.spec.ts`).
+> - `/login`, `/registrazione`, `/(auth)/conferma-email` (`e2e/login.spec.ts`, `e2e/register-confirm.spec.ts`).
+> - `/recupero-password`, `/reimposta-password` (`e2e/password-reset.spec.ts`).
+
+Rischio basso per le pagine di solo testo (legali, home), più concreto per Editor articolo e login/registrazione — sono le pagine con più campi di form e quindi più esposte a problemi di layout su viewport stretti.

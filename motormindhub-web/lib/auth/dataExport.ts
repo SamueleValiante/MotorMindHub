@@ -35,6 +35,6 @@ export async function requestDataExport(): Promise<boolean> {
   }
 
   const data: { message?: string } = await response.json().catch(() => ({}));
-  toast.success(data.message ?? "Riceverai a breve un'email con il link per scaricare i tuoi dati.");
+  toast.success(data.message ?? "Riceverai a breve un'email con i tuoi dati personali in allegato, in formato JSON.");
   return true;
 }

@@ -76,7 +76,7 @@ public class AmministrazioneUtentiController {
     public ResponseEntity<MessageResponseDTO> exportUserDataAssisted(@PathVariable Long userId) {
         gestioneAmministrazioneUtenti.exportUserDataAssisted(userId);
         return ResponseEntity.accepted()
-                .body(new MessageResponseDTO("Esportazione avviata: l'utente ricevera' un link di download sicuro via email."));
+                .body(new MessageResponseDTO("Esportazione avviata: l'utente ricevera' un'email con i suoi dati in allegato."));
     }
 
     @GetMapping("/segnalazioni")

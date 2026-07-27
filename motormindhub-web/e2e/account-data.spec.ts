@@ -15,7 +15,7 @@ test.describe("I miei dati / Esportazione", () => {
 
     await page.getByRole("button", { name: "Esporta dati" }).click();
     await expect(
-      page.getByText("Riceverai a breve un'email con il link per scaricare i tuoi dati.")
+      page.getByText("Riceverai a breve un'email con i tuoi dati personali in allegato, in formato JSON.")
     ).toBeVisible();
 
     const exportEmail = await waitForDataExportEmail(email);

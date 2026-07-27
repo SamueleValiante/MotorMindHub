@@ -99,7 +99,7 @@ public class UtentiController {
     public ResponseEntity<MessageResponseDTO> requestAccountDataExport(@AuthenticationPrincipal UserPrincipal principal) {
         gestioneUtenti.requestAccountDataExport(principal.getId());
         return ResponseEntity.accepted()
-                .body(new MessageResponseDTO("Riceverai a breve un'email con il link per scaricare i tuoi dati."));
+                .body(new MessageResponseDTO("Riceverai a breve un'email con i tuoi dati personali in allegato, in formato JSON."));
     }
 
     @PostMapping("/me/cancellazione")
