@@ -105,12 +105,14 @@ public class GestioneAmministrazioneUtenti {
             throw new GestoreNonAutorizzatoException("Un Gestore Utenti non puo' sospendere un altro Gestore Utenti.");
         }
 
+        String motivazioneTesto = testoMotivazione(dto.motivazione(), dto.noteAggiuntive());
+
         utente.setStato(StatoUtente.SOSPESO);
         logAzioneAmministrativaRepository.save(new LogAzioneAmministrativa(utente,
-                TipoAzioneAmministrativa.SOSPENSIONE, descrizioneSospensione(dto.durataGiorni())));
+                TipoAzioneAmministrativa.SOSPENSIONE, descrizioneSospensione(dto.durataGiorni(), motivazioneTesto)));
 
         eventPublisher.publishEvent(new AccountSospesoEvent(utente.getId(), utente.getEmail(),
-                testoMotivazione(dto.motivazione(), dto.noteAggiuntive()), dto.durataGiorni()));
+                motivazioneTesto, dto.durataGiorni()));
     }
 
     /**
@@ -308,10 +310,14 @@ public class GestioneAmministrazioneUtenti {
 
     // --- helper privati -------------------------------------------------------
 
-    private static String descrizioneSospensione(Integer durataGiorni) {
-        return durataGiorni == null
-                ? "Sospensione account (permanente)"
-                : "Sospensione account (%d gg)".formatted(durataGiorni);
+    /**
+     * Include la motivazione nel dettaglio del log (non solo nell'email, RF4.3): mockup 42
+     * "Ricorsi" mostra "Motivazione Sospensione" per il Gestore che valuta un ricorso, e
+     * LogAzioneAmministrativa.dettaglio e' l'unica fonte persistita per quel dato.
+     */
+    private static String descrizioneSospensione(Integer durataGiorni, String motivazioneTesto) {
+        String durata = durataGiorni == null ? "permanente" : "%d gg".formatted(durataGiorni);
+        return "Sospensione account (%s) — %s".formatted(durata, motivazioneTesto);
     }
 
     /** Combina l'etichetta della motivazione predefinita con le note libere opzionali (RAD, Tabella Formati §1.5.1). */
