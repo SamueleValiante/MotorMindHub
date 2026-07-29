@@ -23,7 +23,7 @@ test.describe("Dettaglio Articolo", () => {
     });
 
     try {
-      expect(getViewCount(id)).toBe(0);
+      expect(await getViewCount(id)).toBe(0);
 
       await page.goto(`/articoli/${id}`);
       await expect(page.getByRole("heading", { name: titolo })).toBeVisible();
@@ -31,7 +31,7 @@ test.describe("Dettaglio Articolo", () => {
       // Attesa esplicita oltre al render: se lo strict-mode innescasse una
       // seconda fetch dopo la prima, avverrebbe comunque entro pochi ms.
       await page.waitForTimeout(500);
-      expect(getViewCount(id)).toBe(1);
+      expect(await getViewCount(id)).toBe(1);
     } finally {
       await deleteArticle(manager.email, manager.password, id);
     }

@@ -23,7 +23,7 @@ test.describe("Dashboard Gestione Utenti (Gestore Utenti)", () => {
     const gestore = await testUsers.create({ ruolo: "GESTORE_UTENTI" });
     const reporter = await testUsers.create();
     const target = await testUsers.create();
-    const targetId = getUserId(target.email);
+    const targetId = await getUserId(target.email);
     const stamp = Date.now();
     const motivazione = `Motivazione dashboard e2e ${stamp}`;
 

@@ -23,7 +23,7 @@ test.describe("Coda Segnalazioni + Dettaglio (Gestore Utenti)", () => {
     const gestore = await testUsers.create({ ruolo: "GESTORE_UTENTI" });
     const reporter = await testUsers.create();
     const target = await testUsers.create();
-    const targetId = getUserId(target.email);
+    const targetId = await getUserId(target.email);
     const stamp = Date.now();
     const motivazione = `Motivazione scala e2e felice ${stamp}`;
 
@@ -58,7 +58,7 @@ test.describe("Coda Segnalazioni + Dettaglio (Gestore Utenti)", () => {
     const gestore = await testUsers.create({ ruolo: "GESTORE_UTENTI" });
     const reporter = await testUsers.create();
     const target = await testUsers.create();
-    const targetId = getUserId(target.email);
+    const targetId = await getUserId(target.email);
     const stamp = Date.now();
     const motivazione = `Motivazione scala e2e fallimento ${stamp}`;
 
@@ -99,7 +99,7 @@ test.describe("Coda Segnalazioni + Dettaglio (Gestore Utenti)", () => {
     const gestore = await testUsers.create({ ruolo: "GESTORE_UTENTI" });
     const reporter = await testUsers.create();
     const target = await testUsers.create();
-    const targetId = getUserId(target.email);
+    const targetId = await getUserId(target.email);
     const stamp = Date.now();
     const motivazione = `Motivazione scala e2e responsive ${stamp}`;
 

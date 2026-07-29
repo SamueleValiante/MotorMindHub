@@ -48,7 +48,7 @@ test.describe("Gestione Account + Scheda Utente (Gestore Utenti)", () => {
   }) => {
     const gestore = await testUsers.create({ ruolo: "GESTORE_UTENTI" });
     const target = await testUsers.create();
-    const targetId = getUserId(target.email);
+    const targetId = await getUserId(target.email);
 
     await loginViaUi(page, gestore.email, gestore.password);
     await page.goto(`/gestore/gestione-account/${targetId}`);
@@ -82,7 +82,7 @@ test.describe("Gestione Account + Scheda Utente (Gestore Utenti)", () => {
     const gestore = await testUsers.create({ ruolo: "GESTORE_UTENTI" });
     const reporter = await testUsers.create();
     const target = await testUsers.create();
-    const targetId = getUserId(target.email);
+    const targetId = await getUserId(target.email);
     const motivazione = `Motivazione e2e ${Date.now()}`;
     await reportUser(reporter.email, reporter.password, targetId, motivazione);
 
@@ -108,7 +108,7 @@ test.describe("Gestione Account + Scheda Utente (Gestore Utenti)", () => {
   test("responsive: lista e scheda utente restano usabili su viewport mobile", async ({ page, testUsers }) => {
     const gestore = await testUsers.create({ ruolo: "GESTORE_UTENTI" });
     const target = await testUsers.create();
-    const targetId = getUserId(target.email);
+    const targetId = await getUserId(target.email);
 
     await page.setViewportSize({ width: 390, height: 844 });
     await loginViaUi(page, gestore.email, gestore.password);

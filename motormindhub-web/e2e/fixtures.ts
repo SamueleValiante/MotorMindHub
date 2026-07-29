@@ -67,7 +67,7 @@ export const test = base.extend<Fixtures>({
       }
 
       if (options.ruolo && options.ruolo !== "ISCRITTO") {
-        setUserRole(email, options.ruolo);
+        await setUserRole(email, options.ruolo);
       }
 
       return { email, password: PASSWORD, verificationToken };
@@ -85,7 +85,7 @@ export const test = base.extend<Fixtures>({
 
     for (const email of createdEmails) {
       try {
-        deleteTestUser(email);
+        await deleteTestUser(email);
       } catch (error) {
         // Non bloccante: il sweep di global-teardown.ts è la rete di
         // sicurezza per gli utenti "e2e-*" che restano indietro qui.

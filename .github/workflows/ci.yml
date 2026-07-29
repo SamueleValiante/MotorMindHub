@@ -115,7 +115,140 @@ jobs:
       - name: Build
         run: npm run build
 
-      # Playwright/e2e non ancora incluso qui: richiede backend+frontend insieme (Fase B),
-      # troppo presto finche' stiamo ancora sistemando le basi della pipeline.
       - name: Unit tests (vitest)
         run: npm test
+
+  # Fase B: backend e frontend reali nello stesso runner, Playwright gira contro lo stack vero
+  # (non contro dei mock). Parte se cambia l'uno o l'altro sottoprogetto, perche' un e2e puo'
+  # rompersi per una modifica solo-backend (es. un campo rinominato in una response) tanto quanto
+  # per una solo-frontend.
+  e2e:
+    needs: changes
+    if: needs.changes.outputs.api == 'true' || needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    # I runner condivisi di GitHub Actions sono piu' lenti della macchina di sviluppo: la suite
+    # (29 file, seriale per design - cfr. commento in playwright.config.ts) ci ha gia' messo
+    # 5-7 min in locale. Timeout generoso per non confondere lentezza pura con un test bloccato.
+    timeout-minutes: 25
+
+    services:
+      # Stessa immagine/credenziali del job "test" e di docker-compose.yml (uso locale).
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: motormindhub
+          POSTGRES_USER: mmh
+          POSTGRES_PASSWORD: mmh
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      # Stessa immagine di docker-compose.yml. Nessun service container e' dentro un "container:"
+      # di job qui, quindi e' raggiungibile dagli step del job su localhost (stessa ragione per
+      # cui application.properties non richiede override di MAIL_HOST/MAIL_PORT: i default
+      # localhost:1025 restano corretti, cfr. step "Attendi che il backend sia pronto" sotto e
+      # MAILPIT_BASE hardcoded su localhost:8025 in e2e/helpers/test-users.ts e test-authors.ts).
+      mailpit:
+        image: axllent/mailpit
+        ports:
+          - 1025:1025
+          - 8025:8025
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Setup Node LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: motormindhub-web/package-lock.json
+
+      # In background (non "./mvnw spring-boot:run" in foreground): il job deve proseguire con
+      # gli step successivi mentre il backend resta in ascolto. Log ridiretto su file per poterlo
+      # ispezionare se l'health check sotto scade.
+      - name: Avvia il backend (background)
+        working-directory: motormindhub-api
+        run: nohup ./mvnw --batch-mode spring-boot:run > /tmp/backend.log 2>&1 &
+
+      # Polling su un endpoint noto, non uno sleep fisso (le attese a tempo fisso si sono gia'
+      # rivelate fragili in locale). GET /api/v1/categorie e' permitAll in lettura (SecurityConfig)
+      # e non richiede dati di seed: una risposta qualunque (anche lista vuota, 200) certifica che
+      # il context Spring e' su, il DB e' raggiungibile e Flyway ha finito le migration. Niente
+      # Actuator: non e' tra le dipendenze del progetto (pom.xml) e aggiungerlo solo per la CI
+      # sarebbe fuori scope - un endpoint pubblico gia' esistente basta.
+      # Budget piu' largo che per il frontend (90 tentativi = 3 min): "spring-boot:run" qui parte
+      # da un ambiente a cache Maven potenzialmente fredda (compilazione compresa), non da un jar
+      # gia' pronto - a differenza dell'avvio del frontend sotto, che segue una build gia' fatta.
+      - name: Attendi che il backend sia pronto
+        run: |
+          for i in $(seq 1 90); do
+            if curl -sf http://localhost:8080/api/v1/categorie > /dev/null; then
+              echo "Backend pronto dopo ${i} tentativi (~$((i * 2))s)"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Backend non pronto dopo 180s, log:"
+          cat /tmp/backend.log
+          exit 1
+
+      - name: Installa dipendenze frontend
+        working-directory: motormindhub-web
+        run: npm ci
+
+      # Solo Chromium: e' l'unico browser che la suite usa (nessun "projects" in
+      # playwright.config.ts, progetto di default = chromium).
+      - name: Installa i browser Playwright
+        working-directory: motormindhub-web
+        run: npx playwright install --with-deps chromium
+
+      # Build di produzione + "next start" (non "next dev"): piu' vicino a un ambiente reale ed
+      # evita il rischio di StrictMode/compilazione on-demand che ha gia' causato flakiness in
+      # locale con il dev server sotto carico (cfr. playwright.config.ts).
+      - name: Build di produzione del frontend
+        working-directory: motormindhub-web
+        run: npm run build
+
+      - name: Avvia il frontend (background)
+        working-directory: motormindhub-web
+        run: nohup npm start > /tmp/frontend.log 2>&1 &
+
+      - name: Attendi che il frontend sia pronto
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3000 > /dev/null; then
+              echo "Frontend pronto dopo ${i} tentativi (~$((i * 2))s)"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Frontend non pronto dopo 120s, log:"
+          cat /tmp/frontend.log
+          exit 1
+
+      # CI=true e' gia' impostato di default da GitHub Actions (e da act in locale): attiva sia
+      # "retries: 2" che "reuseExistingServer: true" senza avviare un secondo server doppione su
+      # :3000, cfr. playwright.config.ts.
+      - name: Playwright e2e
+        working-directory: motormindhub-web
+        run: npm run test:e2e
+
+      - name: Carica report Playwright
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: motormindhub-web/playwright-report/
+          retention-days: 7
