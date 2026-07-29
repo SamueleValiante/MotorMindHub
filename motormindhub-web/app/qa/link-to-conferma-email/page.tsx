@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { qaFixturesEnabled } from "@/lib/qa/fixturesEnabled";
 import { LinkToConfermaEmailFixtureContent } from "./LinkToConfermaEmailFixtureContent";
 
 /**
@@ -15,7 +16,7 @@ import { LinkToConfermaEmailFixtureContent } from "./LinkToConfermaEmailFixtureC
  * app/qa/report-user.
  */
 export default function LinkToConfermaEmailFixture() {
-  if (process.env.NODE_ENV === "production") {
+  if (!qaFixturesEnabled()) {
     notFound();
   }
 

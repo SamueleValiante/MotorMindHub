@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { qaFixturesEnabled } from "@/lib/qa/fixturesEnabled";
 import { ReportUserFixtureContent } from "./ReportUserFixtureContent";
 
 /**
@@ -10,7 +11,7 @@ import { ReportUserFixtureContent } from "./ReportUserFixtureContent";
  * app/qa/toast-cookie-overlap.
  */
 export default function ReportUserFixture() {
-  if (process.env.NODE_ENV === "production") {
+  if (!qaFixturesEnabled()) {
     notFound();
   }
 

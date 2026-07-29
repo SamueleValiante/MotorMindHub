@@ -131,6 +131,14 @@ jobs:
     # 5-7 min in locale. Timeout generoso per non confondere lentezza pura con un test bloccato.
     timeout-minutes: 25
 
+    # QA_FIXTURES_ENABLED: le pagine fixture /qa/* (cfr. lib/qa/fixturesEnabled.ts) sono
+    # prerenderate staticamente da "next build" - il guard va soddisfatto gia' in fase di build,
+    # non solo all'avvio, altrimenti Next le congela come 404. Stesso valore che lo sviluppatore
+    # ha in .env.local: non e' NODE_ENV, quindi "next build && next start" (produzione vera, non
+    # "sono online sul dominio di produzione") non le nasconde qui come non le nasconde in locale.
+    env:
+      QA_FIXTURES_ENABLED: "true"
+
     services:
       # Stessa immagine/credenziali del job "test" e di docker-compose.yml (uso locale).
       postgres:
