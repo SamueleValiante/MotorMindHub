@@ -23,8 +23,8 @@ test.describe("Cronologia Azioni Amministrative (Gestore Utenti)", () => {
     const gestore = await testUsers.create({ ruolo: "GESTORE_UTENTI" });
     const target1 = await testUsers.create();
     const target2 = await testUsers.create();
-    const target1Id = getUserId(target1.email);
-    const target2Id = getUserId(target2.email);
+    const target1Id = await getUserId(target1.email);
+    const target2Id = await getUserId(target2.email);
 
     await suspendAccountApi(gestore.email, gestore.password, target1Id);
     await reactivateAccountApi(gestore.email, gestore.password, target1Id);
@@ -56,7 +56,7 @@ test.describe("Cronologia Azioni Amministrative (Gestore Utenti)", () => {
   test("ricerca testuale filtra per nome utente o dettaglio azione", async ({ page, testUsers }) => {
     const gestore = await testUsers.create({ ruolo: "GESTORE_UTENTI" });
     const target = await testUsers.create();
-    const targetId = getUserId(target.email);
+    const targetId = await getUserId(target.email);
     const stamp = Date.now();
 
     await suspendAccountApi(gestore.email, gestore.password, targetId);
@@ -72,7 +72,7 @@ test.describe("Cronologia Azioni Amministrative (Gestore Utenti)", () => {
   test("responsive: tabella e tab restano usabili su viewport mobile", async ({ page, testUsers }) => {
     const gestore = await testUsers.create({ ruolo: "GESTORE_UTENTI" });
     const target = await testUsers.create();
-    const targetId = getUserId(target.email);
+    const targetId = await getUserId(target.email);
     await suspendAccountApi(gestore.email, gestore.password, targetId);
 
     await page.setViewportSize({ width: 390, height: 844 });

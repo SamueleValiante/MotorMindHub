@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { qaFixturesEnabled } from "@/lib/qa/fixturesEnabled";
 import { ToastTriggerButton } from "./ToastTriggerButton";
 
 /**
@@ -8,12 +9,12 @@ import { ToastTriggerButton } from "./ToastTriggerButton";
  * modo stabile per far comparire un toast (nell'app reale scatta da azioni
  * mutanti nelle varie pagine, ancora da costruire).
  *
- * Irraggiungibile in produzione: `next dev` (usato da Playwright via
- * webServer in playwright.config.ts) gira sempre con NODE_ENV=development,
- * mentre `next build`/`next start` forzano NODE_ENV=production.
+ * Irraggiungibile in produzione: cfr. lib/qa/fixturesEnabled.ts, guard
+ * esplicito su QA_FIXTURES_ENABLED (non NODE_ENV — il job "e2e" di ci.yml
+ * builda in produzione ma deve comunque poter raggiungere questa pagina).
  */
 export default function ToastCookieOverlapFixture() {
-  if (process.env.NODE_ENV === "production") {
+  if (!qaFixturesEnabled()) {
     notFound();
   }
 

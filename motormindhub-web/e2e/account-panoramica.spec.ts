@@ -68,7 +68,7 @@ test.describe("Profilo pubblico utente", () => {
   }) => {
     const reporter = await testUsers.create();
     const target = await testUsers.create();
-    const targetId = getUserId(target.email);
+    const targetId = await getUserId(target.email);
 
     await loginViaUi(page, reporter.email, reporter.password);
     await page.goto(`/utenti/${targetId}`, { waitUntil: "domcontentloaded" });

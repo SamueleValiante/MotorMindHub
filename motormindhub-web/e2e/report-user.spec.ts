@@ -13,7 +13,7 @@ test.describe("Form segnalazione", () => {
   test("submit riuscito: toast di conferma", async ({ page, testUsers }) => {
     const reporter = await testUsers.create();
     const target = await testUsers.create();
-    const targetId = getUserId(target.email);
+    const targetId = await getUserId(target.email);
 
     await loginViaUi(page, reporter.email, reporter.password);
     await page.goto(
@@ -54,7 +54,7 @@ test.describe("Form segnalazione", () => {
   test("annulla: chiude il modale senza inviare nulla", async ({ page, testUsers }) => {
     const reporter = await testUsers.create();
     const target = await testUsers.create();
-    const targetId = getUserId(target.email);
+    const targetId = await getUserId(target.email);
 
     await loginViaUi(page, reporter.email, reporter.password);
     await page.goto(`/qa/report-user?segnalatoId=${targetId}`, { waitUntil: "domcontentloaded" });

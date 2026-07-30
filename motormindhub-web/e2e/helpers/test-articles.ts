@@ -1,7 +1,6 @@
-import { execSync } from "node:child_process";
+import { query } from "./db";
 
 const API_BASE = "http://localhost:8080";
-const DB_CONTAINER = "motormindhub-api-db-1";
 
 /**
  * Nessuna UI ancora per creare/approvare articoli (area Autore e coda
@@ -290,13 +289,12 @@ export async function viewArticle(articleId: number, times = 1): Promise<void> {
  * pagina di dettaglio lo incrementi di esattamente 1, non 2 (regressione
  * dello strict-mode di React già vista sul consumo del token email).
  */
-export function getViewCount(articleId: number): number {
-  const output = execSync(
-    `docker exec ${DB_CONTAINER} psql -U mmh -d motormindhub -t -A -c "SELECT numero_visualizzazioni FROM articoli WHERE id=${articleId};"`
-  )
-    .toString()
-    .trim();
-  return Number(output);
+export async function getViewCount(articleId: number): Promise<number> {
+  const result = await query<{ numero_visualizzazioni: number }>(
+    "SELECT numero_visualizzazioni FROM articoli WHERE id=$1",
+    [articleId]
+  );
+  return Number(result.rows[0]?.numero_visualizzazioni);
 }
 
 export async function deleteArticle(

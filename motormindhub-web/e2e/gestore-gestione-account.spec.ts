@@ -48,24 +48,25 @@ test.describe("Gestione Account + Scheda Utente (Gestore Utenti)", () => {
   }) => {
     const gestore = await testUsers.create({ ruolo: "GESTORE_UTENTI" });
     const target = await testUsers.create();
-    const targetId = getUserId(target.email);
+    const targetId = await getUserId(target.email);
 
     await loginViaUi(page, gestore.email, gestore.password);
     await page.goto(`/gestore/gestione-account/${targetId}`);
 
+    const statoUtente = page.getByTestId("utente-stato");
     await expect(page.getByRole("heading", { name: "Scheda Utente" })).toBeVisible();
-    await expect(page.getByText("ATTIVO")).toBeVisible();
+    await expect(statoUtente).toHaveText("ATTIVO");
 
     // Sospendi (riusa SuspendAccountModal, già verificato in dettaglio in
     // gestore-segnalazioni.spec.ts): qui basta il percorso felice.
     await page.getByRole("button", { name: "Sospendi account" }).click();
     await page.getByRole("button", { name: "Conferma sospensione" }).click();
-    await expect(page.getByText("SOSPESO")).toBeVisible();
+    await expect(statoUtente).toHaveText("SOSPESO");
     await expect(page.getByText("Sospensione — Sospensione account")).toBeVisible();
 
     await page.getByRole("button", { name: "Riattiva account" }).click();
     await page.getByRole("button", { name: "Conferma riattivazione" }).click();
-    await expect(page.getByText("ATTIVO")).toBeVisible();
+    await expect(statoUtente).toHaveText("ATTIVO");
     await expect(page.getByText("Riattivazione — Riattivazione account")).toBeVisible();
 
     await page.getByRole("button", { name: "Esporta dati utente" }).click();
@@ -82,7 +83,7 @@ test.describe("Gestione Account + Scheda Utente (Gestore Utenti)", () => {
     const gestore = await testUsers.create({ ruolo: "GESTORE_UTENTI" });
     const reporter = await testUsers.create();
     const target = await testUsers.create();
-    const targetId = getUserId(target.email);
+    const targetId = await getUserId(target.email);
     const motivazione = `Motivazione e2e ${Date.now()}`;
     await reportUser(reporter.email, reporter.password, targetId, motivazione);
 
@@ -108,7 +109,7 @@ test.describe("Gestione Account + Scheda Utente (Gestore Utenti)", () => {
   test("responsive: lista e scheda utente restano usabili su viewport mobile", async ({ page, testUsers }) => {
     const gestore = await testUsers.create({ ruolo: "GESTORE_UTENTI" });
     const target = await testUsers.create();
-    const targetId = getUserId(target.email);
+    const targetId = await getUserId(target.email);
 
     await page.setViewportSize({ width: 390, height: 844 });
     await loginViaUi(page, gestore.email, gestore.password);

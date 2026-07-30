@@ -1,8 +1,7 @@
-import { execSync } from "node:child_process";
+import { query } from "./db";
 
 const API_BASE = "http://localhost:8080";
 const MAILPIT_BASE = "http://localhost:8025";
-const DB_CONTAINER = "motormindhub-api-db-1";
 
 /** Registra un utente senza verificarne l'email (per testare ACCOUNT_NON_VERIFICATO / il flusso di conferma). */
 export async function registerUnverified(email: string, password: string): Promise<void> {
@@ -128,37 +127,31 @@ export async function waitForDataExportEmail(
  * si promuove via SQL diretto un account ISCRITTO gia' registrato e
  * verificato, solo nel DB di sviluppo/test.
  */
-export function setUserRole(email: string, ruolo: string): void {
-  execSync(
-    `docker exec ${DB_CONTAINER} psql -U mmh -d motormindhub -c "UPDATE utenti SET ruolo='${ruolo}' WHERE email='${email}';"`
-  );
+export async function setUserRole(email: string, ruolo: string): Promise<void> {
+  await query("UPDATE utenti SET ruolo=$1 WHERE email=$2", [ruolo, email]);
 }
 
-export function getUserId(email: string): number {
-  const output = execSync(
-    `docker exec ${DB_CONTAINER} psql -U mmh -d motormindhub -t -A -c "SELECT id FROM utenti WHERE email='${email}';"`
-  )
-    .toString()
-    .trim();
-  return Number(output);
+export async function getUserId(email: string): Promise<number> {
+  const result = await query<{ id: number }>("SELECT id FROM utenti WHERE email=$1", [email]);
+  return Number(result.rows[0]?.id);
 }
 
-export function deleteTestUser(email: string): void {
-  execSync(
-    `docker exec ${DB_CONTAINER} psql -U mmh -d motormindhub -c "` +
-      `DELETE FROM refresh_tokens WHERE utente_id = (SELECT id FROM utenti WHERE email='${email}'); ` +
-      `DELETE FROM token_recupero_password WHERE utente_id = (SELECT id FROM utenti WHERE email='${email}'); ` +
-      `DELETE FROM richieste_cancellazione WHERE utente_id = (SELECT id FROM utenti WHERE email='${email}'); ` +
-      `DELETE FROM segnalazioni WHERE segnalante_id = (SELECT id FROM utenti WHERE email='${email}') OR segnalato_id = (SELECT id FROM utenti WHERE email='${email}'); ` +
-      // articoli_salvati: introdotta da GestioneArticoli (saveArticleToList) — un
-      // utente di test che ha salvato un articolo durante il test bloccherebbe
-      // altrimenti la DELETE su utenti con una violazione di foreign key.
-      `DELETE FROM articoli_salvati WHERE utente_id = (SELECT id FROM utenti WHERE email='${email}'); ` +
-      // log_azioni_amministrative: introdotta da GestioneAmministrazioneUtenti
-      // (sospendi/riattiva/cancella/esporta) — un utente target di un'azione
-      // amministrativa durante il test bloccherebbe altrimenti la DELETE su
-      // utenti con una violazione di foreign key (utente_target_id).
-      `DELETE FROM log_azioni_amministrative WHERE utente_target_id = (SELECT id FROM utenti WHERE email='${email}'); ` +
-      `DELETE FROM utenti WHERE email='${email}';"`
+export async function deleteTestUser(email: string): Promise<void> {
+  await query("DELETE FROM refresh_tokens WHERE utente_id = (SELECT id FROM utenti WHERE email=$1)", [email]);
+  await query("DELETE FROM token_recupero_password WHERE utente_id = (SELECT id FROM utenti WHERE email=$1)", [email]);
+  await query("DELETE FROM richieste_cancellazione WHERE utente_id = (SELECT id FROM utenti WHERE email=$1)", [email]);
+  await query(
+    "DELETE FROM segnalazioni WHERE segnalante_id = (SELECT id FROM utenti WHERE email=$1) OR segnalato_id = (SELECT id FROM utenti WHERE email=$1)",
+    [email]
   );
+  // articoli_salvati: introdotta da GestioneArticoli (saveArticleToList) — un
+  // utente di test che ha salvato un articolo durante il test bloccherebbe
+  // altrimenti la DELETE su utenti con una violazione di foreign key.
+  await query("DELETE FROM articoli_salvati WHERE utente_id = (SELECT id FROM utenti WHERE email=$1)", [email]);
+  // log_azioni_amministrative: introdotta da GestioneAmministrazioneUtenti
+  // (sospendi/riattiva/cancella/esporta) — un utente target di un'azione
+  // amministrativa durante il test bloccherebbe altrimenti la DELETE su
+  // utenti con una violazione di foreign key (utente_target_id).
+  await query("DELETE FROM log_azioni_amministrative WHERE utente_target_id = (SELECT id FROM utenti WHERE email=$1)", [email]);
+  await query("DELETE FROM utenti WHERE email=$1", [email]);
 }

@@ -22,7 +22,7 @@ test.describe("Ricorsi (Gestore Utenti)", () => {
   }) => {
     const gestore = await testUsers.create({ ruolo: "GESTORE_UTENTI" });
     const target = await testUsers.create();
-    const targetId = getUserId(target.email);
+    const targetId = await getUserId(target.email);
     await suspendAccountApi(gestore.email, gestore.password, targetId, "SPAM");
 
     await loginViaUi(page, gestore.email, gestore.password);
@@ -64,7 +64,7 @@ test.describe("Ricorsi (Gestore Utenti)", () => {
   test("responsive: tabella e navigazione restano usabili su viewport mobile", async ({ page, testUsers }) => {
     const gestore = await testUsers.create({ ruolo: "GESTORE_UTENTI" });
     const target = await testUsers.create();
-    const targetId = getUserId(target.email);
+    const targetId = await getUserId(target.email);
     await suspendAccountApi(gestore.email, gestore.password, targetId, "SPAM");
 
     await page.setViewportSize({ width: 390, height: 844 });
