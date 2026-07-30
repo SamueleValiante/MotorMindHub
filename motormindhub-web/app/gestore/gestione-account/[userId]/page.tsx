@@ -130,7 +130,7 @@ export default function SchedaUtentePage() {
         <dl className="mt-6 flex flex-col gap-3 border-t border-paper/10 pt-6 text-sm">
           <div className="flex justify-between">
             <dt className="text-fog">Stato</dt>
-            <dd className="text-paper">{utente.stato}</dd>
+            <dd className="text-paper" data-testid="utente-stato">{utente.stato}</dd>
           </div>
           <div className="flex justify-between">
             <dt className="text-fog">Iscritto dal</dt>

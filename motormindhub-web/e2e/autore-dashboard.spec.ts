@@ -188,7 +188,7 @@ test.describe("Dashboard Autore", () => {
       await loginViaUi(page, autore.email, autore.password);
       await page.goto("/autore");
 
-      await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Dashboard", exact: true })).toBeVisible();
       await expect(page.getByRole("heading", { name: titolo })).toBeVisible();
     } finally {
       await deleteDraftArticle(autore.email, autore.password, id);

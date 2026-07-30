@@ -53,19 +53,20 @@ test.describe("Gestione Account + Scheda Utente (Gestore Utenti)", () => {
     await loginViaUi(page, gestore.email, gestore.password);
     await page.goto(`/gestore/gestione-account/${targetId}`);
 
+    const statoUtente = page.getByTestId("utente-stato");
     await expect(page.getByRole("heading", { name: "Scheda Utente" })).toBeVisible();
-    await expect(page.getByText("ATTIVO")).toBeVisible();
+    await expect(statoUtente).toHaveText("ATTIVO");
 
     // Sospendi (riusa SuspendAccountModal, già verificato in dettaglio in
     // gestore-segnalazioni.spec.ts): qui basta il percorso felice.
     await page.getByRole("button", { name: "Sospendi account" }).click();
     await page.getByRole("button", { name: "Conferma sospensione" }).click();
-    await expect(page.getByText("SOSPESO")).toBeVisible();
+    await expect(statoUtente).toHaveText("SOSPESO");
     await expect(page.getByText("Sospensione — Sospensione account")).toBeVisible();
 
     await page.getByRole("button", { name: "Riattiva account" }).click();
     await page.getByRole("button", { name: "Conferma riattivazione" }).click();
-    await expect(page.getByText("ATTIVO")).toBeVisible();
+    await expect(statoUtente).toHaveText("ATTIVO");
     await expect(page.getByText("Riattivazione — Riattivazione account")).toBeVisible();
 
     await page.getByRole("button", { name: "Esporta dati utente" }).click();
