@@ -1,6 +1,7 @@
 package com.motormindhub.Api.web;
 
 import com.motormindhub.Api.security.exception.RefreshTokenNonValidoException;
+import com.motormindhub.Api.security.exception.TroppiTentativiLoginException;
 import com.motormindhub.Api.service.gestioneUtenti.exception.AccountNonAttivoException;
 import com.motormindhub.Api.service.gestioneUtenti.exception.EmailGiaRegistrataException;
 import com.motormindhub.Api.service.gestioneUtenti.exception.RichiestaCancellazioneEsistenteException;
@@ -154,6 +155,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleRefreshTokenNonValido(RefreshTokenNonValidoException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ErrorResponseDTO.of(HttpStatus.UNAUTHORIZED.value(), "Unauthorized", ex.getMessage()));
+    }
+
+    /** LoginRateLimiter (rate limit per email su /auth/login, distinto dal blocco per-account RNF2.6). */
+    @ExceptionHandler(TroppiTentativiLoginException.class)
+    public ResponseEntity<ErrorResponseDTO> handleTroppiTentativiLogin(TroppiTentativiLoginException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(ErrorResponseDTO.of(HttpStatus.TOO_MANY_REQUESTS.value(), "Too Many Requests", ex.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

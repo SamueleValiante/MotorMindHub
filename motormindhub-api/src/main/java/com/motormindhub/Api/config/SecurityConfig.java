@@ -2,6 +2,7 @@ package com.motormindhub.Api.config;
 
 import com.motormindhub.Api.security.JwtAuthenticationFilter;
 import com.motormindhub.Api.security.JwtTokenProvider;
+import com.motormindhub.Api.security.RateLimitFilter;
 import com.motormindhub.Api.security.RestAccessDeniedHandler;
 import com.motormindhub.Api.security.RestAuthenticationEntryPoint;
 import com.motormindhub.Api.security.UserDetailsServiceImpl;
@@ -99,6 +100,11 @@ public class SecurityConfig {
         return new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService);
     }
 
+    @Bean
+    public RateLimitFilter rateLimitFilter() {
+        return new RateLimitFilter();
+    }
+
     /**
      * Origin del front-end Next.js in sviluppo. Credentials abilitate perche' il front-end
      * invia l'header Authorization (Bearer JWT) in richieste cross-origin.
@@ -118,6 +124,7 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter,
+                                                     RateLimitFilter rateLimitFilter,
                                                      CorsConfigurationSource corsConfigurationSource,
                                                      RestAuthenticationEntryPoint authenticationEntryPoint,
                                                      RestAccessDeniedHandler accessDeniedHandler) throws Exception {
@@ -143,7 +150,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, ENDPOINT_PUBBLICI_SOLO_LETTURA).permitAll()
                         .requestMatchers(HttpMethod.GET, ARTICOLO_DETTAGLIO_PUBBLICO).permitAll()
                         .anyRequest().authenticated())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(rateLimitFilter, JwtAuthenticationFilter.class);
 
         return http.build();
     }

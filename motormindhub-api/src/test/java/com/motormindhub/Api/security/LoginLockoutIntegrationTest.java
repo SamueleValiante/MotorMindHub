@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,9 +34,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @Transactional: l'intero test (incluse le chiamate MockMvc, sincrone sullo stesso thread) gira in
  * un'unica transazione fatta rollback a fine test - stesso pattern usato per isolare i test da
  * modifiche persistenti al DB condiviso.
+ *
+ * @TestPropertySource: questa classe fa gia' legittimamente 7+3 POST /auth/login ravvicinati sulla
+ * stessa email tra i due metodi di test (stesso contesto Spring cache, stesso singleton
+ * LoginRateLimiter) - al netto della soglia di default (10/min, cfr. LoginRateLimiter) sarebbe al
+ * limite e fragile a qualunque riordino. Alzarla qui, non globalmente: un file
+ * application.properties in src/test/resources romperebbe la risoluzione di TUTTE le altre
+ * proprieta' (ombreggia src/main/resources/application.properties sul classpath dei test invece di
+ * unirsi ad esso - provato rompere l'intera suite in questo modo).
  */
 @SpringBootTest
 @AutoConfigureMockMvc
+@TestPropertySource(properties = "security.login-rate-limit.capacity-per-minute=1000")
 @Transactional
 class LoginLockoutIntegrationTest {
 

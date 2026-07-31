@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,9 +31,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * token opaco (RNF9.2): come per LoginLockoutIntegrationTest, gli unit test di RefreshTokenServiceTest
  * verificano la logica isolata ma non possono verificare che AuthController e SecurityConfig
  * (endpoint pubblici, wiring del bean) siano davvero cablati correttamente end-to-end.
+ *
+ * @TestPropertySource: login() e' invocato da piu' metodi di test su questa stessa classe, tutti
+ * sulla stessa EMAIL fissa - nello stesso contesto Spring cache (stesso singleton LoginRateLimiter)
+ * il numero cumulativo di POST /auth/login sull'intera classe supera la soglia di default
+ * (10/min, cfr. LoginRateLimiter). Alzarla qui, non globalmente (nessun application.properties in
+ * src/test/resources: ombreggerebbe src/main/resources/application.properties sul classpath dei
+ * test invece di unirsi ad esso).
  */
 @SpringBootTest
 @AutoConfigureMockMvc
+@TestPropertySource(properties = "security.login-rate-limit.capacity-per-minute=1000")
 @Transactional
 class RefreshTokenIntegrationTest {
 

@@ -2,6 +2,7 @@ package com.motormindhub.Api.web.auth;
 
 import com.motormindhub.Api.model.entity.Utente;
 import com.motormindhub.Api.security.JwtTokenProvider;
+import com.motormindhub.Api.security.LoginRateLimiter;
 import com.motormindhub.Api.security.RefreshTokenService;
 import com.motormindhub.Api.security.UserPrincipal;
 import com.motormindhub.Api.web.MessageResponseDTO;
@@ -31,16 +32,20 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenService refreshTokenService;
+    private final LoginRateLimiter loginRateLimiter;
 
     public AuthController(AuthenticationManager authenticationManager, JwtTokenProvider jwtTokenProvider,
-                           RefreshTokenService refreshTokenService) {
+                           RefreshTokenService refreshTokenService, LoginRateLimiter loginRateLimiter) {
         this.authenticationManager = authenticationManager;
         this.jwtTokenProvider = jwtTokenProvider;
         this.refreshTokenService = refreshTokenService;
+        this.loginRateLimiter = loginRateLimiter;
     }
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO dto) {
+        loginRateLimiter.checkAndConsume(dto.email());
+
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(dto.email(), dto.password()));
 
