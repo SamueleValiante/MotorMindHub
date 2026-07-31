@@ -25,6 +25,8 @@ import com.motormindhub.Api.service.gestioneArticoli.exception.AutoreNonValidoEx
 import com.motormindhub.Api.service.gestioneArticoli.exception.CategoriaNonTrovataException;
 import com.motormindhub.Api.service.gestioneArticoli.exception.RegolaDiDominioViolataException;
 import com.motormindhub.Api.service.gestioneArticoli.exception.StatoArticoloNonValidoException;
+import com.motormindhub.Api.service.storage.CloudStorageService;
+import com.motormindhub.Api.service.storage.ImageUploadValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,7 +35,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Optional;
@@ -64,12 +68,17 @@ class GestioneArticoliTest {
     private CategoriaRepository categoriaRepository;
     @Mock
     private UtenteRepository utenteRepository;
+    @Mock
+    private CloudStorageService cloudStorageService;
+    @Mock
+    private ImageUploadValidator imageUploadValidator;
 
     private GestioneArticoli gestioneArticoli;
 
     @BeforeEach
     void setUp() {
-        gestioneArticoli = new GestioneArticoli(articoloRepository, articoloSalvatoRepository, categoriaRepository, utenteRepository);
+        gestioneArticoli = new GestioneArticoli(articoloRepository, articoloSalvatoRepository, categoriaRepository,
+                utenteRepository, cloudStorageService, imageUploadValidator);
     }
 
     private static Utente utente(Long id, Ruolo ruolo) {
@@ -214,6 +223,47 @@ class GestioneArticoliTest {
         assertThrows(AutoreNonValidoException.class, () -> gestioneArticoli.updateDraft(10L, 2L, dto));
     }
 
+    @Test
+    void updateDraft_eliminaLaVecchiaImmagineCopertina_quandoSostituitaConUnaDiversa() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo bozza = new Articolo(autore, "Titolo", "Testo", null, "tag", "https://cdn/vecchia-copertina.jpg");
+        ReflectionTestUtils.setField(bozza, "id", 10L);
+        bozza.setStato(StatoArticolo.BOZZA);
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(bozza));
+        ArticleDraftDTO dto = new ArticleDraftDTO("Titolo", "Testo", null, null, "https://cdn/nuova-copertina.jpg");
+
+        gestioneArticoli.updateDraft(10L, 1L, dto);
+
+        verify(cloudStorageService).delete("https://cdn/vecchia-copertina.jpg");
+    }
+
+    @Test
+    void updateDraft_nonEliminaNulla_quandoImmagineCopertinaRestaInvariata() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo bozza = new Articolo(autore, "Titolo", "Testo", null, "tag", "https://cdn/stessa-copertina.jpg");
+        ReflectionTestUtils.setField(bozza, "id", 10L);
+        bozza.setStato(StatoArticolo.BOZZA);
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(bozza));
+        ArticleDraftDTO dto = new ArticleDraftDTO("Titolo", "Testo", null, null, "https://cdn/stessa-copertina.jpg");
+
+        gestioneArticoli.updateDraft(10L, 1L, dto);
+
+        verify(cloudStorageService, never()).delete(any());
+    }
+
+    // --- uploadImmagineCopertina ---------------------------------------------
+
+    @Test
+    void uploadImmagineCopertina_valida_eDelegaAlCloudStorageService() {
+        MultipartFile file = new MockMultipartFile("file", "copertina.jpg", "image/jpeg", "dati".getBytes());
+        when(cloudStorageService.upload(file, "copertine-articoli")).thenReturn("https://cdn/copertina.jpg");
+
+        String url = gestioneArticoli.uploadImmagineCopertina(file);
+
+        verify(imageUploadValidator).validate(file, 5L * 1024 * 1024);
+        assertThat(url).isEqualTo("https://cdn/copertina.jpg");
+    }
+
     // --- publishArticle -----------------------------------------------------
 
     @Test
@@ -348,6 +398,38 @@ class GestioneArticoliTest {
         ArticleUpdateDTO dto = new ArticleUpdateDTO("Titolo", "Testo", 5L, null, null);
 
         assertThrows(AutoreNonValidoException.class, () -> gestioneArticoli.updatePublishedArticle(10L, 2L, dto));
+    }
+
+    @Test
+    void updatePublishedArticle_eliminaLaVecchiaImmagineCopertina_quandoSostituitaConUnaDiversa() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Categoria categoria = categoria(5L);
+        Articolo pubblicato = new Articolo(autore, "Titolo", "Testo", categoria, "tag", "https://cdn/vecchia-copertina.jpg");
+        ReflectionTestUtils.setField(pubblicato, "id", 10L);
+        pubblicato.setStato(StatoArticolo.PUBBLICATO);
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(pubblicato));
+        when(categoriaRepository.findById(5L)).thenReturn(Optional.of(categoria));
+        ArticleUpdateDTO dto = new ArticleUpdateDTO("Titolo", "Testo", 5L, null, "https://cdn/nuova-copertina.jpg");
+
+        gestioneArticoli.updatePublishedArticle(10L, 1L, dto);
+
+        verify(cloudStorageService).delete("https://cdn/vecchia-copertina.jpg");
+    }
+
+    @Test
+    void updatePublishedArticle_nonEliminaNulla_quandoImmagineCopertinaRestaInvariata() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Categoria categoria = categoria(5L);
+        Articolo pubblicato = new Articolo(autore, "Titolo", "Testo", categoria, "tag", "https://cdn/stessa-copertina.jpg");
+        ReflectionTestUtils.setField(pubblicato, "id", 10L);
+        pubblicato.setStato(StatoArticolo.PUBBLICATO);
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(pubblicato));
+        when(categoriaRepository.findById(5L)).thenReturn(Optional.of(categoria));
+        ArticleUpdateDTO dto = new ArticleUpdateDTO("Titolo", "Testo", 5L, null, "https://cdn/stessa-copertina.jpg");
+
+        gestioneArticoli.updatePublishedArticle(10L, 1L, dto);
+
+        verify(cloudStorageService, never()).delete(any());
     }
 
     // --- deleteDraft -----------------------------------------------------

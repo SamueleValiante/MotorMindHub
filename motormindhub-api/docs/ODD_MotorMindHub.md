@@ -106,7 +106,7 @@ Non essendo previsto alcun template engine lato server — le View sono demandat
 
 Il codice del back-end è organizzato nei seguenti pacchetti:
 
-> **—** /config — classi di configurazione dichiarativa: SecurityConfig (filter chain JWT e regole RBAC), OpenApiConfig (documentazione Swagger, cfr. RNF4.2), AsyncConfig (thread pool per i listener di eventi), CorsConfig, CloudStorageConfig.
+> **—** /config — classi di configurazione dichiarativa: SecurityConfig (filter chain JWT e regole RBAC), OpenApiConfig (documentazione Swagger, cfr. RNF4.2), AsyncConfig (thread pool per i listener di eventi), CorsConfig, CloudinaryConfig (costruisce e valida il client del provider di Cloud Storage, cfr. /service/storage sotto - fail-fast se le credenziali mancano, nessun default insicuro).
 >
 > **—** /security — componenti dedicati all'autenticazione stateless: JwtTokenProvider, JwtAuthenticationFilter, UserDetailsServiceImpl. Separato da /config per isolare la logica di sicurezza pura dalla sua configurazione dichiarativa.
 >
@@ -114,7 +114,9 @@ Il codice del back-end è organizzato nei seguenti pacchetti:
 >
 > **—** /model — contiene: 1) /entity, le classi persistenti che mappano le tabelle del database tramite JPA, con le relative enumerazioni di stato; 2) /repository, le interfacce Spring Data JPA che forniscono le operazioni CRUD di base, estese con query custom dove necessario (es. ricerca full-text tramite tsvector).
 >
-> **—** /service — contiene l'implementazione dei sei sottosistemi individuati nell'SDD (§3.1). Ciascun sottosistema è un pacchetto /gestioneXxx contenente obbligatoriamente la classe di servizio GestioneXxx (Facade verso il sottosistema) e, dove necessario, i sotto-pacchetti /dto (i Data Transfer Object del sottosistema), /exception (le eccezioni applicative specifiche) e /specific (implementazioni dedicate, es. /gestioneArticoli/specific/RicercaFullTextService o /gestioneUtenti/specific/CloudStorageService con le sue implementazioni S3CloudStorageService e CloudinaryCloudStorageService, secondo il pattern Strategy definito nell'SDD §3.2).
+> **—** /service — contiene l'implementazione dei sei sottosistemi individuati nell'SDD (§3.1). Ciascun sottosistema è un pacchetto /gestioneXxx contenente obbligatoriamente la classe di servizio GestioneXxx (Facade verso il sottosistema) e, dove necessario, i sotto-pacchetti /dto (i Data Transfer Object del sottosistema), /exception (le eccezioni applicative specifiche) e /specific (implementazioni dedicate al singolo sottosistema, es. /gestioneArticoli/specific/RicercaFullTextService).
+>
+> **—** /service/storage — **correzione**: una versione precedente di questo documento collocava CloudStorageService (e le sue implementazioni) sotto /gestioneUtenti/specific, coerentemente con l'uso originario per le sole foto profilo. L'SDD (§3.2) lo indica pero' come condiviso anche da GestioneArticoli (immagini di copertina): un sottoservizio annidato sotto lo /specific di un solo sottosistema violerebbe l'isolamento tra sottosistemi che questo stesso documento adotta altrove. CloudStorageService (interfaccia, pattern Strategy) e ImageUploadValidator (validazione dimensione/formato/contenuto, condivisa e indipendente dal provider) vivono quindi in un pacchetto cross-cutting proprio, allo stesso livello di /security o /events. Unica implementazione reale: CloudinaryStorageService (provider Cloudinary).
 >
 > **—** /web — i REST Controller, organizzati anch'essi per sottosistema (es. /web/utenti, /web/articoli), responsabili esclusivamente della validazione della richiesta, della delega al Service Layer e della serializzazione della risposta in DTO.
 >
@@ -214,7 +216,7 @@ Per ciascun sottosistema, le sezioni seguenti riportano gli invarianti di classe
 
 **Nome metodo updateProfile(userId: Long, dto: UpdateProfileDTO)**
 
-**Descrizione** Aggiorna dati anagrafici, foto profilo e biografia. (cfr. RF1.6, UC_4)
+**Descrizione** Aggiorna dati anagrafici, foto profilo e biografia. Se fotoProfilo cambia rispetto al valore precedente, il vecchio file viene eliminato da Cloud Storage (best-effort, CloudStorageService.delete - cfr. uploadFotoProfilo sotto), per non accumulare asset orfani a ogni sostituzione dell'avatar. (cfr. RF1.6, UC_4, SDD 3.2)
 
 **Pre-condizioni**
 
@@ -229,6 +231,26 @@ Per ciascun sottosistema, le sezioni seguenti riportano gli invarianti di classe
 > *context GestioneUtenti::updateProfile(userId: Long, dto: UpdateProfileDTO)*
 >
 > post: Utente.allInstances()-\>select(u \| u.id = userId).biografia = dto.biografia
+>
+> and Utente.allInstances()-\>select(u \| u.id = userId).fotoProfilo = dto.fotoProfilo
+
+**Nome metodo uploadFotoProfilo(file: MultipartFile)**
+
+**Descrizione** Carica un'immagine su Cloud Storage (CloudStorageService, pattern Strategy - SDD 3.2, implementazione corrente CloudinaryStorageService/Cloudinary) e ne restituisce l'URL pubblico. Non tocca Utente: il chiamante deve poi passare l'URL a updateProfile per persisterlo - un'immagine caricata ma mai associata a un profilo (upload interrotto prima del salvataggio) resta un file orfano su Cloud Storage, accettato come costo residuo non coperto da questo contratto. Validazione (ImageUploadValidator, condivisa con GestioneArticoli::uploadImmagineCopertina): formato in whitelist (JPEG/PNG/WEBP), dimensione massima 2MB, contenuto verificato come immagine reale via decodifica (non il solo Content-Type dichiarato, falsificabile). (SDD 3.2)
+
+**Pre-condizioni**
+
+> *context GestioneUtenti::uploadFotoProfilo(file: MultipartFile)*
+>
+> pre: file.oclIsUndefined() = false and file.size \<= 2097152
+>
+> and Set{'image/jpeg', 'image/png', 'image/webp'}-\>includes(file.contentType)
+
+**Post-condizioni**
+
+> *context GestioneUtenti::uploadFotoProfilo(file: MultipartFile)*
+>
+> post: result = -- URL pubblico del file appena caricato su Cloud Storage
 
 **Metodi di sola lettura**
 
@@ -293,6 +315,24 @@ Per ciascun sottosistema, le sezioni seguenti riportano gli invarianti di classe
 
 **Nota (ownership)** updateDraft, publishArticle, reopenRejectedArticle, updatePublishedArticle, deleteDraft e deleteArticle accettano tutti un parametro callerId (il chiamante autenticato) oltre all'id dell'articolo, e condividono lo stesso vincolo, non altrimenti derivabile dai soli ruoli RBAC (@PreAuthorize verifica solo "è un Autore o un Manager Autori", non "è l'autore *di questo articolo*"): solo l'autore proprietario dell'articolo o un utente con ruolo MANAGER_AUTORI può operare su di esso, altrimenti AutoreNonValidoException. Per non ripeterlo identico sei volte, le pre-condizioni seguenti lo esprimono con la clausola comune `and (a.autore.id = callerId or Utente.allInstances()->exists(u | u.id = callerId and u.ruolo = Ruolo::MANAGER_AUTORI))`.
 
+**Nome metodo uploadImmagineCopertina(file: MultipartFile)**
+
+**Descrizione** Carica un'immagine su Cloud Storage (CloudStorageService, pattern Strategy - SDD 3.2) e ne restituisce l'URL pubblico. Non lega l'upload a un articolo/bozza esistente (l'editor supporta un articolo non ancora creato, senza id): il chiamante deve poi passare l'URL a createDraft/updateDraft/updatePublishedArticle. Validazione (ImageUploadValidator, condivisa con GestioneUtenti::uploadFotoProfilo): formato in whitelist (JPEG/PNG/WEBP), dimensione massima 5MB (piu' permissiva della foto profilo: e' un'immagine hero, non un avatar), contenuto verificato come immagine reale via decodifica. Sostituisce il precedente campo URL libero dell'editor: l'immagine di copertina e' ora raggiungibile solo tramite questo endpoint, non piu' testo arbitrario incollato dall'autore (altrimenti la validazione qui descritta sarebbe aggirabile). (SDD 3.2)
+
+**Pre-condizioni**
+
+> *context GestioneArticoli::uploadImmagineCopertina(file: MultipartFile)*
+>
+> pre: file.oclIsUndefined() = false and file.size \<= 5242880
+>
+> and Set{'image/jpeg', 'image/png', 'image/webp'}-\>includes(file.contentType)
+
+**Post-condizioni**
+
+> *context GestioneArticoli::uploadImmagineCopertina(file: MultipartFile)*
+>
+> post: result = -- URL pubblico del file appena caricato su Cloud Storage
+
 **Nome metodo createDraft(authorId: Long, dto: ArticleDraftDTO)**
 
 **Descrizione** Crea un nuovo articolo in stato BOZZA. (cfr. RF2.7, UC_16)
@@ -311,7 +351,7 @@ Per ciascun sottosistema, le sezioni seguenti riportano gli invarianti di classe
 
 **Nome metodo updateDraft(draftId: Long, callerId: Long, dto: ArticleDraftDTO)**
 
-**Descrizione** Aggiorna una bozza esistente, ripristinando l'editor allo stato salvato. (cfr. RF2.7, UC_17)
+**Descrizione** Aggiorna una bozza esistente, ripristinando l'editor allo stato salvato. Se immagineCopertina cambia rispetto al valore precedente, il vecchio file viene eliminato da Cloud Storage (best-effort, CloudStorageService.delete - cfr. uploadImmagineCopertina sopra). (cfr. RF2.7, UC_17, SDD 3.2)
 
 **Pre-condizioni**
 
@@ -368,7 +408,7 @@ BOZZA. (cfr. RF2.7, UC_18, UC_21)
 
 **Nome metodo updatePublishedArticle(articleId: Long, callerId: Long, dto: ArticleUpdateDTO)**
 
-**Descrizione** Corregge un articolo già pubblicato; le modifiche sono immediatamente visibili. (cfr. RF2.3, UC_20)
+**Descrizione** Corregge un articolo già pubblicato; le modifiche sono immediatamente visibili. Se immagineCopertina cambia rispetto al valore precedente, il vecchio file viene eliminato da Cloud Storage (best-effort, CloudStorageService.delete - cfr. uploadImmagineCopertina sopra). (cfr. RF2.3, UC_20, SDD 3.2)
 
 **Pre-condizioni**
 

@@ -8,6 +8,8 @@ import com.motormindhub.Api.service.gestioneUtenti.exception.RichiestaCancellazi
 import com.motormindhub.Api.service.gestioneUtenti.exception.TokenNonValidoException;
 import com.motormindhub.Api.service.gestioneUtenti.exception.TokenVerificaScadutoException;
 import com.motormindhub.Api.service.gestioneUtenti.exception.UtenteNonTrovatoException;
+import com.motormindhub.Api.service.storage.exception.CloudStorageNonDisponibileException;
+import com.motormindhub.Api.service.storage.exception.ImmagineNonValidaException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -19,6 +21,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.List;
 
@@ -162,6 +165,35 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleTroppiTentativiLogin(TroppiTentativiLoginException ex) {
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                 .body(ErrorResponseDTO.of(HttpStatus.TOO_MANY_REQUESTS.value(), "Too Many Requests", ex.getMessage()));
+    }
+
+    /** ImageUploadValidator (upload foto profilo/copertina articolo): errorCode distingue le tre cause (dimensione/formato/contenuto). */
+    @ExceptionHandler(ImmagineNonValidaException.class)
+    public ResponseEntity<ErrorResponseDTO> handleImmagineNonValida(ImmagineNonValidaException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponseDTO.of(HttpStatus.BAD_REQUEST.value(), "Bad Request", ex.getMessage(), ex.getErrorCode()));
+    }
+
+    /**
+     * Il file eccede spring.servlet.multipart.max-file-size/max-request-size: sollevata dal
+     * meccanismo multipart di Spring prima ancora che il body arrivi al controller, quindi prima di
+     * ImageUploadValidator (i due limiti applicativi differenziati per scopo, cfr.
+     * GestioneUtenti/GestioneArticoli, restano comunque il controllo primario - questo e' solo una
+     * difesa aggiuntiva contro payload cosi' grandi da non voler nemmeno bufferizzare).
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponseDTO> handleFileTroppoGrande(MaxUploadSizeExceededException ex) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(ErrorResponseDTO.of(HttpStatus.PAYLOAD_TOO_LARGE.value(), "Payload Too Large",
+                        "Il file caricato supera la dimensione massima consentita.", "FILE_TROPPO_GRANDE"));
+    }
+
+    /** CloudinaryStorageService: provider non raggiungibile o richiesta rifiutata - non un errore del chiamante. */
+    @ExceptionHandler(CloudStorageNonDisponibileException.class)
+    public ResponseEntity<ErrorResponseDTO> handleCloudStorageNonDisponibile(CloudStorageNonDisponibileException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(ErrorResponseDTO.of(HttpStatus.BAD_GATEWAY.value(), "Bad Gateway",
+                        "Servizio di archiviazione temporaneamente non disponibile. Riprova piu' tardi."));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

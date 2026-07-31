@@ -11,8 +11,10 @@ import com.motormindhub.Api.service.gestioneUtenti.dto.ReportUserDTO;
 import com.motormindhub.Api.service.gestioneUtenti.dto.UpdateProfileDTO;
 import com.motormindhub.Api.service.gestioneUtenti.exception.AccountNonAttivoException;
 import com.motormindhub.Api.web.MessageResponseDTO;
+import com.motormindhub.Api.web.UploadResponseDTO;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * REST Controller di GestioneUtenti (SDD 3, ODD 2.1). Responsabilita' limitata a validazione della
@@ -87,6 +90,17 @@ public class UtentiController {
                                                               @Valid @RequestBody UpdateProfileDTO dto) {
         gestioneUtenti.updateProfile(principal.getId(), dto);
         return ResponseEntity.ok(new MessageResponseDTO("Dati aggiornati correttamente."));
+    }
+
+    /**
+     * Restituisce solo l'URL caricato (SDD 3.2): non aggiorna da solo Utente.fotoProfilo, il
+     * client deve poi passarlo a updateProfile - stesso round-trip in due passi gia' usato dal
+     * form "salva" esistente, nessuna modifica al contratto di updateProfile.
+     */
+    @PostMapping(value = "/me/foto-profilo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ISCRITTO', 'AUTORE', 'MANAGER_AUTORI')")
+    public ResponseEntity<UploadResponseDTO> uploadFotoProfilo(@RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(new UploadResponseDTO(gestioneUtenti.uploadFotoProfilo(file)));
     }
 
     @GetMapping("/{userId}/profilo-pubblico")

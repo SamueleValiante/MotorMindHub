@@ -1,6 +1,7 @@
 package com.motormindhub.Api.service.gestioneArticoli.dto;
 
 import jakarta.validation.constraints.Size;
+import org.hibernate.validator.constraints.URL;
 
 import java.util.List;
 
@@ -20,6 +21,11 @@ public record ArticleDraftDTO(
 
         List<String> tag,
 
+        // Popolato con l'URL restituito da POST /articoli/copertine (SDD 3.2): l'upload sostituisce
+        // il campo URL libero che l'editor esponeva finora (non coesistono, altrimenti un autore
+        // potrebbe aggirare le validazioni di ImageUploadValidator incollando un link diretto).
+        @Size(max = 2048)
+        @URL
         String immagineCopertina
 ) {
 }

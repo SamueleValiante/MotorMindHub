@@ -27,13 +27,17 @@ import com.motormindhub.Api.service.gestioneUtenti.exception.RichiestaCancellazi
 import com.motormindhub.Api.service.gestioneUtenti.exception.TokenNonValidoException;
 import com.motormindhub.Api.service.gestioneUtenti.exception.TokenVerificaScadutoException;
 import com.motormindhub.Api.service.gestioneUtenti.exception.UtenteNonTrovatoException;
+import com.motormindhub.Api.service.storage.CloudStorageService;
+import com.motormindhub.Api.service.storage.ImageUploadValidator;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -54,25 +58,48 @@ public class GestioneUtenti {
     private static final int MAX_TENTATIVI_LOGIN_FALLITI = 5;
     private static final long DURATA_BLOCCO_MINUTI = 15;
 
+    // Upload foto profilo (SDD 3.2): limite piu' stretto della copertina articolo (GestioneArticoli)
+    // perche' un avatar non ha bisogno della stessa risoluzione di un'immagine hero.
+    private static final long MAX_DIMENSIONE_FOTO_PROFILO_BYTES = 2L * 1024 * 1024;
+    private static final String CARTELLA_FOTO_PROFILO = "profili";
+
     private final UtenteRepository utenteRepository;
     private final TokenRecuperoPasswordRepository tokenRecuperoPasswordRepository;
     private final SegnalazioneRepository segnalazioneRepository;
     private final RichiestaCancellazioneRepository richiestaCancellazioneRepository;
     private final PasswordEncoder passwordEncoder;
     private final ApplicationEventPublisher eventPublisher;
+    private final CloudStorageService cloudStorageService;
+    private final ImageUploadValidator imageUploadValidator;
 
     public GestioneUtenti(UtenteRepository utenteRepository,
                            TokenRecuperoPasswordRepository tokenRecuperoPasswordRepository,
                            SegnalazioneRepository segnalazioneRepository,
                            RichiestaCancellazioneRepository richiestaCancellazioneRepository,
                            PasswordEncoder passwordEncoder,
-                           ApplicationEventPublisher eventPublisher) {
+                           ApplicationEventPublisher eventPublisher,
+                           CloudStorageService cloudStorageService,
+                           ImageUploadValidator imageUploadValidator) {
         this.utenteRepository = utenteRepository;
         this.tokenRecuperoPasswordRepository = tokenRecuperoPasswordRepository;
         this.segnalazioneRepository = segnalazioneRepository;
         this.richiestaCancellazioneRepository = richiestaCancellazioneRepository;
         this.passwordEncoder = passwordEncoder;
         this.eventPublisher = eventPublisher;
+        this.cloudStorageService = cloudStorageService;
+        this.imageUploadValidator = imageUploadValidator;
+    }
+
+    /**
+     * pre: file valido (formato JPEG/PNG/WEBP, dimensione <= 2MB, contenuto verificato come
+     * immagine reale - ImageUploadValidator)
+     * post: il file e' caricato su Cloud Storage e viene restituito il suo URL pubblico. Non tocca
+     * Utente: il chiamante deve poi passare l'URL a updateProfile per persisterlo (ODD 2.1).
+     * (SDD 3.2)
+     */
+    public String uploadFotoProfilo(MultipartFile file) {
+        imageUploadValidator.validate(file, MAX_DIMENSIONE_FOTO_PROFILO_BYTES);
+        return cloudStorageService.upload(file, CARTELLA_FOTO_PROFILO);
     }
 
     /**
@@ -168,6 +195,10 @@ public class GestioneUtenti {
      * pre: exists u | u.id = userId  and  dto.biografia.size() <= 1000
      * post: u.biografia = dto.biografia (e analogamente nome, cognome, fotoProfilo)
      * (ODD 2.1, RF1.6, UC_4)
+     *
+     * Se fotoProfilo cambia rispetto al valore precedente, il vecchio file viene eliminato da
+     * Cloud Storage (best-effort, cfr. CloudStorageService.delete) per non accumulare asset orfani
+     * a ogni sostituzione dell'avatar.
      */
     @Transactional
     public void updateProfile(Long userId, UpdateProfileDTO dto) {
@@ -178,10 +209,16 @@ public class GestioneUtenti {
             throw new RegolaDiDominioViolataException("La biografia ha superato il limite massimo di caratteri consentiti.");
         }
 
+        String vecchiaFotoProfilo = utente.getFotoProfilo();
+
         utente.setNome(dto.nome());
         utente.setCognome(dto.cognome());
         utente.setFotoProfilo(dto.fotoProfilo());
         utente.setBiografia(dto.biografia());
+
+        if (vecchiaFotoProfilo != null && !Objects.equals(vecchiaFotoProfilo, dto.fotoProfilo())) {
+            cloudStorageService.delete(vecchiaFotoProfilo);
+        }
     }
 
     /** Query di sola lettura (RF1.9) - nessun contratto OCL formale. */

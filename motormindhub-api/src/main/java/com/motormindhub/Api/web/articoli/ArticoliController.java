@@ -14,8 +14,10 @@ import com.motormindhub.Api.service.gestioneArticoli.dto.SaveArticleDTO;
 import com.motormindhub.Api.service.gestioneArticoli.dto.SavedArticleDTO;
 import com.motormindhub.Api.service.gestioneArticoli.dto.SearchCriteriaDTO;
 import com.motormindhub.Api.web.MessageResponseDTO;
+import com.motormindhub.Api.web.UploadResponseDTO;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -28,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -73,6 +76,17 @@ public class ArticoliController {
     @PreAuthorize("hasAnyRole('ISCRITTO', 'AUTORE', 'MANAGER_AUTORI')")
     public ResponseEntity<List<SavedArticleDTO>> getSavedArticles(@AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(gestioneArticoli.getSavedArticles(principal.getId()));
+    }
+
+    /**
+     * Restituisce solo l'URL caricato (SDD 3.2): non lega l'upload a un articolo esistente (l'editor
+     * supporta una bozza non ancora creata), il client lo passa poi a createDraft/updateDraft/
+     * updatePublishedArticle.
+     */
+    @PostMapping(value = "/copertine", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('AUTORE', 'MANAGER_AUTORI')")
+    public ResponseEntity<UploadResponseDTO> uploadImmagineCopertina(@RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(new UploadResponseDTO(gestioneArticoli.uploadImmagineCopertina(file)));
     }
 
     @PostMapping("/bozze")

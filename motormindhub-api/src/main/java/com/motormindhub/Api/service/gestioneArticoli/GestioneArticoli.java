@@ -27,12 +27,15 @@ import com.motormindhub.Api.service.gestioneArticoli.exception.CategoriaNonTrova
 import com.motormindhub.Api.service.gestioneArticoli.exception.RegolaDiDominioViolataException;
 import com.motormindhub.Api.service.gestioneArticoli.exception.StatoArticoloNonValidoException;
 import com.motormindhub.Api.service.gestioneArticoli.exception.UtenteNonTrovatoException;
+import com.motormindhub.Api.service.storage.CloudStorageService;
+import com.motormindhub.Api.service.storage.ImageUploadValidator;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayDeque;
@@ -41,6 +44,7 @@ import java.util.Deque;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -57,19 +61,44 @@ public class GestioneArticoli {
     private static final int PAROLE_AL_MINUTO = 200;
     private static final int LUNGHEZZA_ESTRATTO = 160;
 
+    // Upload copertina articolo (SDD 3.2): limite piu' permissivo della foto profilo
+    // (GestioneUtenti) perche' e' un'immagine hero, non un piccolo avatar.
+    private static final long MAX_DIMENSIONE_IMMAGINE_COPERTINA_BYTES = 5L * 1024 * 1024;
+    private static final String CARTELLA_IMMAGINI_COPERTINA = "copertine-articoli";
+
     private final ArticoloRepository articoloRepository;
     private final ArticoloSalvatoRepository articoloSalvatoRepository;
     private final CategoriaRepository categoriaRepository;
     private final UtenteRepository utenteRepository;
+    private final CloudStorageService cloudStorageService;
+    private final ImageUploadValidator imageUploadValidator;
 
     public GestioneArticoli(ArticoloRepository articoloRepository,
                              ArticoloSalvatoRepository articoloSalvatoRepository,
                              CategoriaRepository categoriaRepository,
-                             UtenteRepository utenteRepository) {
+                             UtenteRepository utenteRepository,
+                             CloudStorageService cloudStorageService,
+                             ImageUploadValidator imageUploadValidator) {
         this.articoloRepository = articoloRepository;
         this.articoloSalvatoRepository = articoloSalvatoRepository;
         this.categoriaRepository = categoriaRepository;
         this.utenteRepository = utenteRepository;
+        this.cloudStorageService = cloudStorageService;
+        this.imageUploadValidator = imageUploadValidator;
+    }
+
+    /**
+     * pre: file valido (formato JPEG/PNG/WEBP, dimensione <= 5MB, contenuto verificato come
+     * immagine reale - ImageUploadValidator)
+     * post: il file e' caricato su Cloud Storage e viene restituito il suo URL pubblico. Non lega
+     * l'upload a un articolo/bozza esistente: l'editor supporta un articolo non ancora creato
+     * (nessun id), quindi il chiamante deve poi passare l'URL a createDraft/updateDraft/
+     * updatePublishedArticle per persisterlo (ODD 2.2).
+     * (SDD 3.2)
+     */
+    public String uploadImmagineCopertina(MultipartFile file) {
+        imageUploadValidator.validate(file, MAX_DIMENSIONE_IMMAGINE_COPERTINA_BYTES);
+        return cloudStorageService.upload(file, CARTELLA_IMMAGINI_COPERTINA);
     }
 
     /**
@@ -93,13 +122,22 @@ public class GestioneArticoli {
      * pre: exists a | a.id = draftId and a.stato = BOZZA
      * post: a.titolo = dto.titolo
      * (ODD 2.2, RF2.7, UC_17)
+     *
+     * Se immagineCopertina cambia rispetto al valore precedente, il vecchio file viene eliminato da
+     * Cloud Storage (best-effort, cfr. CloudStorageService.delete) per non accumulare asset orfani
+     * a ogni sostituzione della copertina.
      */
     @Transactional
     public void updateDraft(Long draftId, Long callerId, ArticleDraftDTO dto) {
         Articolo bozza = trovaBozzaDiProprietaOLancia(draftId, callerId);
 
         Categoria categoria = risolviCategoria(dto.categoriaId());
+        String vecchiaImmagineCopertina = bozza.getImmagineCopertina();
         bozza.aggiornaContenuto(dto.titolo(), dto.testo(), categoria, unisciTag(dto.tag()), dto.immagineCopertina());
+
+        if (vecchiaImmagineCopertina != null && !Objects.equals(vecchiaImmagineCopertina, dto.immagineCopertina())) {
+            cloudStorageService.delete(vecchiaImmagineCopertina);
+        }
     }
 
     /**
@@ -130,6 +168,10 @@ public class GestioneArticoli {
      * pre: exists a | a.id = articleId and a.stato = PUBBLICATO
      * post: a.testo = dto.testo  and  a.stato resta PUBBLICATO
      * (ODD 2.2, RF2.3, UC_20)
+     *
+     * Se immagineCopertina cambia rispetto al valore precedente, il vecchio file viene eliminato da
+     * Cloud Storage (best-effort, cfr. CloudStorageService.delete) per non accumulare asset orfani
+     * a ogni sostituzione della copertina.
      */
     @Transactional
     public void updatePublishedArticle(Long articleId, Long callerId, ArticleUpdateDTO dto) {
@@ -142,8 +184,13 @@ public class GestioneArticoli {
 
         Categoria categoria = categoriaRepository.findById(dto.categoriaId())
                 .orElseThrow(() -> new CategoriaNonTrovataException("Categoria non trovata."));
+        String vecchiaImmagineCopertina = articolo.getImmagineCopertina();
         articolo.aggiornaContenuto(dto.titolo(), dto.testo(), categoria, unisciTag(dto.tag()), dto.immagineCopertina());
         // stato invariato = PUBBLICATO: aggiornaContenuto non tocca il campo stato.
+
+        if (vecchiaImmagineCopertina != null && !Objects.equals(vecchiaImmagineCopertina, dto.immagineCopertina())) {
+            cloudStorageService.delete(vecchiaImmagineCopertina);
+        }
     }
 
     /**

@@ -28,6 +28,8 @@ import com.motormindhub.Api.service.gestioneUtenti.exception.RichiestaCancellazi
 import com.motormindhub.Api.service.gestioneUtenti.exception.TokenNonValidoException;
 import com.motormindhub.Api.service.gestioneUtenti.exception.TokenVerificaScadutoException;
 import com.motormindhub.Api.service.gestioneUtenti.exception.UtenteNonTrovatoException;
+import com.motormindhub.Api.service.storage.CloudStorageService;
+import com.motormindhub.Api.service.storage.ImageUploadValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,8 +37,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -70,13 +74,18 @@ class GestioneUtentiTest {
     private PasswordEncoder passwordEncoder;
     @Mock
     private ApplicationEventPublisher eventPublisher;
+    @Mock
+    private CloudStorageService cloudStorageService;
+    @Mock
+    private ImageUploadValidator imageUploadValidator;
 
     private GestioneUtenti gestioneUtenti;
 
     @BeforeEach
     void setUp() {
         gestioneUtenti = new GestioneUtenti(utenteRepository, tokenRecuperoPasswordRepository,
-                segnalazioneRepository, richiestaCancellazioneRepository, passwordEncoder, eventPublisher);
+                segnalazioneRepository, richiestaCancellazioneRepository, passwordEncoder, eventPublisher,
+                cloudStorageService, imageUploadValidator);
     }
 
     private static Utente utenteAttivo(Long id, String email) {
@@ -298,6 +307,43 @@ class GestioneUtentiTest {
         UpdateProfileDTO dto = new UpdateProfileDTO("Marco", "Bianchi", null, biografiaTroppoLunga);
 
         assertThrows(RegolaDiDominioViolataException.class, () -> gestioneUtenti.updateProfile(1L, dto));
+    }
+
+    @Test
+    void updateProfile_eliminaLaVecchiaFotoProfilo_quandoSostituitaConUnaDiversa() {
+        Utente utente = utenteAttivo(1L, "marco@provider.it");
+        utente.setFotoProfilo("https://cdn/vecchia-foto.jpg");
+        when(utenteRepository.findById(1L)).thenReturn(Optional.of(utente));
+        UpdateProfileDTO dto = new UpdateProfileDTO("Marco", "Bianchi", "https://cdn/nuova-foto.jpg", null);
+
+        gestioneUtenti.updateProfile(1L, dto);
+
+        verify(cloudStorageService).delete("https://cdn/vecchia-foto.jpg");
+    }
+
+    @Test
+    void updateProfile_nonEliminaNulla_quandoLaFotoProfiloRestaInvariata() {
+        Utente utente = utenteAttivo(1L, "marco@provider.it");
+        utente.setFotoProfilo("https://cdn/stessa-foto.jpg");
+        when(utenteRepository.findById(1L)).thenReturn(Optional.of(utente));
+        UpdateProfileDTO dto = new UpdateProfileDTO("Marco", "Bianchi", "https://cdn/stessa-foto.jpg", null);
+
+        gestioneUtenti.updateProfile(1L, dto);
+
+        verify(cloudStorageService, never()).delete(anyString());
+    }
+
+    // --- uploadFotoProfilo ---------------------------------------------------
+
+    @Test
+    void uploadFotoProfilo_valida_eDelegaAlCloudStorageService() {
+        MultipartFile file = new MockMultipartFile("file", "avatar.jpg", "image/jpeg", "dati".getBytes());
+        when(cloudStorageService.upload(file, "profili")).thenReturn("https://cdn/nuova-foto.jpg");
+
+        String url = gestioneUtenti.uploadFotoProfilo(file);
+
+        verify(imageUploadValidator).validate(file, 2L * 1024 * 1024);
+        assertThat(url).isEqualTo("https://cdn/nuova-foto.jpg");
     }
 
     // --- getPublicProfile (query) -------------------------------------------

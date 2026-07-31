@@ -121,6 +121,11 @@
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 			<version>3.0.3</version>
 		</dependency>
+		<dependency>
+			<groupId>com.cloudinary</groupId>
+			<artifactId>cloudinary-http5</artifactId>
+			<version>2.4.0</version>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -128,6 +133,24 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<!-- CloudinaryConfig fallisce l'avvio se le credenziali mancano (deliberato,
+					     nessun default insicuro in application.properties): questi valori-civetta,
+					     chiaramente non funzionanti verso un vero account Cloudinary, esistono solo
+					     per permettere il caricamento del contesto Spring nella suite di test, che
+					     non effettua mai una vera chiamata di rete a Cloudinary (CloudStorageService
+					     e' sempre mockato dove serve, cfr. CloudinaryStorageServiceTest e i test di
+					     integrazione sugli endpoint di upload). -->
+					<environmentVariables>
+						<CLOUDINARY_CLOUD_NAME>test-cloud-name</CLOUDINARY_CLOUD_NAME>
+						<CLOUDINARY_API_KEY>test-api-key</CLOUDINARY_API_KEY>
+						<CLOUDINARY_API_SECRET>test-api-secret</CLOUDINARY_API_SECRET>
+					</environmentVariables>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
