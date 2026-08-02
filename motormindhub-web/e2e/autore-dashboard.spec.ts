@@ -8,6 +8,7 @@ import {
   deleteArticle,
   approveArticle,
   viewArticle,
+  login,
 } from "./helpers/test-articles";
 
 test.describe("Dashboard Autore", () => {
@@ -27,13 +28,26 @@ test.describe("Dashboard Autore", () => {
     const stamp = Date.now();
     const TOTALE_ARTICOLI = 22;
 
+    // Un login per account, riusato per tutte le 22 iterazioni: un login
+    // per iterazione (44 in totale su 2 soli account) esaurirebbe
+    // LoginRateLimiter (10/min per account) senza alcun bisogno reale di
+    // una sessione nuova ogni volta - la stessa sessione resta valida per
+    // tutto il loop.
+    const autoreToken = await login(autore.email, autore.password);
+    const managerToken = await login(manager.email, manager.password);
+
     const ids: number[] = [];
     for (let i = 0; i < TOTALE_ARTICOLI; i++) {
-      const id = await createPendingArticle(autore.email, autore.password, {
-        titolo: `Articolo aggregazione ${stamp} #${i}`,
-        categoriaNome: `Categoria aggregazione ${stamp} ${i}`,
-      });
-      await approveArticle(manager.email, manager.password, id);
+      const id = await createPendingArticle(
+        autore.email,
+        autore.password,
+        {
+          titolo: `Articolo aggregazione ${stamp} #${i}`,
+          categoriaNome: `Categoria aggregazione ${stamp} ${i}`,
+        },
+        autoreToken
+      );
+      await approveArticle(manager.email, manager.password, id, managerToken);
       await viewArticle(id, 1);
       ids.push(id);
     }
@@ -49,7 +63,7 @@ test.describe("Dashboard Autore", () => {
       await expect(lettureTile.getByText(String(TOTALE_ARTICOLI), { exact: true })).toBeVisible();
     } finally {
       for (const id of ids) {
-        await deleteArticle(manager.email, manager.password, id);
+        await deleteArticle(manager.email, manager.password, id, managerToken);
       }
     }
   });

@@ -40,6 +40,18 @@ import java.util.concurrent.TimeUnit;
  * un giro completo con piu' cambi di filtro/ordinamento/pagina e alcune aperture di dettaglio resta
  * a circa un terzo del limite anche concentrato in un solo minuto.
  *
+ * Le due capacita' sono configurabili (security.rate-limit.permissive-capacity-per-minute /
+ * strict-capacity-per-minute, cfr. SecurityConfig.rateLimitFilter) e non piu' costanti fisse: la
+ * suite e2e (Playwright, cfr. motormindhub-web/e2e) genera facilmente piu' di 60 GET /categorie o
+ * /articoli al minuto anche in esecuzione seriale (workers:1, nessuna concorrenza) semplicemente
+ * per il numero di file che condividono lo stesso backend/IP - non e' un caso limite raro, e'
+ * successo ed e' stato isolato con una riproduzione minimale fuori da Playwright (un client Node
+ * sequenziale, nessuna concorrenza, fallisce deterministicamente alla 61-esima richiesta). L'ambiente
+ * e2e (CI e locale) imposta le soglie molto piu' alte via env var; i default restano quelli di
+ * produzione. Deliberatamente NON un'esclusione per IP: fragile (quale IP esattamente, cosa succede
+ * se l'ambiente CI cambia) e rischia di restare un'eccezione dimenticata - una soglia esplicita e
+ * tracciabile e' preferibile.
+ *
  * Bucket in cache Caffeine, non una mappa semplice: la chiave e' l'IP del chiamante, quindi di
  * cardinalita' potenzialmente grande e in parte sotto controllo di chi genera le richieste (un
  * attaccante puo' presentarsi con IP diversi) - senza scadenza la mappa crescerebbe senza limite.
@@ -51,8 +63,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private static final PathPatternParser PARSER = new PathPatternParser();
 
-    private static final int PERMISSIVO_CAPACITA_AL_MINUTO = 60;
-    private static final int STRETTO_CAPACITA_AL_MINUTO = 8;
+    private final int permissivoCapacitaAlMinuto;
+    private final int strettoCapacitaAlMinuto;
 
     private static final List<Endpoint> ENDPOINT_PERMISSIVI = List.of(
             Endpoint.of(HttpMethod.GET, "/api/v1/articoli"),
@@ -73,6 +85,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final Cache<String, Bucket> bucketPermissivi = nuovaCache();
     private final Cache<String, Bucket> bucketStretti = nuovaCache();
 
+    public RateLimitFilter(int permissivoCapacitaAlMinuto, int strettoCapacitaAlMinuto) {
+        this.permissivoCapacitaAlMinuto = permissivoCapacitaAlMinuto;
+        this.strettoCapacitaAlMinuto = strettoCapacitaAlMinuto;
+    }
+
     private static Cache<String, Bucket> nuovaCache() {
         return Caffeine.newBuilder()
                 .maximumSize(50_000)
@@ -85,11 +102,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
                                      @NonNull HttpServletResponse response,
                                      @NonNull FilterChain filterChain) throws ServletException, IOException {
         if (matches(ENDPOINT_STRETTI, request)) {
-            if (!consenti(bucketStretti, STRETTO_CAPACITA_AL_MINUTO, request, response)) {
+            if (!consenti(bucketStretti, strettoCapacitaAlMinuto, request, response)) {
                 return;
             }
         } else if (matches(ENDPOINT_PERMISSIVI, request)) {
-            if (!consenti(bucketPermissivi, PERMISSIVO_CAPACITA_AL_MINUTO, request, response)) {
+            if (!consenti(bucketPermissivi, permissivoCapacitaAlMinuto, request, response)) {
                 return;
             }
         }

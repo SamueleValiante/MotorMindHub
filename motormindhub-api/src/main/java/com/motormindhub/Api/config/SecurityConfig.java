@@ -7,6 +7,7 @@ import com.motormindhub.Api.security.RestAccessDeniedHandler;
 import com.motormindhub.Api.security.RestAuthenticationEntryPoint;
 import com.motormindhub.Api.security.UserDetailsServiceImpl;
 import jakarta.servlet.DispatcherType;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -100,9 +101,15 @@ public class SecurityConfig {
         return new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService);
     }
 
+    /**
+     * Soglie configurabili (cfr. RateLimitFilter): l'ambiente e2e (CI e locale) le alza
+     * drasticamente via env var, senza toccare i default di produzione qui.
+     */
     @Bean
-    public RateLimitFilter rateLimitFilter() {
-        return new RateLimitFilter();
+    public RateLimitFilter rateLimitFilter(
+            @Value("${security.rate-limit.permissive-capacity-per-minute:60}") int permissivoCapacitaAlMinuto,
+            @Value("${security.rate-limit.strict-capacity-per-minute:8}") int strettoCapacitaAlMinuto) {
+        return new RateLimitFilter(permissivoCapacitaAlMinuto, strettoCapacitaAlMinuto);
     }
 
     /**

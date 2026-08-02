@@ -1,5 +1,11 @@
 import { test, expect } from "./fixtures";
-import { createPublishedArticle, deleteArticle, viewArticle, getCategoryId } from "./helpers/test-articles";
+import {
+  createPublishedArticle,
+  deleteArticle,
+  viewArticle,
+  getCategoryId,
+  login,
+} from "./helpers/test-articles";
 
 test.describe("Esplora Articoli", () => {
   test("il filtro categoria invia un solo id esatto (nessuna espansione lato client)", async ({
@@ -125,11 +131,21 @@ test.describe("Esplora Articoli", () => {
     const categoria = `Categoria paginazione ${stamp}`;
     const ids: number[] = [];
 
+    // Un login riusato per tutte le creazioni/cancellazioni: 7 create + 7
+    // delete con un login ciascuna esaurirebbero LoginRateLimiter (10/min
+    // per account) sullo stesso manager, cfr. autore-dashboard.spec.ts.
+    const managerToken = await login(manager.email, manager.password);
+
     for (let i = 0; i < 7; i++) {
-      const id = await createPublishedArticle(manager.email, manager.password, {
-        titolo: `Articolo paginato ${stamp} #${i}`,
-        categoriaNome: i === 0 ? categoria : `${categoria} ${i}`,
-      });
+      const id = await createPublishedArticle(
+        manager.email,
+        manager.password,
+        {
+          titolo: `Articolo paginato ${stamp} #${i}`,
+          categoriaNome: i === 0 ? categoria : `${categoria} ${i}`,
+        },
+        managerToken
+      );
       ids.push(id);
     }
 
@@ -153,7 +169,7 @@ test.describe("Esplora Articoli", () => {
       );
     } finally {
       for (const id of ids) {
-        await deleteArticle(manager.email, manager.password, id);
+        await deleteArticle(manager.email, manager.password, id, managerToken);
       }
     }
   });
@@ -164,12 +180,20 @@ test.describe("Esplora Articoli", () => {
     const categoriaTarget = `Categoria reset ${stamp}`;
     const ids: number[] = [];
 
+    // Cfr. commento nel test "paginazione" sopra: stesso motivo, stesso fix.
+    const managerToken = await login(manager.email, manager.password);
+
     // 6 articoli "filler" (stessa query, categorie diverse): riempiono la pagina 1.
     for (let i = 0; i < 6; i++) {
-      const id = await createPublishedArticle(manager.email, manager.password, {
-        titolo: `Filler reset ${stamp} #${i}`,
-        categoriaNome: `Categoria reset filler ${stamp} ${i}`,
-      });
+      const id = await createPublishedArticle(
+        manager.email,
+        manager.password,
+        {
+          titolo: `Filler reset ${stamp} #${i}`,
+          categoriaNome: `Categoria reset filler ${stamp} ${i}`,
+        },
+        managerToken
+      );
       ids.push(id);
     }
     // 2 articoli target, stessa categoria tra loro: nel risultato NON filtrato
@@ -178,15 +202,19 @@ test.describe("Esplora Articoli", () => {
     // esistono solo in pagina 1 di quel risultato filtrato.
     const titoloTarget1 = `Target reset ${stamp} A`;
     const titoloTarget2 = `Target reset ${stamp} B`;
-    const idTarget1 = await createPublishedArticle(manager.email, manager.password, {
-      titolo: titoloTarget1,
-      categoriaNome: categoriaTarget,
-    });
+    const idTarget1 = await createPublishedArticle(
+      manager.email,
+      manager.password,
+      { titolo: titoloTarget1, categoriaNome: categoriaTarget },
+      managerToken
+    );
     ids.push(idTarget1);
-    const idTarget2 = await createPublishedArticle(manager.email, manager.password, {
-      titolo: titoloTarget2,
-      categoriaNome: categoriaTarget,
-    });
+    const idTarget2 = await createPublishedArticle(
+      manager.email,
+      manager.password,
+      { titolo: titoloTarget2, categoriaNome: categoriaTarget },
+      managerToken
+    );
     ids.push(idTarget2);
 
     try {
@@ -209,7 +237,7 @@ test.describe("Esplora Articoli", () => {
       await expect(page.getByRole("heading", { name: titoloTarget2 })).toBeVisible();
     } finally {
       for (const id of ids) {
-        await deleteArticle(manager.email, manager.password, id);
+        await deleteArticle(manager.email, manager.password, id, managerToken);
       }
     }
   });

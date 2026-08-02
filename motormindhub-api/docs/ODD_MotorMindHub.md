@@ -933,3 +933,9 @@ Nota trasversale emersa da un audit del frontend (gestione errori nelle mutation
 > - `/recupero-password`, `/reimposta-password` (`e2e/password-reset.spec.ts`).
 
 Rischio basso per le pagine di solo testo (legali, home), più concreto per Editor articolo e login/registrazione — sono le pagine con più campi di form e quindi più esposte a problemi di layout su viewport stretti.
+
+> **2.9 Debito tecnico noto — errorCode mancante su handleConflitto**
+
+Nota trasversale (non un contratto di un singolo metodo), non corretta in questa sessione. `GlobalExceptionHandler::handleConflitto` raggruppa sotto lo stesso 409, con `errorCode: null`, 9 eccezioni applicative distinte (11 classi concrete, alcune omonime in package diversi): `EmailGiaRegistrataException` (GestioneUtenti e GestioneAutori), `RichiestaCancellazioneEsistenteException`, `CategoriaGiaEsistenteException`, `CategoriaConSottocategorieException`, `ArticoloGiaSalvatoException`, `StatoArticoloNonValidoException` (GestioneArticoli e GestioneAutori), `InvitoGiaEsistenteException`, `StatoAccountNonValidoException`, `ContenutiInSospesoException`.
+
+Un client (o un test) che deve distinguere la causa specifica di un 409 può farlo solo per testo del messaggio (`messages[0]`), fragile a un cambio di copy — a differenza degli handler che già valorizzano `errorCode` per lo stesso motivo (`CREDENZIALI_NON_VALIDE`, `ACCOUNT_NON_VERIFICATO`, `ACCOUNT_BLOCCATO`, `TOKEN_VERIFICA_SCADUTO`, `FILE_TROPPO_GRANDE`/`FORMATO_NON_SUPPORTATO`/`FILE_NON_VALIDO`). In un giro dedicato: assegnare un `errorCode` esplicito a ciascuna delle 9, stesso pattern già in uso.

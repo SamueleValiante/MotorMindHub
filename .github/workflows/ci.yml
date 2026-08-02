@@ -136,8 +136,19 @@ jobs:
     # non solo all'avvio, altrimenti Next le congela come 404. Stesso valore che lo sviluppatore
     # ha in .env.local: non e' NODE_ENV, quindi "next build && next start" (produzione vera, non
     # "sono online sul dominio di produzione") non le nasconde qui come non le nasconde in locale.
+    #
+    # RATE_LIMIT_*_CAPACITY_PER_MINUTE: RateLimitFilter (motormindhub-api, SecurityConfig) applica
+    # per default le soglie di produzione (60/min letture pubbliche, 8/min azioni sensibili come la
+    # registrazione) - la suite e2e le supera facilmente anche in esecuzione seriale senza alcuna
+    # concorrenza (isolato con una riproduzione minimale fuori da Playwright: un client Node
+    # sequenziale fallisce deterministicamente alla 61-esima GET /categorie in un minuto), quindi
+    # qui vanno alzate drasticamente solo per questo job - non i default di produzione in
+    # application.properties. Deliberatamente non un'esclusione per IP (fragile, cfr. commento in
+    # RateLimitFilter): una soglia esplicita e tracciabile.
     env:
       QA_FIXTURES_ENABLED: "true"
+      RATE_LIMIT_PERMISSIVE_CAPACITY_PER_MINUTE: "1000000"
+      RATE_LIMIT_STRICT_CAPACITY_PER_MINUTE: "1000000"
 
     services:
       # Stessa immagine/credenziali del job "test" e di docker-compose.yml (uso locale).

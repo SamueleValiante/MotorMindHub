@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCurrentUser, type CurrentUser } from "@/lib/auth/useCurrentUser";
 import { updateProfile } from "@/lib/auth/updateProfile";
-import { Avatar } from "@/components/shared/Avatar";
+import { ImageUploadField } from "@/components/shared/ImageUploadField";
 
 const inputClassName =
   "rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-amber";
@@ -19,6 +19,7 @@ const labelClassName =
 function SettingsForm({ user }: { user: CurrentUser }) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [fotoProfilo, setFotoProfilo] = useState<string | null>(user.fotoProfilo);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -28,7 +29,7 @@ function SettingsForm({ user }: { user: CurrentUser }) {
     const ok = await updateProfile({
       nome: String(formData.get("nome")),
       cognome: String(formData.get("cognome")),
-      fotoProfilo: user.fotoProfilo,
+      fotoProfilo,
       biografia: String(formData.get("biografia") || "") || null,
     });
     setSubmitting(false);
@@ -40,12 +41,18 @@ function SettingsForm({ user }: { user: CurrentUser }) {
 
   return (
     <form onSubmit={handleSubmit} className="max-w-2xl rounded-lg bg-carbon p-6">
-      {/* Il mockup 16 mostra un pulsante "Carica nuova foto": nessun endpoint
-          di storage nel backend (UpdateProfileDTO.fotoProfilo è solo una
-          stringa, senza un canale di upload) — mostrata in sola lettura. */}
       <p className={labelClassName}>Foto profilo</p>
       <div className="mt-2">
-        <Avatar nome={user.nome} cognome={user.cognome} fotoProfilo={user.fotoProfilo} />
+        <ImageUploadField
+          variant="avatar"
+          value={fotoProfilo}
+          onChange={setFotoProfilo}
+          endpoint="/api/v1/utenti/me/foto-profilo"
+          maxSizeBytes={2 * 1024 * 1024}
+          label="Carica nuova foto"
+          nome={user.nome}
+          cognome={user.cognome}
+        />
       </div>
 
       <div className="mt-6 flex flex-col gap-2">

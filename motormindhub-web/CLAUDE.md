@@ -35,3 +35,25 @@ docs/ in questo repo è una COPIA. La fonte di verità è
 motormindhub-api/docs/. Dopo ogni aggiornamento a PS/RAD/SDD/ODD nel
 backend, ricopiare manualmente qui prima di continuare il lavoro
 frontend — non fidarsi che questa copia sia già aggiornata.
+
+## Eseguire la suite e2e (Playwright) in locale
+`npm run test:e2e` avvia da solo solo il front-end (playwright.config.ts,
+webServer → `npm run dev`); il backend va avviato a mano PRIMA
+(`./mvnw spring-boot:run` in motormindhub-api, con Postgres/Mailpit di
+docker-compose.yml già su). RateLimitFilter (motormindhub-api,
+SecurityConfig) applica per default le soglie di produzione (60/min
+letture pubbliche, 8/min azioni sensibili): la suite le supera facilmente
+anche in esecuzione seriale, senza alcuna concorrenza — verificato con
+una riproduzione minimale fuori da Playwright. Prima di avviare il
+backend per una sessione e2e locale, esporta le stesse env var che il job
+"e2e" di ci.yml imposta:
+
+```bash
+export RATE_LIMIT_PERMISSIVE_CAPACITY_PER_MINUTE=1000000
+export RATE_LIMIT_STRICT_CAPACITY_PER_MINUTE=1000000
+./mvnw spring-boot:run
+```
+
+Senza, i test che creano molte categorie/articoli o registrano molti
+utenti in sequenza possono fallire con un 429 che assomiglia a un bug
+applicativo (es. "categoria non trovata dopo la creazione") ma non lo è.

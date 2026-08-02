@@ -15,8 +15,8 @@ import {
 import { toast } from "@/lib/toast/toast";
 import { StatoBadge } from "@/components/articoli/StatoBadge";
 import { WarningIcon } from "@/components/account/icons";
-import { ImageIcon } from "@/components/autore/icons";
 import { CloseIcon } from "@/components/public/icons";
+import { ImageUploadField } from "@/components/shared/ImageUploadField";
 import type { ArticleDetail } from "@/lib/articoli/types";
 
 const inputClassName =
@@ -216,9 +216,11 @@ function TagInput({ tags, onChange }: { tags: string[]; onChange: (next: string[
  * rendering HTML/Markdown lato pubblico — una toolbar la simulerebbe senza
  * che l'effetto sia mai visibile all'autore.
  *
- * Immagine di copertina: campo URL testuale, non un vero upload (stesso gap
- * già noto per la foto profilo, cfr. impostazioni/page.tsx) — ArticleDraftDTO
- * la tratta come una semplice stringa.
+ * Immagine di copertina: upload reale (ImageUploadField, condiviso con
+ * impostazioni/page.tsx), non più un campo URL testuale — ArticleDraftDTO la
+ * tratta comunque come una semplice stringa, un URL esterno storico
+ * pre-migrazione resta quindi visibile in preview senza alcuna logica
+ * speciale.
  */
 function ArticleEditorForm({ articolo }: { articolo: ArticleDetail | null }) {
   const router = useRouter();
@@ -374,29 +376,15 @@ function ArticleEditorForm({ articolo }: { articolo: ArticleDetail | null }) {
         </div>
 
         <div className="flex flex-col gap-2">
-          <label htmlFor="editor-copertina" className={labelClassName}>
-            Immagine di copertina (URL)
-          </label>
-          <input
-            id="editor-copertina"
-            type="url"
-            value={immagineCopertina}
-            onChange={(event) => setImmagineCopertina(event.target.value)}
-            placeholder="https://…"
-            className={inputClassName}
+          <p className={labelClassName}>Immagine di copertina</p>
+          <ImageUploadField
+            variant="cover"
+            value={immagineCopertina || null}
+            onChange={setImmagineCopertina}
+            endpoint="/api/v1/articoli/copertine"
+            maxSizeBytes={5 * 1024 * 1024}
+            label="Carica immagine di copertina"
           />
-          {immagineCopertina ? (
-            // eslint-disable-next-line @next/next/no-img-element -- URL arbitraria, stesso pattern di ArticleCard
-            <img
-              src={immagineCopertina}
-              alt=""
-              className="mt-1 aspect-video w-full max-w-xs rounded-md object-cover"
-            />
-          ) : (
-            <div className="mt-1 flex aspect-video w-full max-w-xs items-center justify-center rounded-md border border-dashed border-chrome/30 text-fog">
-              <ImageIcon className="h-6 w-6" />
-            </div>
-          )}
         </div>
       </div>
 

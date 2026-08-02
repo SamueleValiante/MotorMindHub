@@ -10,15 +10,19 @@ import java.io.IOException;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Unit test del filtro (nessun contesto Spring): le soglie sono costanti private della classe
- * (60/min permissivo, 8/min stretto), verificate qui esaurendo davvero il bucket invece di
- * duplicarle come costanti nel test - se cambiano in RateLimitFilter, il test si adatta.
+ * Unit test del filtro (nessun contesto Spring): le soglie non sono piu' costanti fisse (ora
+ * configurabili, cfr. SecurityConfig.rateLimitFilter - necessario per l'ambiente e2e), quindi qui
+ * si passano esplicitamente i valori di default di produzione (60/min permissivo, 8/min stretto),
+ * esaurendo davvero il bucket invece di limitarsi a un mock.
  */
 class RateLimitFilterTest {
 
+    private static final int PERMISSIVO_DEFAULT = 60;
+    private static final int STRETTO_DEFAULT = 8;
+
     @Test
     void endpointStretto_vieneBloccatoConTooManyRequests_dopoLaSogliaEChiaveEIp() throws Exception {
-        RateLimitFilter filtro = new RateLimitFilter();
+        RateLimitFilter filtro = new RateLimitFilter(PERMISSIVO_DEFAULT, STRETTO_DEFAULT);
 
         // Fino alla soglia: passa tutto (POST /api/v1/utenti/registrazione, tier stretto).
         int ultimaRisposta = -1;
@@ -36,7 +40,7 @@ class RateLimitFilterTest {
 
     @Test
     void endpointPermissivo_esauritoAdArticoli_nonInfluenzaIlTierStretto_stessoIp() throws Exception {
-        RateLimitFilter filtro = new RateLimitFilter();
+        RateLimitFilter filtro = new RateLimitFilter(PERMISSIVO_DEFAULT, STRETTO_DEFAULT);
 
         for (int i = 0; i < 60; i++) {
             eseguiRichiesta(filtro, "GET", "/api/v1/articoli", "10.0.0.5");
@@ -49,7 +53,7 @@ class RateLimitFilterTest {
 
     @Test
     void dettaglioArticoloNumerico_eProfiloPubblico_rientranoNelTierPermissivo() throws Exception {
-        RateLimitFilter filtro = new RateLimitFilter();
+        RateLimitFilter filtro = new RateLimitFilter(PERMISSIVO_DEFAULT, STRETTO_DEFAULT);
 
         assertThat(eseguiRichiesta(filtro, "GET", "/api/v1/articoli/42", "10.0.0.9")).isEqualTo(200);
         assertThat(eseguiRichiesta(filtro, "GET", "/api/v1/utenti/7/profilo-pubblico", "10.0.0.9")).isEqualTo(200);
@@ -57,7 +61,7 @@ class RateLimitFilterTest {
 
     @Test
     void endpointNonElencato_nonVieneMaiLimitato() throws Exception {
-        RateLimitFilter filtro = new RateLimitFilter();
+        RateLimitFilter filtro = new RateLimitFilter(PERMISSIVO_DEFAULT, STRETTO_DEFAULT);
 
         for (int i = 0; i < 100; i++) {
             assertThat(eseguiRichiesta(filtro, "GET", "/api/v1/utenti/me", "10.0.0.7")).isEqualTo(200);
@@ -66,7 +70,7 @@ class RateLimitFilterTest {
 
     @Test
     void rispostaTooManyRequests_haRetryAfterEBodyJsonCoerente() throws Exception {
-        RateLimitFilter filtro = new RateLimitFilter();
+        RateLimitFilter filtro = new RateLimitFilter(PERMISSIVO_DEFAULT, STRETTO_DEFAULT);
         for (int i = 0; i < 8; i++) {
             eseguiRichiesta(filtro, "GET", "/api/v1/utenti/verifica-email", "10.0.0.11");
         }
