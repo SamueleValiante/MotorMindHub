@@ -200,7 +200,7 @@ export default function HomePage() {
         </div>
         <Link
           href="/diventa-autore"
-          className="shrink-0 rounded-md bg-ember px-6 py-3 font-heading text-sm font-bold uppercase tracking-wide text-paper"
+          className="shrink-0 rounded-md bg-ember px-6 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
         >
           Candidati come autore
         </Link>

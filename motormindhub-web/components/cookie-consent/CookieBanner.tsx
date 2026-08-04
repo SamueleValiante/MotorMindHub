@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useCookieConsentStore } from "@/lib/cookie-consent/store";
+import { useFocusTrap } from "@/lib/shared/useFocusTrap";
 
 const primaryButtonClassName =
   "rounded-md bg-amber px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wide text-asphalt";
@@ -41,10 +42,6 @@ export function CookieBanner() {
     hydrate();
   }, [hydrate]);
 
-  if (status === "decided" && !panelOpen) {
-    return null;
-  }
-
   // Transizioni esplicite invece di un effect che sincronizza lo stato
   // locale su panelOpen: sia perché più corretto (nessun setState in un
   // effect), sia perché il componente resta montato anche quando ritorna
@@ -67,6 +64,26 @@ export function CookieBanner() {
     setShowCustomize(false);
   };
 
+  // Non un semplice dialog: e' un meccanismo di consenso legale (RNF6.1-RNF6.4,
+  // provvedimento Garante Privacy 8 luglio 2021). Escape equivale a "Rifiuta tutti",
+  // mai a un'accettazione silenziosa (Art. 4(11)/7 GDPR, Considerando 32: silenzio o
+  // inattivita' non costituiscono consenso) e mai a "resta aperto" (ambiguo, incoerente
+  // con gli altri modali dell'app). Vale identico da entrambe le sotto-viste.
+  const isOpen = !(status === "decided" && !panelOpen);
+  const containerRef = useFocusTrap<HTMLDivElement>({
+    isOpen,
+    onClose: handleRejectAll,
+    // Il passaggio compatta <-> personalizza non chiude/riapre il banner
+    // (isOpen resta true): senza focusKey il focus non si sposterebbe mai
+    // sul nuovo marker [data-focus-trap-initial] della sotto-vista appena
+    // mostrata.
+    focusKey: showCustomize,
+  });
+
+  if (!isOpen) {
+    return null;
+  }
+
   return (
     // pointer-events-none sul wrapper: è full-width (inset-x-0) anche se la
     // card visibile è più stretta e centrata, quindi senza questo la fascia
@@ -75,7 +92,11 @@ export function CookieBanner() {
     // lunghi di quello di login, cfr. e2e/register-confirm.spec.ts).
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center p-4">
       <div
+        ref={containerRef}
         data-testid="cookie-banner"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Preferenze cookie"
         className="pointer-events-auto w-full max-w-4xl rounded-xl bg-carbon p-6 shadow-xl"
       >
         {!showCustomize ? (
@@ -96,6 +117,7 @@ export function CookieBanner() {
               <button
                 type="button"
                 onClick={handleOpenCustomize}
+                data-focus-trap-initial
                 className={tertiaryButtonClassName}
               >
                 Personalizza
@@ -118,7 +140,11 @@ export function CookieBanner() {
           </div>
         ) : (
           <div className="flex flex-col gap-4">
-            <h2 className="font-heading text-base font-bold uppercase tracking-wide text-paper">
+            <h2
+              tabIndex={-1}
+              data-focus-trap-initial
+              className="font-heading text-base font-bold uppercase tracking-wide text-paper outline-none"
+            >
               Personalizza le preferenze cookie
             </h2>
 

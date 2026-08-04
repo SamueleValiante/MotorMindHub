@@ -173,7 +173,6 @@ function TagInput({ tags, onChange }: { tags: string[]; onChange: (next: string[
 
       {adding ? (
         <input
-          autoFocus
           type="text"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}

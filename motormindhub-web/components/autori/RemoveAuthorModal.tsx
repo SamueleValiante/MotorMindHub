@@ -46,6 +46,12 @@ export function RemoveAuthorModal({ autore, onCancel, onRemoved }: RemoveAuthorM
         </p>
 
         <div className="mt-6 flex flex-col gap-3">
+          {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- falso
+              positivo: la regola cerca testo accessibile fino a profondita' 2
+              (default), qui il testo e' a profondita' 3 (label > span > span >
+              testo). Il controllo e' annidato correttamente (implicit label,
+              screen reader lo associa) e il testo c'e' davvero - verificato
+              leggendo mayHaveAccessibleLabel.js della regola, non per assunzione. */}
           <label className="flex cursor-pointer items-start gap-3">
             <input
               type="radio"
@@ -59,6 +65,7 @@ export function RemoveAuthorModal({ autore, onCancel, onRemoved }: RemoveAuthorM
               <span className="text-fog"> — resteranno pubblicati, l&apos;autore perde solo l&apos;accesso all&apos;area riservata</span>
             </span>
           </label>
+          {/* eslint-disable-next-line jsx-a11y/label-has-associated-control -- stesso falso positivo di sopra (testo a profondita' 3). */}
           <label className="flex cursor-pointer items-start gap-3">
             <input
               type="radio"
@@ -87,7 +94,7 @@ export function RemoveAuthorModal({ autore, onCancel, onRemoved }: RemoveAuthorM
             type="button"
             onClick={() => void handleConfirm()}
             disabled={pending}
-            className="rounded-md bg-ember px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wide text-paper disabled:opacity-50"
+            className="rounded-md bg-ember px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-50"
           >
             {pending ? "Rimozione…" : "Conferma rimozione"}
           </button>

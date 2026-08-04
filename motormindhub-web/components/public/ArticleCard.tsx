@@ -23,7 +23,15 @@ interface ArticleCardProps {
 
 const cardContentClassName = "flex flex-col gap-3";
 
-function ArticleCardContent({ articolo }: { articolo: ArticleSummary }) {
+/**
+ * `muted`: usato dalla variante non-linkable sotto invece di un wrapper
+ * `opacity-60` — l'opacita' riduceva il contrasto effettivo di fog ben
+ * sotto soglia WCAG (verificato in audit: 2.09:1, il peggiore trovato sul
+ * sito), indipendentemente da quanto fosse corretto il colore base.
+ * text-fog-disabled e' un colore dedicato pensato per restare conforme
+ * anche qui, non fog attenuato via opacita' - cfr. docs/DESIGN_SYSTEM.md.
+ */
+function ArticleCardContent({ articolo, muted = false }: { articolo: ArticleSummary; muted?: boolean }) {
   return (
     <>
       <div className="aspect-video w-full overflow-hidden rounded-md bg-surface-raised">
@@ -44,11 +52,13 @@ function ArticleCardContent({ articolo }: { articolo: ArticleSummary }) {
       <div>
         <h3 className="font-heading text-lg font-bold text-paper">{articolo.titolo}</h3>
         {articolo.estratto && (
-          <p className="mt-1 line-clamp-2 text-sm text-fog">{articolo.estratto}</p>
+          <p className={`mt-1 line-clamp-2 text-sm ${muted ? "text-fog-disabled" : "text-fog"}`}>
+            {articolo.estratto}
+          </p>
         )}
       </div>
 
-      <div className="flex items-center gap-2 text-xs text-fog">
+      <div className={`flex items-center gap-2 text-xs ${muted ? "text-fog-disabled" : "text-fog"}`}>
         <span>{articolo.autoreNome}</span>
         <span aria-hidden="true">·</span>
         <span className="flex items-center gap-1">
@@ -77,14 +87,15 @@ export function ArticleCard({ articolo, action, badge, linkable = true }: Articl
           <ArticleCardContent articolo={articolo} />
         </Link>
       ) : (
-        // opacity + cursor-default: senza un segnale visivo esplicito, una
-        // card identica alle altre ma non cliccabile sembra semplicemente
-        // rotta, non intenzionalmente non interattiva.
-        <div
-          className={`${cardContentClassName} cursor-default opacity-60`}
-          title={NON_LINKABLE_REASON}
-        >
-          <ArticleCardContent articolo={articolo} />
+        // cursor-default + title: senza un segnale esplicito, una card
+        // identica alle altre ma non cliccabile sembra semplicemente
+        // rotta, non intenzionalmente non interattiva. Non piu' un
+        // wrapper opacity-60 (rompeva il contrasto del testo fog al suo
+        // interno, cfr. ArticleCardContent): il testo muted usa un colore
+        // dedicato invece, l'assenza di dimming generale sull'immagine/
+        // badge e' compensata dal cursor-default + tooltip + etichetta sotto.
+        <div className={`${cardContentClassName} cursor-default`} title={NON_LINKABLE_REASON}>
+          <ArticleCardContent articolo={articolo} muted />
         </div>
       )}
 

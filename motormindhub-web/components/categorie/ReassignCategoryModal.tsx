@@ -97,7 +97,7 @@ export function ReassignCategoryModal({
             type="button"
             onClick={() => void handleConfirm()}
             disabled={pending || destinazioneId === null}
-            className="rounded-md bg-ember px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wide text-paper disabled:opacity-50"
+            className="rounded-md bg-ember px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-50"
           >
             {pending ? "Eliminazione…" : "Elimina definitivamente"}
           </button>

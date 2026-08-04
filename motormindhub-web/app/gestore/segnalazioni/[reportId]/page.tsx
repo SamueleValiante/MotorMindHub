@@ -131,7 +131,7 @@ export default function DettaglioSegnalazionePage() {
             type="button"
             onClick={() => setSuspendModalOpen(true)}
             disabled={pending !== null || nonLavorabile}
-            className="rounded-md bg-ember px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-paper disabled:opacity-50"
+            className="rounded-md bg-ember px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-50"
           >
             Scala a sospensione
           </button>

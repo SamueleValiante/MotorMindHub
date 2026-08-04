@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ShieldDataIcon } from "@/components/account/icons";
 import { MOTIVAZIONI_SOSPENSIONE, type MotivazioneSospensione, type SuspensionInput } from "@/lib/amministrazioneUtenti/types";
+import { useFocusTrap } from "@/lib/shared/useFocusTrap";
 
 interface SuspendAccountModalProps {
   targetNome: string;
@@ -22,6 +23,8 @@ export function SuspendAccountModal({ targetNome, pending, onCancel, onConfirm }
 
   const durataValida = permanente || (/^\d+$/.test(durataGiorni) && Number(durataGiorni) > 0);
 
+  const containerRef = useFocusTrap<HTMLDivElement>({ isOpen: true, onClose: onCancel });
+
   const handleConfirm = () => {
     if (!durataValida) return;
     onConfirm({
@@ -33,12 +36,23 @@ export function SuspendAccountModal({ targetNome, pending, onCancel, onConfirm }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-asphalt/80 p-4">
-      <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-xl bg-carbon p-8 shadow-xl">
+      <div
+        ref={containerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sospendi-account-title"
+        className="w-full max-w-md rounded-xl bg-carbon p-8 shadow-xl"
+      >
         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-ember/10 text-ember">
           <ShieldDataIcon className="h-5 w-5" />
         </div>
 
-        <h2 className="mt-4 font-heading text-lg font-bold uppercase tracking-wide text-paper">
+        <h2
+          id="sospendi-account-title"
+          tabIndex={-1}
+          data-focus-trap-initial
+          className="mt-4 font-heading text-lg font-bold uppercase tracking-wide text-paper outline-none"
+        >
           Sospendi l&apos;account di &quot;{targetNome}&quot;
         </h2>
         <p className="mt-2 text-sm text-fog">
@@ -80,11 +94,15 @@ export function SuspendAccountModal({ targetNome, pending, onCancel, onConfirm }
         )}
 
         <div className="mt-4 flex flex-col gap-2">
-          <label className="font-heading text-xs font-semibold uppercase tracking-wide text-chrome">
+          <label
+            htmlFor="durata-sospensione"
+            className="font-heading text-xs font-semibold uppercase tracking-wide text-chrome"
+          >
             Durata sospensione
           </label>
           <div className="flex items-center gap-3">
             <input
+              id="durata-sospensione"
               type="number"
               min={1}
               value={durataGiorni}
@@ -118,7 +136,7 @@ export function SuspendAccountModal({ targetNome, pending, onCancel, onConfirm }
             type="button"
             onClick={handleConfirm}
             disabled={pending || !durataValida}
-            className="rounded-md bg-ember px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wide text-paper disabled:opacity-50"
+            className="rounded-md bg-ember px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-50"
           >
             {pending ? "Sospensione…" : "Conferma sospensione"}
           </button>

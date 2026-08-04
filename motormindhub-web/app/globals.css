@@ -3,10 +3,21 @@
 @theme {
   --color-asphalt: #0A0B0D;
   --color-carbon: #16181D;
-  --color-ember: #D6401A;
+  /* Corretto da #D6401A (falliva WCAG AA come testo su carbon/asphalt E
+     come sfondo con testo paper sopra - due direzioni opposte che un solo
+     valore non risolveva; i bottoni bg-ember sono passati a text-asphalt
+     invece di text-paper per lo stesso motivo, cfr. docs/DESIGN_SYSTEM.md). */
+  --color-ember: #EE471D;
   --color-amber: #FFB800;
   --color-chrome: #B8BEC7;
-  --color-fog: #6B7178;
+  /* Corretto da #6B7178 (falliva WCAG AA 4.5:1 su tutti gli sfondi scuri
+     della palette, cfr. docs/DESIGN_SYSTEM.md per i rapporti misurati). */
+  --color-fog: #888E95;
+  /* Colore dedicato per testo muto in stato disabled, non fog con opacita'
+     ridotta: l'opacita' e' il meccanismo che rompe il contrasto (anche col
+     fog corretto sopra, il 60% scenderebbe sotto soglia), non il colore
+     base - cfr. docs/DESIGN_SYSTEM.md. */
+  --color-fog-disabled: #8C8C8C;
   --color-paper: #EDEEF0;
   /* "Success green", palette di docs/DESIGN_SYSTEM.md. */
   --color-success: #3FB27F;

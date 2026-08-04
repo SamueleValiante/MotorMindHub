@@ -147,7 +147,7 @@ export default function SchedaUtentePage() {
             <button
               type="button"
               onClick={() => setPopup("sospendi")}
-              className="rounded-md bg-ember px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-paper"
+              className="rounded-md bg-ember px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
             >
               Sospendi account
             </button>

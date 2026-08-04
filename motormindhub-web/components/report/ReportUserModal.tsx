@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useReportModalStore } from "@/lib/report/store";
 import { useAuthStore } from "@/lib/auth/store";
 import { reportUser } from "@/lib/report/reportUser";
+import { useFocusTrap } from "@/lib/shared/useFocusTrap";
 import { FlagIcon } from "./icons";
 
 /**
@@ -34,14 +35,7 @@ export function ReportUserModal() {
     }
   }, [isOpen, authStatus, close, router]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close();
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isOpen, close]);
+  const containerRef = useFocusTrap<HTMLDivElement>({ isOpen, onClose: close });
 
   if (!isOpen || segnalatoId === null || authStatus !== "authenticated") {
     return null;
@@ -59,11 +53,23 @@ export function ReportUserModal() {
   };
 
   return (
+    // Il backdrop non e' un elemento interattivo con cui l'utente deve interagire da tastiera:
+    // e' il "click fuori per chiudere" per il mouse. L'equivalente da tastiera esiste gia' ed e'
+    // funzionalmente migliore di un keydown qui sotto (che richiederebbe il focus su questo div,
+    // mai raggiungibile via Tab) - Escape e' gestito da useFocusTrap (listener a livello di
+    // document, dentro il container del dialog) indipendentemente da dove sia il focus.
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-asphalt/80 p-4"
       onClick={close}
     >
+      {/* Non un handler funzionale: solo un guard che ferma la propagazione del click verso il
+          backdrop (altrimenti cliccare dentro il modale lo chiuderebbe). Nessuna azione da
+          replicare da tastiera, la propagazione degli eventi click non si applica alla
+          navigazione da tastiera. */}
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions */}
       <div
+        ref={containerRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="report-modal-title"
@@ -76,7 +82,9 @@ export function ReportUserModal() {
 
         <h2
           id="report-modal-title"
-          className="mt-4 font-heading text-xl font-bold uppercase tracking-wide text-paper"
+          tabIndex={-1}
+          data-focus-trap-initial
+          className="mt-4 font-heading text-xl font-bold uppercase tracking-wide text-paper outline-none"
         >
           Segnala il profilo di &quot;{segnalatoNome ?? "questo utente"}&quot;
         </h2>
@@ -113,7 +121,7 @@ export function ReportUserModal() {
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-md bg-ember px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-paper disabled:opacity-60"
+              className="rounded-md bg-ember px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-60"
             >
               {submitting ? "Invio in corso…" : "Invia segnalazione"}
             </button>
