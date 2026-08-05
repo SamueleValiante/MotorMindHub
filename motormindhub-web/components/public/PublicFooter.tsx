@@ -12,9 +12,9 @@ const SUPPORTO_EMAIL = "supporto@motormindhub.it";
  * registrazione/page.tsx, /cookie-policy nel CookieBanner, /informativa-privacy
  * anch'essa in registrazione/page.tsx — checkbox di consenso RNF5.1).
  *
- * "Categorie" punta a /esplora (non una pagina dedicata: la navigazione per
- * categoria vive già lì, cfr. i link /esplora?categoriaIds=... in home) —
- * nessun mockup prevede una pagina pubblica /categorie separata.
+ * Nessuna voce "Categorie": puntava a /esplora, stessa destinazione di
+ * "Esplora articoli" con lo stesso filtro categoria già integrato — un
+ * secondo link identico non aggiungeva nulla, rimosso (qui e nell'header).
  *
  * "Diventa autore" rimosso (era un link morto, cfr. /diventa-autore prima
  * di questa modifica): nel dominio (RAD, UC_8/9/10) diventare autore è solo
@@ -53,9 +53,6 @@ export function PublicFooter() {
           </h3>
           <Link href="/esplora" className="text-sm text-chrome hover:text-amber">
             Esplora articoli
-          </Link>
-          <Link href="/esplora" className="text-sm text-chrome hover:text-amber">
-            Categorie
           </Link>
           <Link href="/chi-siamo" className="text-sm text-chrome hover:text-amber">
             Chi siamo
