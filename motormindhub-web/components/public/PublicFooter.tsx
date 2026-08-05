@@ -9,9 +9,17 @@ const SUPPORTO_EMAIL = "supporto@motormindhub.it";
 /**
  * Footer pubblico condiviso (mockup 01). Le colonne "Piattaforma" e
  * "Legale" puntano a pagine reali gia' referenziate altrove (/termini in
- * registrazione/page.tsx, /cookie-policy nel CookieBanner) o a rotte
- * previste ma non ancora costruite (stesso pattern gia' in uso in
- * AccountSidebar): nessuna e' una pagina finta, solo non ancora costruita.
+ * registrazione/page.tsx, /cookie-policy nel CookieBanner, /informativa-privacy
+ * anch'essa in registrazione/page.tsx — checkbox di consenso RNF5.1).
+ *
+ * "Categorie" punta a /esplora (non una pagina dedicata: la navigazione per
+ * categoria vive già lì, cfr. i link /esplora?categoriaIds=... in home) —
+ * nessun mockup prevede una pagina pubblica /categorie separata.
+ *
+ * "Diventa autore" rimosso (era un link morto, cfr. /diventa-autore prima
+ * di questa modifica): nel dominio (RAD, UC_8/9/10) diventare autore è solo
+ * su invito del Manager Autori, nessun flusso di candidatura self-service
+ * esiste da collegare.
  *
  * "Segnala un problema" e "Contatti" vanno a un mailto: nessun endpoint di
  * contatto/bug-report esiste nel backend, un link che apre il client di
@@ -46,11 +54,8 @@ export function PublicFooter() {
           <Link href="/esplora" className="text-sm text-chrome hover:text-amber">
             Esplora articoli
           </Link>
-          <Link href="/categorie" className="text-sm text-chrome hover:text-amber">
+          <Link href="/esplora" className="text-sm text-chrome hover:text-amber">
             Categorie
-          </Link>
-          <Link href="/diventa-autore" className="text-sm text-chrome hover:text-amber">
-            Diventa autore
           </Link>
           <Link href="/chi-siamo" className="text-sm text-chrome hover:text-amber">
             Chi siamo
@@ -67,8 +72,8 @@ export function PublicFooter() {
           <Link href="/cookie-policy" className="text-sm text-chrome hover:text-amber">
             Cookie Policy
           </Link>
-          <Link href="/privacy" className="text-sm text-chrome hover:text-amber">
-            Privacy
+          <Link href="/informativa-privacy" className="text-sm text-chrome hover:text-amber">
+            Informativa Privacy
           </Link>
           <Link href="/accessibilita" className="text-sm text-chrome hover:text-amber">
             Accessibilità

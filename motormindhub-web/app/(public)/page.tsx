@@ -90,12 +90,6 @@ export default function HomePage() {
             >
               Esplora gli articoli
             </Link>
-            <Link
-              href="/diventa-autore"
-              className="font-heading text-sm font-bold uppercase tracking-wide text-paper"
-            >
-              Scrivi per noi →
-            </Link>
           </div>
         </div>
 
@@ -188,22 +182,6 @@ export default function HomePage() {
         ) : (
           <p className="text-sm text-fog">Caricamento…</p>
         )}
-      </section>
-
-      {/* CTA diventa autore */}
-      <section className="mx-auto flex w-full max-w-6xl flex-col items-start gap-4 rounded-lg bg-carbon p-8 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="font-heading text-xs uppercase tracking-wide text-amber">Community autori</p>
-          <h2 className="font-heading text-xl font-bold uppercase tracking-wide text-paper">
-            Hai competenze da condividere?
-          </h2>
-        </div>
-        <Link
-          href="/diventa-autore"
-          className="shrink-0 rounded-md bg-ember px-6 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
-        >
-          Candidati come autore
-        </Link>
       </section>
     </div>
   );

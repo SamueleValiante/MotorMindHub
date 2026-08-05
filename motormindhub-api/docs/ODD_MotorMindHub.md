@@ -934,6 +934,8 @@ Nota trasversale emersa da un audit del frontend (gestione errori nelle mutation
 
 Rischio basso per le pagine di solo testo (legali, home), più concreto per Editor articolo e login/registrazione — sono le pagine con più campi di form e quindi più esposte a problemi di layout su viewport stretti.
 
+**Nessun flusso di autocandidatura per diventare Autore** — il sistema supporta solo inviti Manager-iniziati (`GestioneAutori.inviteAuthor`). Il CTA "Diventa Autore" è stato rimosso dal frontend perché non aveva un endpoint corrispondente, non per una scelta di prodotto esplicita.
+
 > **2.9 Debito tecnico noto — errorCode mancante su handleConflitto**
 
 Nota trasversale (non un contratto di un singolo metodo), non corretta in questa sessione. `GlobalExceptionHandler::handleConflitto` raggruppa sotto lo stesso 409, con `errorCode: null`, 9 eccezioni applicative distinte (11 classi concrete, alcune omonime in package diversi): `EmailGiaRegistrataException` (GestioneUtenti e GestioneAutori), `RichiestaCancellazioneEsistenteException`, `CategoriaGiaEsistenteException`, `CategoriaConSottocategorieException`, `ArticoloGiaSalvatoException`, `StatoArticoloNonValidoException` (GestioneArticoli e GestioneAutori), `InvitoGiaEsistenteException`, `StatoAccountNonValidoException`, `ContenutiInSospesoException`.

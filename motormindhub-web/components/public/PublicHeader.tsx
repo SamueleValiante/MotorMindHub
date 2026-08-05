@@ -9,8 +9,7 @@ import { BellIcon, MenuIcon, CloseIcon } from "./icons";
 
 const NAV_ITEMS = [
   { href: "/esplora", label: "Esplora" },
-  { href: "/categorie", label: "Categorie" },
-  { href: "/diventa-autore", label: "Diventa Autore" },
+  { href: "/esplora", label: "Categorie" },
   { href: "/chi-siamo", label: "Chi Siamo" },
 ];
 
@@ -38,7 +37,7 @@ export function PublicHeader() {
         <nav className="hidden items-center gap-6 md:flex">
           {NAV_ITEMS.map((item) => (
             <Link
-              key={item.href}
+              key={item.label}
               href={item.href}
               className="font-heading text-sm font-semibold uppercase tracking-wide text-chrome hover:text-amber"
             >
@@ -83,7 +82,7 @@ export function PublicHeader() {
           <nav className="flex flex-col gap-3">
             {NAV_ITEMS.map((item) => (
               <Link
-                key={item.href}
+                key={item.label}
                 href={item.href}
                 onClick={() => setMobileOpen(false)}
                 className="font-heading text-sm font-semibold uppercase tracking-wide text-chrome"

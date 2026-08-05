@@ -113,6 +113,7 @@ test.describe("Audit accessibilità (axe-core, WCAG 2.1 A+AA) — sola verifica"
       ["Chi Siamo", "/chi-siamo"],
       ["Cookie Policy", "/cookie-policy"],
       ["Termini", "/termini"],
+      ["Informativa Privacy", "/informativa-privacy"],
       ["Dichiarazione di Accessibilità", "/accessibilita"],
       ["Login", "/login"],
       ["Registrazione", "/registrazione"],

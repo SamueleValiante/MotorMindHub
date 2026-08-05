@@ -9,7 +9,12 @@ interface LegalPageLayoutProps {
   sections: LegalSection[];
 }
 
-/** Struttura condivisa dai 3 documenti legali (mockup 11/12/13): eyebrow, titolo, data, elenco di sezioni. */
+/**
+ * Struttura condivisa dai documenti legali: eyebrow, titolo, data, elenco
+ * di sezioni. Termini/Cookie Policy/Accessibilità seguono i mockup 11/12/13;
+ * Informativa Privacy (RNF5.1, Art. 13 GDPR) non ha un mockup dedicato —
+ * riusa comunque questo stesso layout per coerenza visiva con le altre.
+ */
 export function LegalPageLayout({ title, ultimoAggiornamento, sections }: LegalPageLayoutProps) {
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">

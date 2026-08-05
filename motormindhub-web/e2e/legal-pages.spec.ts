@@ -10,7 +10,7 @@ test.describe("Pagine legali statiche", () => {
     await expect(page.getByRole("heading", { name: "Cookie Policy" })).toBeVisible();
   });
 
-  test("i 4 link legali del footer portano davvero alle rispettive pagine", async ({ page }) => {
+  test("i 5 link legali del footer portano davvero alle rispettive pagine", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Rifiuta tutti" }).click();
     const footer = page.getByRole("contentinfo");
@@ -23,6 +23,11 @@ test.describe("Pagine legali statiche", () => {
     await footer.getByRole("link", { name: "Cookie Policy" }).click();
     await expect(page).toHaveURL(/\/cookie-policy$/);
     await expect(page.getByRole("heading", { name: "Cookie Policy" })).toBeVisible();
+
+    await page.goto("/");
+    await footer.getByRole("link", { name: "Informativa Privacy" }).click();
+    await expect(page).toHaveURL(/\/informativa-privacy$/);
+    await expect(page.getByRole("heading", { name: "Informativa Privacy" })).toBeVisible();
 
     await page.goto("/");
     await footer.getByRole("link", { name: "Accessibilità" }).click();
