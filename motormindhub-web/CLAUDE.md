@@ -57,3 +57,15 @@ export RATE_LIMIT_STRICT_CAPACITY_PER_MINUTE=1000000
 Senza, i test che creano molte categorie/articoli o registrano molti
 utenti in sequenza possono fallire con un 429 che assomiglia a un bug
 applicativo (es. "categoria non trovata dopo la creazione") ma non lo è.
+
+## Checklist di autoverifica prima di committare
+Prima di ogni commit, verifica con `git status --porcelain` che non
+restino file untracked referenziati da import/require nel codice appena
+modificato. Non fidarti che "il build locale passa" come prova
+sufficiente: la working directory locale ha sempre tutti i file anche
+quando git non li traccia, quindi build/tsc/test locali passano lo
+stesso — il problema emerge solo su un checkout pulito (CI, un altro
+collaboratore, un deploy). Già capitato due volte, lato backend
+(ConteggioArticoliPerAutore.java) e lato frontend (lib/shared/useFocusTrap.ts,
+importato da 5 componenti già committati ma mai aggiunto esso stesso —
+main è rimasto rotto su origin finché non è stato scoperto a posteriori).
