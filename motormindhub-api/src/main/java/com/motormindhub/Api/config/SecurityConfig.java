@@ -124,7 +124,16 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource(
             @Value("${app.cors.allowed-origins}") String allowedOrigins) {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
+        // trim() su ciascun elemento: Spring confronta l'Origin per uguaglianza esatta di stringa,
+        // uno spazio residuo attorno a una virgola o un a-capo finale (es. da un copia-incolla nella
+        // dashboard di un provider di hosting) farebbe fallire silenziosamente ogni confronto - un
+        // 403 indistinguibile da un valore completamente sbagliato. filter() scarta voci vuote da
+        // un'eventuale virgola finale/doppia.
+        List<String> origins = Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .toList();
+        configuration.setAllowedOrigins(origins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
