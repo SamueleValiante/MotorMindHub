@@ -27,6 +27,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -113,13 +114,17 @@ public class SecurityConfig {
     }
 
     /**
-     * Origin del front-end Next.js in sviluppo. Credentials abilitate perche' il front-end
-     * invia l'header Authorization (Bearer JWT) in richieste cross-origin.
+     * Origin/i del front-end Next.js, configurabili (app.cors.allowed-origins, default
+     * localhost:3000 per non rompere lo sviluppo locale) - elenco separato da virgole per
+     * ammettere piu' origini contemporaneamente (es. un dominio Vercel temporaneo insieme a un
+     * futuro dominio custom) senza ritoccare il codice una seconda volta. Credentials abilitate
+     * perche' il front-end invia l'header Authorization (Bearer JWT) in richieste cross-origin.
      */
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
+    public CorsConfigurationSource corsConfigurationSource(
+            @Value("${app.cors.allowed-origins}") String allowedOrigins) {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
