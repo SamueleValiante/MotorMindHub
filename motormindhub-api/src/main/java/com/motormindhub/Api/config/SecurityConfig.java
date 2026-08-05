@@ -7,6 +7,8 @@ import com.motormindhub.Api.security.RestAccessDeniedHandler;
 import com.motormindhub.Api.security.RestAuthenticationEntryPoint;
 import com.motormindhub.Api.security.UserDetailsServiceImpl;
 import jakarta.servlet.DispatcherType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
@@ -38,6 +40,8 @@ import java.util.List;
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
+
+    private static final Logger log = LoggerFactory.getLogger(SecurityConfig.class);
 
     // Path che espongono un unico metodo HTTP: permitAll sull'intero path e' sicuro.
     private static final String[] ENDPOINT_PUBBLICI = {
@@ -123,6 +127,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource(
             @Value("${app.cors.allowed-origins}") String allowedOrigins) {
+        // TEMPORANEO - diagnostica CORS_ALLOWED_ORIGINS su Railway, da rimuovere una volta chiarito.
+        // Le parentesi quadre rendono visibile a occhio uno spazio iniziale/finale nascosto nel
+        // valore risolto.
+        log.info("CORS allowed origins risolti: [{}]", allowedOrigins);
+
         CorsConfiguration configuration = new CorsConfiguration();
         // trim() su ciascun elemento: Spring confronta l'Origin per uguaglianza esatta di stringa,
         // uno spazio residuo attorno a una virgola o un a-capo finale (es. da un copia-incolla nella
