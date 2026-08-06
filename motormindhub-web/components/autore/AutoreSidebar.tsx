@@ -13,7 +13,7 @@ const NAV_ITEMS = [
   { href: "/autore/articoli", label: "I Miei Articoli", Icon: DocumentIcon },
   { href: "/autore/bozze", label: "Le Mie Bozze", Icon: PencilIcon },
   { href: "/autore/categorie", label: "Categorie", Icon: LayersIcon },
-  { href: "/account/impostazioni", label: "Impostazioni Profilo", Icon: PersonIcon },
+  { href: "/autore/impostazioni", label: "Impostazioni Profilo", Icon: PersonIcon },
 ];
 
 /**

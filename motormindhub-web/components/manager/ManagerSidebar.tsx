@@ -14,7 +14,7 @@ const NAV_ITEMS = [
   { href: "/manager/autori", label: "Gestione Autori", Icon: PeopleIcon },
   { href: "/manager/categorie", label: "Gestione Categorie", Icon: LayersIcon },
   { href: "/manager/articoli-in-attesa", label: "Articoli in Attesa", Icon: DocumentIcon },
-  { href: "/account/impostazioni", label: "Impostazioni Profilo", Icon: PersonIcon },
+  { href: "/manager/impostazioni", label: "Impostazioni Profilo", Icon: PersonIcon },
 ];
 
 /**
