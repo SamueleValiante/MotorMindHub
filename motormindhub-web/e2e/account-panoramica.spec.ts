@@ -31,11 +31,15 @@ test.describe("Panoramica / Impostazioni profilo", () => {
     await page.goto(`/conferma-email?token=${token}`);
     await expect(page.getByRole("heading", { name: "Account attivato" })).toBeVisible();
 
-    // Login -> il redirect post-login punta a /account: prima di questo
-    // punto era una pagina inesistente (nessun page.tsx), qui verifichiamo
-    // che ora atterri su una Panoramica reale, non su un vuoto/404.
+    // Il redirect post-login per ISCRITTO punta alla home pubblica (/), non
+    // più ad /account (cfr. lib/auth/roleRedirect.ts) — /account resta
+    // comunque raggiungibile (qui via navigazione diretta, nell'app reale
+    // dal menu utente in header) e questo test verifica che la Panoramica
+    // sia reale, non un vuoto/404: prima di quella pagina non esisteva
+    // proprio (nessun page.tsx).
     await loginViaUi(page, email, PASSWORD);
-    await expect(page).toHaveURL(/\/account$/);
+    await expect(page).toHaveURL(/\/$/);
+    await page.goto("/account");
     await expect(page.getByRole("heading", { name: "Ciao, Marco" })).toBeVisible();
     await expect(page.getByText("Iscritto dal")).toBeVisible();
     await expect(page.getByRole("main").getByText("Marco Verdi")).toBeVisible();

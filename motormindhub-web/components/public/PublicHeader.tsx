@@ -8,6 +8,7 @@ import { UserMenu } from "./UserMenu";
 import { BellIcon, MenuIcon, CloseIcon } from "./icons";
 
 const NAV_ITEMS = [
+  { href: "/", label: "Home" },
   { href: "/esplora", label: "Esplora" },
   { href: "/chi-siamo", label: "Chi Siamo" },
 ];

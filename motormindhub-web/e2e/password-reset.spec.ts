@@ -43,11 +43,12 @@ test.describe("Reimposta password", () => {
     );
 
     // Verifica che la nuova password funzioni davvero per il login (non solo che la UI lo dica).
+    // ISCRITTO -> redirect post-login alla home pubblica (cfr. lib/auth/roleRedirect.ts).
     await page.goto("/login");
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Password").fill(NEW_PASSWORD);
     await page.getByRole("button", { name: "Accedi" }).click();
-    await expect(page).toHaveURL(/\/account$/);
+    await expect(page).toHaveURL(/\/$/);
   });
 
   test("password e conferma non coincidenti: toast di errore, resta sul form", async ({

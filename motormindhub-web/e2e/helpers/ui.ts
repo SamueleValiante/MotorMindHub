@@ -12,9 +12,9 @@ function decodeAccessTokenPayload(token: string): DecodedAccessToken {
 }
 
 // Rispecchia ROLE_HOME_PATH (lib/auth/roleRedirect.ts): il redirect post-login
-// dipende dal ruolo, non è sempre /account.
+// dipende dal ruolo, non è sempre /account (ISCRITTO va alla home pubblica).
 const ROLE_HOME_PATH: Record<string, string> = {
-  ISCRITTO: "/account",
+  ISCRITTO: "/",
   AUTORE: "/autore",
   MANAGER_AUTORI: "/manager",
   GESTORE_UTENTI: "/gestore",

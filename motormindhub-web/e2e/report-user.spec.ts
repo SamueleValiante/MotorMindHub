@@ -59,10 +59,15 @@ test.describe("Form segnalazione", () => {
     await loginViaUi(page, reporter.email, reporter.password);
     await page.goto(`/qa/report-user?segnalatoId=${targetId}`, { waitUntil: "domcontentloaded" });
 
+    // Nome scoped esplicitamente: senza consenso cookie deciso in questo test
+    // (a differenza degli altri in questo file) il CookieBanner è visibile ed
+    // è anch'esso un role="dialog" (cfr. useFocusTrap) — un selettore nudo
+    // risulterebbe ambiguo tra i due.
+    const reportDialog = page.getByRole("dialog", { name: /Segnala il profilo/ });
     await page.getByRole("button", { name: "Segnala profilo" }).click();
-    await expect(page.getByRole("dialog")).toBeVisible();
+    await expect(reportDialog).toBeVisible();
 
     await page.getByRole("button", { name: "Annulla" }).click();
-    await expect(page.getByRole("dialog")).not.toBeVisible();
+    await expect(reportDialog).not.toBeVisible();
   });
 });

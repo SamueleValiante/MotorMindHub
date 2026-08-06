@@ -31,7 +31,7 @@ test.describe("Login", () => {
   });
 
   const roleRedirects: Array<[TestRuolo, string]> = [
-    ["ISCRITTO", "/account"],
+    ["ISCRITTO", "/"],
     ["AUTORE", "/autore"],
     ["MANAGER_AUTORI", "/manager"],
     ["GESTORE_UTENTI", "/gestore"],
