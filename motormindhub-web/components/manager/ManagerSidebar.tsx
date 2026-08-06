@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { Logo } from "@/components/brand/Logo";
 import { useCurrentUser } from "@/lib/auth/useCurrentUser";
 import { logout } from "@/lib/auth/logout";
-import { HouseIcon, LogoutIcon } from "@/components/account/icons";
+import { HouseIcon, LogoutIcon, PersonIcon } from "@/components/account/icons";
 import { DocumentIcon, LayersIcon } from "@/components/autore/icons";
 import { PeopleIcon } from "./icons";
 
@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { href: "/manager/autori", label: "Gestione Autori", Icon: PeopleIcon },
   { href: "/manager/categorie", label: "Gestione Categorie", Icon: LayersIcon },
   { href: "/manager/articoli-in-attesa", label: "Articoli in Attesa", Icon: DocumentIcon },
+  { href: "/account/impostazioni", label: "Impostazioni Profilo", Icon: PersonIcon },
 ];
 
 /**

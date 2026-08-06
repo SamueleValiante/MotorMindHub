@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { Logo } from "@/components/brand/Logo";
 import { useCurrentUser } from "@/lib/auth/useCurrentUser";
 import { logout } from "@/lib/auth/logout";
-import { HouseIcon, LogoutIcon } from "@/components/account/icons";
+import { HouseIcon, LogoutIcon, PersonIcon } from "@/components/account/icons";
 import { DocumentIcon, PencilIcon, LayersIcon } from "./icons";
 
 const NAV_ITEMS = [
@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { href: "/autore/articoli", label: "I Miei Articoli", Icon: DocumentIcon },
   { href: "/autore/bozze", label: "Le Mie Bozze", Icon: PencilIcon },
   { href: "/autore/categorie", label: "Categorie", Icon: LayersIcon },
+  { href: "/account/impostazioni", label: "Impostazioni Profilo", Icon: PersonIcon },
 ];
 
 /**
