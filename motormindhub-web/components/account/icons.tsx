@@ -64,6 +64,15 @@ export function LogoutIcon({ className }: IconProps) {
   );
 }
 
+export function ArrowLeftIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M19 12H5" />
+      <path d="M11 6l-6 6 6 6" />
+    </svg>
+  );
+}
+
 export function WarningIcon({ className }: IconProps) {
   return (
     <svg {...base} className={className}>
