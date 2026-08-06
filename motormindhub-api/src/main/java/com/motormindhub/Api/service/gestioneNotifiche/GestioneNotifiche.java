@@ -53,11 +53,22 @@ public class GestioneNotifiche {
     public GestioneNotifiche(JavaMailSender mailSender,
                               @Value("${app.mail.from}") String mittente,
                               @Value("${app.frontend-base-url}") String frontendBaseUrl,
-                              @Value("${app.mail.notifiche-interne-gestore-utenti}") String notificheInterneGestoreUtenti) {
+                              @Value("${app.mail.notifiche-interne-gestore-utenti}") String notificheInterneGestoreUtenti,
+                              @Value("${spring.mail.host}") String mailHostDiagnostico,
+                              @Value("${spring.mail.port}") String mailPortDiagnostico,
+                              @Value("${spring.mail.properties.mail.smtp.auth}") String mailAuthDiagnostico) {
         this.mailSender = mailSender;
         this.mittente = mittente;
         this.frontendBaseUrl = frontendBaseUrl;
         this.notificheInterneGestoreUtenti = notificheInterneGestoreUtenti;
+        // TEMPORANEO - diagnostica invio email non recapitate in produzione: verifica se
+        // spring.mail.host risolve davvero al relay Postmark o e' rimasto sul default locale
+        // (localhost:1025, Mailpit) perche' le variabili MAIL_* non sono impostate su Railway - in
+        // quel caso il container prova a connettersi a un Mailpit che li' non esiste, fallisce, e
+        // GestioneNotifiche.invia lo logga (catch MailException) senza che nessuno lo veda. Da
+        // rimuovere una volta chiarita la causa.
+        log.info("Configurazione mail risolta: host=[{}] port=[{}] auth=[{}] mittente=[{}]",
+                mailHostDiagnostico, mailPortDiagnostico, mailAuthDiagnostico, mittente);
     }
 
     /**

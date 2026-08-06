@@ -51,7 +51,8 @@ class GestioneNotificheTest {
 
     @BeforeEach
     void setUp() {
-        gestioneNotifiche = new GestioneNotifiche(mailSender, MITTENTE, FRONTEND_BASE_URL, NOTIFICHE_INTERNE);
+        gestioneNotifiche = new GestioneNotifiche(mailSender, MITTENTE, FRONTEND_BASE_URL, NOTIFICHE_INTERNE,
+                "localhost", "1025", "false");
     }
 
     @Test
