@@ -10,208 +10,176 @@ import com.motormindhub.Api.events.DataExportReadyEvent;
 import com.motormindhub.Api.events.PasswordResetRequestedEvent;
 import com.motormindhub.Api.events.RichiestaModificaProfiloEvent;
 import com.motormindhub.Api.events.UtenteRegistratoEvent;
-import jakarta.mail.internet.MimeMessage;
-import jakarta.mail.internet.MimeMultipart;
+import com.motormindhub.Api.service.gestioneNotifiche.specific.EmailSender;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.mail.MailSendException;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.JavaMailSenderImpl;
+
+import java.nio.charset.StandardCharsets;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * Un test per ciascun listener di GestioneNotifiche (ODD 2.6): non esistono contratti OCL formali
  * (il sottosistema non ha stato persistente proprio), quindi ogni test verifica solo che, ricevuto
- * l'evento, venga inviata un'email al destinatario atteso con oggetto/contenuto coerenti - non la
- * consegna reale (coperta invece da verifica manuale su Mailpit, localhost:8025).
+ * l'evento, venga chiamato EmailSender.send con destinatario/oggetto/corpo attesi - non la
+ * consegna reale ne' il meccanismo di trasporto (SMTP vs API HTTP), quello e' testato
+ * separatamente in SmtpEmailSenderTest/PostmarkApiEmailSenderTest.
  */
 @ExtendWith(MockitoExtension.class)
 class GestioneNotificheTest {
 
-    private static final String MITTENTE = "no-reply@motormindhub.it";
     private static final String FRONTEND_BASE_URL = "http://localhost:3000";
     private static final String NOTIFICHE_INTERNE = "gestore-utenti@motormindhub.it";
 
     @Mock
-    private JavaMailSender mailSender;
+    private EmailSender emailSender;
 
     private GestioneNotifiche gestioneNotifiche;
 
     @BeforeEach
     void setUp() {
-        gestioneNotifiche = new GestioneNotifiche(mailSender, MITTENTE, FRONTEND_BASE_URL, NOTIFICHE_INTERNE,
-                "localhost", "1025", "false");
+        gestioneNotifiche = new GestioneNotifiche(emailSender, FRONTEND_BASE_URL, NOTIFICHE_INTERNE);
     }
 
     @Test
     void onUserRegistered_inviaEmailDiVerificaConLinkToken() {
         gestioneNotifiche.onUserRegistered(new UtenteRegistratoEvent(1L, "marco@provider.it", "Marco", "tok-verifica"));
 
-        SimpleMailMessage messaggio = catturaMessaggioSemplice();
-        assertThat(messaggio.getTo()).containsExactly("marco@provider.it");
-        assertThat(messaggio.getFrom()).isEqualTo(MITTENTE);
-        assertThat(messaggio.getSubject()).containsIgnoringCase("conferma");
-        assertThat(messaggio.getText()).contains(FRONTEND_BASE_URL + "/conferma-email?token=tok-verifica");
+        EmailCatturata email = catturaEmailSemplice();
+        assertThat(email.destinatario()).isEqualTo("marco@provider.it");
+        assertThat(email.oggetto()).containsIgnoringCase("conferma");
+        assertThat(email.corpo()).contains(FRONTEND_BASE_URL + "/conferma-email?token=tok-verifica");
     }
 
     @Test
     void onPasswordResetRequested_inviaEmailConLinkDiRecupero() {
         gestioneNotifiche.onPasswordResetRequested(new PasswordResetRequestedEvent(1L, "marco@provider.it", "tok-reset"));
 
-        SimpleMailMessage messaggio = catturaMessaggioSemplice();
-        assertThat(messaggio.getTo()).containsExactly("marco@provider.it");
-        assertThat(messaggio.getText()).contains(FRONTEND_BASE_URL + "/reimposta-password?token=tok-reset");
+        EmailCatturata email = catturaEmailSemplice();
+        assertThat(email.destinatario()).isEqualTo("marco@provider.it");
+        assertThat(email.corpo()).contains(FRONTEND_BASE_URL + "/reimposta-password?token=tok-reset");
     }
 
     @Test
     void onAuthorInvited_inviaEmailDiInvitoConLinkToken() {
         gestioneNotifiche.onAuthorInvited(new AutoreInvitatoEvent(1L, "Giulia", "giulia@provider.it", "tok-invito"));
 
-        SimpleMailMessage messaggio = catturaMessaggioSemplice();
-        assertThat(messaggio.getTo()).containsExactly("giulia@provider.it");
-        assertThat(messaggio.getText()).contains(FRONTEND_BASE_URL + "/inviti/tok-invito/accetta");
+        EmailCatturata email = catturaEmailSemplice();
+        assertThat(email.destinatario()).isEqualTo("giulia@provider.it");
+        assertThat(email.corpo()).contains(FRONTEND_BASE_URL + "/inviti/tok-invito/accetta");
     }
 
     @Test
     void onArticleReviewed_inviaEmailDiApprovazione_quandoApprovato() {
         gestioneNotifiche.onArticleReviewed(new ArticoloRecensitoEvent(10L, 1L, "autore@provider.it", true, null));
 
-        SimpleMailMessage messaggio = catturaMessaggioSemplice();
-        assertThat(messaggio.getTo()).containsExactly("autore@provider.it");
-        assertThat(messaggio.getSubject()).containsIgnoringCase("approvato");
+        EmailCatturata email = catturaEmailSemplice();
+        assertThat(email.destinatario()).isEqualTo("autore@provider.it");
+        assertThat(email.oggetto()).containsIgnoringCase("approvato");
     }
 
     @Test
     void onArticleReviewed_inviaEmailDiRifiutoConMotivazione_quandoRifiutato() {
         gestioneNotifiche.onArticleReviewed(new ArticoloRecensitoEvent(10L, 1L, "autore@provider.it", false, "Fonti non verificabili"));
 
-        SimpleMailMessage messaggio = catturaMessaggioSemplice();
-        assertThat(messaggio.getSubject()).containsIgnoringCase("rifiutato");
-        assertThat(messaggio.getText()).contains("Fonti non verificabili");
+        EmailCatturata email = catturaEmailSemplice();
+        assertThat(email.oggetto()).containsIgnoringCase("rifiutato");
+        assertThat(email.corpo()).contains("Fonti non verificabili");
     }
 
     @Test
     void onAccountSuspended_inviaEmailConMotivazioneEDurata() {
         gestioneNotifiche.onAccountSuspended(new AccountSospesoEvent(1L, "paolo@provider.it", "Contenuti inappropriati", 30));
 
-        SimpleMailMessage messaggio = catturaMessaggioSemplice();
-        assertThat(messaggio.getTo()).containsExactly("paolo@provider.it");
-        assertThat(messaggio.getText()).contains("Contenuti inappropriati").contains("30 giorni");
+        EmailCatturata email = catturaEmailSemplice();
+        assertThat(email.destinatario()).isEqualTo("paolo@provider.it");
+        assertThat(email.corpo()).contains("Contenuti inappropriati").contains("30 giorni");
     }
 
     @Test
     void onAccountSuspended_indicaSospensionePermanente_quandoDurataNulla() {
         gestioneNotifiche.onAccountSuspended(new AccountSospesoEvent(1L, "paolo@provider.it", "Violazione grave", null));
 
-        SimpleMailMessage messaggio = catturaMessaggioSemplice();
-        assertThat(messaggio.getText()).containsIgnoringCase("tempo indeterminato");
+        EmailCatturata email = catturaEmailSemplice();
+        assertThat(email.corpo()).containsIgnoringCase("tempo indeterminato");
     }
 
     @Test
     void onAccountReactivated_inviaEmailDiRiattivazione() {
         gestioneNotifiche.onAccountReactivated(new AccountRiattivatoEvent(1L, "paolo@provider.it"));
 
-        SimpleMailMessage messaggio = catturaMessaggioSemplice();
-        assertThat(messaggio.getTo()).containsExactly("paolo@provider.it");
-        assertThat(messaggio.getSubject()).containsIgnoringCase("riattivato");
+        EmailCatturata email = catturaEmailSemplice();
+        assertThat(email.destinatario()).isEqualTo("paolo@provider.it");
+        assertThat(email.oggetto()).containsIgnoringCase("riattivato");
     }
 
     @Test
     void onReportResolutionRequested_inviaEmailConGiorniPerLaModifica() {
         gestioneNotifiche.onReportResolutionRequested(new RichiestaModificaProfiloEvent(2L, "xracer@provider.it", 7));
 
-        SimpleMailMessage messaggio = catturaMessaggioSemplice();
-        assertThat(messaggio.getTo()).containsExactly("xracer@provider.it");
-        assertThat(messaggio.getText()).contains("7 giorni");
+        EmailCatturata email = catturaEmailSemplice();
+        assertThat(email.destinatario()).isEqualTo("xracer@provider.it");
+        assertThat(email.corpo()).contains("7 giorni");
     }
 
     @Test
     void onBruteForceLockout_inviaEmailConLinkDiSblocco() {
         gestioneNotifiche.onBruteForceLockout(new BruteForceLockoutEvent(1L, "marco@provider.it", "tok-sblocco"));
 
-        SimpleMailMessage messaggio = catturaMessaggioSemplice();
-        assertThat(messaggio.getTo()).containsExactly("marco@provider.it");
-        assertThat(messaggio.getText()).contains(FRONTEND_BASE_URL + "/sblocco-account?token=tok-sblocco");
+        EmailCatturata email = catturaEmailSemplice();
+        assertThat(email.destinatario()).isEqualTo("marco@provider.it");
+        assertThat(email.corpo()).contains(FRONTEND_BASE_URL + "/sblocco-account?token=tok-sblocco");
     }
 
     @Test
     void onAccountCancellato_inviaConfermaAllUtenteECopiaInternaAlGestore() {
         gestioneNotifiche.onAccountCancellato(new AccountCancellatoEvent(7L, "email-originale@provider.it"));
 
-        ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
-        verify(mailSender, times(2)).send(captor.capture());
-        var messaggi = captor.getAllValues();
+        ArgumentCaptor<String> destinatari = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> oggetti = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> corpi = ArgumentCaptor.forClass(String.class);
+        verify(emailSender, times(2)).send(destinatari.capture(), oggetti.capture(), corpi.capture());
 
-        assertThat(messaggi).anySatisfy(m -> {
-            assertThat(m.getTo()).containsExactly("email-originale@provider.it");
-            assertThat(m.getSubject()).containsIgnoringCase("conferma");
-        });
-        assertThat(messaggi).anySatisfy(m -> {
-            assertThat(m.getTo()).containsExactly(NOTIFICHE_INTERNE);
-            assertThat(m.getText()).contains("email-originale@provider.it").contains("7");
-        });
+        assertThat(destinatari.getAllValues()).containsExactlyInAnyOrder("email-originale@provider.it", NOTIFICHE_INTERNE);
+        assertThat(oggetti.getAllValues()).anySatisfy(o -> assertThat(o).containsIgnoringCase("conferma"));
+        assertThat(corpi.getAllValues()).anySatisfy(c -> assertThat(c).contains("email-originale@provider.it").contains("7"));
     }
 
     @Test
-    void onDataExportReady_inviaEmailConDatiEsportatiInAllegato() throws Exception {
-        when(mailSender.createMimeMessage()).thenReturn(nuovoMimeMessageReale());
+    void onDataExportReady_inviaEmailConDatiEsportatiInAllegato() {
+        String datiEsportati = "{\"nome\":\"Marco\",\"email\":\"marco@provider.it\"}";
+        gestioneNotifiche.onDataExportReady(new DataExportReadyEvent(1L, "marco@provider.it", datiEsportati));
 
-        gestioneNotifiche.onDataExportReady(new DataExportReadyEvent(1L, "marco@provider.it",
-                "{\"nome\":\"Marco\",\"email\":\"marco@provider.it\"}"));
+        ArgumentCaptor<String> destinatario = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> oggetto = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> corpo = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> allegatoNome = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<byte[]> allegatoContenuto = ArgumentCaptor.forClass(byte[].class);
+        verify(emailSender).send(destinatario.capture(), oggetto.capture(), corpo.capture(),
+                allegatoNome.capture(), allegatoContenuto.capture());
 
-        ArgumentCaptor<MimeMessage> captor = ArgumentCaptor.forClass(MimeMessage.class);
-        verify(mailSender).send(captor.capture());
-        MimeMessage inviato = captor.getValue();
-        assertThat(inviato.getAllRecipients()[0].toString()).isEqualTo("marco@provider.it");
-        assertThat(inviato.getSubject()).containsIgnoringCase("dati");
-        assertThat(inviato.getContent()).isInstanceOf(MimeMultipart.class);
-        MimeMultipart contenuto = (MimeMultipart) inviato.getContent();
-        assertThat(contenuto.getCount()).isEqualTo(2); // corpo testuale + allegato
-        assertThat(contenuto.getBodyPart(1).getFileName()).isEqualTo("dati-motormindhub.json");
-    }
-
-    @Test
-    void invia_nonPropagaEccezione_quandoLinvioSmtpFallisce() {
-        doThrow(new MailSendException("SMTP non raggiungibile")).when(mailSender).send(any(SimpleMailMessage.class));
-
-        assertThatCode(() -> gestioneNotifiche.onUserRegistered(
-                new UtenteRegistratoEvent(1L, "marco@provider.it", "Marco", "tok-verifica")))
-                .doesNotThrowAnyException();
-    }
-
-    @Test
-    void onAccountCancellato_inviaComunqueLaCopiaInternaAlGestore_quandoLinvioAllUtenteFallisce() {
-        doThrow(new MailSendException("SMTP non raggiungibile"))
-                .doNothing()
-                .when(mailSender).send(any(SimpleMailMessage.class));
-
-        assertThatCode(() -> gestioneNotifiche.onAccountCancellato(new AccountCancellatoEvent(7L, "email-originale@provider.it")))
-                .doesNotThrowAnyException();
-
-        verify(mailSender, times(2)).send(any(SimpleMailMessage.class));
+        assertThat(destinatario.getValue()).isEqualTo("marco@provider.it");
+        assertThat(oggetto.getValue()).containsIgnoringCase("dati");
+        assertThat(allegatoNome.getValue()).isEqualTo("dati-motormindhub.json");
+        assertThat(new String(allegatoContenuto.getValue(), StandardCharsets.UTF_8)).isEqualTo(datiEsportati);
     }
 
     // --- helper privati -----------------------------------------------------
 
-    private SimpleMailMessage catturaMessaggioSemplice() {
-        ArgumentCaptor<SimpleMailMessage> captor = ArgumentCaptor.forClass(SimpleMailMessage.class);
-        verify(mailSender).send(captor.capture());
-        return captor.getValue();
+    private record EmailCatturata(String destinatario, String oggetto, String corpo) {
     }
 
-    private static MimeMessage nuovoMimeMessageReale() {
-        return new JavaMailSenderImpl().createMimeMessage();
+    private EmailCatturata catturaEmailSemplice() {
+        ArgumentCaptor<String> destinatario = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> oggetto = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> corpo = ArgumentCaptor.forClass(String.class);
+        verify(emailSender).send(destinatario.capture(), oggetto.capture(), corpo.capture());
+        return new EmailCatturata(destinatario.getValue(), oggetto.getValue(), corpo.getValue());
     }
 }

@@ -10,17 +10,9 @@ import com.motormindhub.Api.events.DataExportReadyEvent;
 import com.motormindhub.Api.events.PasswordResetRequestedEvent;
 import com.motormindhub.Api.events.RichiestaModificaProfiloEvent;
 import com.motormindhub.Api.events.UtenteRegistratoEvent;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.motormindhub.Api.service.gestioneNotifiche.specific.EmailSender;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -41,34 +33,21 @@ import java.nio.charset.StandardCharsets;
 @Service
 public class GestioneNotifiche {
 
-    private static final Logger log = LoggerFactory.getLogger(GestioneNotifiche.class);
-
     private static final int GIORNI_SCADENZA_LINK_SENSIBILI = 1; // RNF9.3: "es. 24 ore"
 
-    private final JavaMailSender mailSender;
-    private final String mittente;
+    private final EmailSender emailSender;
     private final String frontendBaseUrl;
     private final String notificheInterneGestoreUtenti;
 
-    public GestioneNotifiche(JavaMailSender mailSender,
-                              @Value("${app.mail.from}") String mittente,
+    // app.mail.from non e' piu' un parametro qui: e' responsabilita' di ciascuna implementazione di
+    // EmailSender (SmtpEmailSender/PostmarkApiEmailSender), non di GestioneNotifiche, che non deve
+    // sapere come/da quale indirizzo viene costruito il messaggio - solo destinatario/oggetto/corpo.
+    public GestioneNotifiche(EmailSender emailSender,
                               @Value("${app.frontend-base-url}") String frontendBaseUrl,
-                              @Value("${app.mail.notifiche-interne-gestore-utenti}") String notificheInterneGestoreUtenti,
-                              @Value("${spring.mail.host}") String mailHostDiagnostico,
-                              @Value("${spring.mail.port}") String mailPortDiagnostico,
-                              @Value("${spring.mail.properties.mail.smtp.auth}") String mailAuthDiagnostico) {
-        this.mailSender = mailSender;
-        this.mittente = mittente;
+                              @Value("${app.mail.notifiche-interne-gestore-utenti}") String notificheInterneGestoreUtenti) {
+        this.emailSender = emailSender;
         this.frontendBaseUrl = frontendBaseUrl;
         this.notificheInterneGestoreUtenti = notificheInterneGestoreUtenti;
-        // TEMPORANEO - diagnostica invio email non recapitate in produzione: verifica se
-        // spring.mail.host risolve davvero al relay Postmark o e' rimasto sul default locale
-        // (localhost:1025, Mailpit) perche' le variabili MAIL_* non sono impostate su Railway - in
-        // quel caso il container prova a connettersi a un Mailpit che li' non esiste, fallisce, e
-        // GestioneNotifiche.invia lo logga (catch MailException) senza che nessuno lo veda. Da
-        // rimuovere una volta chiarita la causa.
-        log.info("Configurazione mail risolta: host=[{}] port=[{}] auth=[{}] mittente=[{}]",
-                mailHostDiagnostico, mailPortDiagnostico, mailAuthDiagnostico, mittente);
     }
 
     /**
@@ -211,21 +190,9 @@ public class GestioneNotifiche {
     @Async
     @EventListener
     public void onDataExportReady(DataExportReadyEvent evento) {
-        try {
-            MimeMessage mimeMessage = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, StandardCharsets.UTF_8.name());
-            helper.setFrom(mittente);
-            helper.setTo(evento.email());
-            helper.setSubject("I tuoi dati personali sono pronti");
-            helper.setText("In allegato trovi l'esportazione dei tuoi dati personali richiesta su MotorMindHub, in formato JSON (RNF5.6).");
-            helper.addAttachment("dati-motormindhub.json",
-                    new ByteArrayResource(evento.datiEsportati().getBytes(StandardCharsets.UTF_8)));
-            mailSender.send(mimeMessage);
-        } catch (MessagingException e) {
-            log.error("Impossibile costruire l'email di esportazione dati per {}", evento.email(), e);
-        } catch (MailException e) {
-            log.error("Invio dell'email di esportazione dati a {} fallito", evento.email(), e);
-        }
+        emailSender.send(evento.email(), "I tuoi dati personali sono pronti",
+                "In allegato trovi l'esportazione dei tuoi dati personali richiesta su MotorMindHub, in formato JSON (RNF5.6).",
+                "dati-motormindhub.json", evento.datiEsportati().getBytes(StandardCharsets.UTF_8));
     }
 
     /**
@@ -281,24 +248,14 @@ public class GestioneNotifiche {
     // --- helper privati -----------------------------------------------------
 
     /**
-     * Un invio fallito (es. timeout SMTP, cfr. spring.mail.properties.mail.smtp.* in
-     * application.properties) viene loggato e non ripropagato: un listener come
-     * onAccountCancellato invoca invia() più volte per destinatari indipendenti (utente + copia
-     * interna al Gestore Utenti) e il fallimento del primo non deve impedire il secondo. Essendo
-     * @Async, un'eccezione qui non bloccherebbe comunque il chiamante, ma verrebbe solo loggata
-     * dall'AsyncUncaughtExceptionHandler di default - la logghiamo esplicitamente qui per
-     * mantenere questo comportamento indipendentemente da come Async e' configurato.
+     * Un invio fallito (timeout, provider non raggiungibile, ecc.) e' catturato e loggato
+     * internamente da EmailSender, mai propagato qui (cfr. il contratto dichiarato sull'interfaccia):
+     * un listener come onAccountCancellato invoca invia() piu' volte per destinatari indipendenti
+     * (utente + copia interna al Gestore Utenti), e il fallimento del primo non deve impedire il
+     * secondo - per questo GestioneNotifiche non ha bisogno di un proprio try/catch attorno a
+     * emailSender.send().
      */
     private void invia(String destinatario, String oggetto, String corpo) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(mittente);
-        message.setTo(destinatario);
-        message.setSubject(oggetto);
-        message.setText(corpo);
-        try {
-            mailSender.send(message);
-        } catch (MailException e) {
-            log.error("Invio email a {} fallito (oggetto: '{}')", destinatario, oggetto, e);
-        }
+        emailSender.send(destinatario, oggetto, corpo);
     }
 }
