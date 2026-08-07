@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { Logo } from "@/components/brand/Logo";
 import { useCurrentUser } from "@/lib/auth/useCurrentUser";
 import { logout } from "@/lib/auth/logout";
-import { HouseIcon, LogoutIcon, PersonIcon, ArrowLeftIcon } from "@/components/account/icons";
+import { HouseIcon, LogoutIcon, PersonIcon } from "@/components/account/icons";
 import { DocumentIcon, PencilIcon, LayersIcon } from "./icons";
 
 const NAV_ITEMS = [
@@ -32,18 +32,8 @@ export function AutoreSidebar() {
     <>
       <aside className="hidden h-screen w-64 shrink-0 flex-col border-r border-paper/10 bg-carbon md:flex">
         <div className="px-6 py-6">
-          <Link href="/">
+          <Link href="/autore">
             <Logo />
-          </Link>
-        </div>
-
-        <div className="border-b border-paper/10 px-3 pb-3">
-          <Link
-            href="/"
-            className="flex items-center gap-3 rounded-md px-3 py-2 font-heading text-sm uppercase tracking-wide text-chrome hover:bg-paper/5 hover:text-amber"
-          >
-            <ArrowLeftIcon className="h-4 w-4 shrink-0" />
-            Torna alla home
           </Link>
         </div>
 
@@ -86,13 +76,10 @@ export function AutoreSidebar() {
       </aside>
 
       <header className="flex items-center justify-between border-b border-paper/10 bg-carbon px-4 py-3 md:hidden">
-        <Link href="/">
+        <Link href="/autore">
           <Logo />
         </Link>
         <nav className="flex items-center gap-1">
-          <Link href="/" aria-label="Torna alla home" className="rounded-md p-2 text-chrome">
-            <ArrowLeftIcon className="h-5 w-5" />
-          </Link>
           {NAV_ITEMS.map(({ href, label, Icon }) => {
             const isActive = pathname === href;
             return (
