@@ -3,9 +3,25 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useCurrentUser } from "@/lib/auth/useCurrentUser";
+import { useAuthStore } from "@/lib/auth/store";
 import { logout } from "@/lib/auth/logout";
 import { Avatar } from "@/components/shared/Avatar";
 import { ChevronDownIcon } from "./icons";
+import type { Ruolo } from "@/lib/auth/jwt";
+
+/**
+ * Voce "propria area" del menu per ruolo: ISCRITTO non ha un'area di
+ * lavoro (RAD UC_2, vedi lib/auth/roleRedirect.ts) quindi resta su
+ * /account con l'etichetta storica; gli altri 3 ruoli hanno una
+ * dashboard dedicata e vanno lì, non su /account — stessa logica già
+ * applicata al link del Logo in ciascuna Sidebar di ruolo.
+ */
+const AREA_PERSONALE: Record<Ruolo, { label: string; href: string }> = {
+  ISCRITTO: { label: "Area personale", href: "/account" },
+  AUTORE: { label: "La mia Dashboard", href: "/autore" },
+  MANAGER_AUTORI: { label: "La mia Dashboard", href: "/manager" },
+  GESTORE_UTENTI: { label: "La mia Dashboard", href: "/gestore" },
+};
 
 /**
  * Chip utente autenticato dell'header pubblico (mockup 03/03b, "MARCO V. ⌄"):
@@ -14,12 +30,22 @@ import { ChevronDownIcon } from "./icons";
  * una lista in-app (solo email, SDD 4.6), niente da mostrare li' dentro.
  */
 export function UserMenu() {
+  // GET /utenti/me esclude deliberatamente GESTORE_UTENTI dai self-service
+  // (RAD 3.2.4, SelfServiceAuthorizationIntegrationTest, 403 garantito —
+  // stesso motivo già documentato in GestoreSidebar): per quel ruolo `user`
+  // resta sempre null, quindi il gating e il ruolo per il link vanno letti
+  // dallo store popolato dal JWT (sempre disponibile qui, PublicHeader
+  // monta questo componente solo a status "authenticated"), non da `user`.
   const { user } = useCurrentUser();
+  const ruolo = useAuthStore((s) => s.ruolo);
+  const email = useAuthStore((s) => s.email);
   const [open, setOpen] = useState(false);
 
-  if (!user) {
+  if (!ruolo || (ruolo !== "GESTORE_UTENTI" && !user)) {
     return null;
   }
+
+  const isGestore = ruolo === "GESTORE_UTENTI";
 
   return (
     <div className="relative">
@@ -28,7 +54,7 @@ export function UserMenu() {
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-2 text-sm text-paper"
         aria-expanded={open}
-        aria-label={`${user.nome} ${user.cognome}`}
+        aria-label={isGestore ? email ?? "Gestore Utenti" : `${user!.nome} ${user!.cognome}`}
       >
         {/*
           Il nome accessibile del bottone vive nell'aria-label sopra, non nel
@@ -37,9 +63,21 @@ export function UserMenu() {
           senza l'aria-label il bottone non aveva alcun nome discernibile su
           mobile (trovato da un audit axe reale, non per ispezione).
         */}
-        <Avatar nome={user.nome} cognome={user.cognome} fotoProfilo={user.fotoProfilo} className="h-8 w-8 text-xs" />
+        {isGestore ? (
+          // Niente nome/cognome disponibili per questo ruolo (vedi sopra):
+          // iniziali statiche "GU" (Gestore Utenti), stesso trattamento
+          // decorativo/aria-hidden del fallback di Avatar, non dati finti.
+          <div
+            aria-hidden="true"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-raised font-heading text-xs font-bold text-accent"
+          >
+            GU
+          </div>
+        ) : (
+          <Avatar nome={user!.nome} cognome={user!.cognome} fotoProfilo={user!.fotoProfilo} className="h-8 w-8 text-xs" />
+        )}
         <span className="hidden font-heading uppercase tracking-wide sm:inline">
-          {user.nome} {user.cognome.charAt(0)}.
+          {isGestore ? "Gestore Utenti" : `${user!.nome} ${user!.cognome.charAt(0)}.`}
         </span>
         <ChevronDownIcon className="h-4 w-4 text-chrome" />
       </button>
@@ -67,11 +105,11 @@ export function UserMenu() {
           */}
           <div className="absolute left-0 z-20 mt-2 w-48 rounded-md border border-paper/10 bg-carbon py-1 shadow-xl md:left-auto md:right-0">
             <Link
-              href="/account"
+              href={AREA_PERSONALE[ruolo].href}
               onClick={() => setOpen(false)}
               className="block px-4 py-2 text-sm text-paper hover:bg-paper/5"
             >
-              Area personale
+              {AREA_PERSONALE[ruolo].label}
             </Link>
             <button
               type="button"

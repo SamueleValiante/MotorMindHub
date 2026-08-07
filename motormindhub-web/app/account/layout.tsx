@@ -7,7 +7,7 @@ export default function AccountLayout({
   children: React.ReactNode;
 }) {
   return (
-    <RoleGuard allowedRoles={["ISCRITTO", "AUTORE", "MANAGER_AUTORI"]}>
+    <RoleGuard allowedRoles={["ISCRITTO"]}>
       <div className="flex min-h-screen flex-col md:flex-row">
         <AccountSidebar />
         <main className="flex-1 overflow-y-auto px-6 py-8 sm:px-10">{children}</main>
