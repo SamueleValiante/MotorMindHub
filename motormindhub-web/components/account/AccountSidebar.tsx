@@ -39,7 +39,7 @@ export function AccountSidebar() {
       <aside className="hidden h-screen w-64 shrink-0 flex-col border-r border-paper/10 bg-carbon md:flex">
         <div className="px-6 py-6">
           <Link href="/">
-            <Logo />
+            <Logo className="h-14 w-14" />
           </Link>
         </div>
 
