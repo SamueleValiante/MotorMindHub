@@ -46,7 +46,7 @@ export function AccountSidebar() {
         <div className="border-b border-paper/10 px-3 pb-3">
           <Link
             href="/"
-            className="flex items-center gap-3 rounded-md px-3 py-2 font-heading text-sm uppercase tracking-wide text-chrome hover:bg-paper/5 hover:text-amber"
+            className="flex items-center gap-3 rounded-md px-3 py-2 font-heading text-sm uppercase tracking-wide text-chrome hover:bg-paper/5 hover:text-accent"
           >
             <ArrowLeftIcon className="h-4 w-4 shrink-0" />
             Torna alla home
@@ -62,7 +62,7 @@ export function AccountSidebar() {
                 href={href}
                 className={`flex items-center gap-3 rounded-md border-l-2 px-3 py-2.5 font-heading text-sm uppercase tracking-wide ${
                   isActive
-                    ? "border-amber bg-paper/5 text-amber"
+                    ? "border-accent bg-paper/5 text-accent"
                     : "border-transparent text-chrome hover:bg-paper/5"
                 }`}
               >
@@ -84,7 +84,7 @@ export function AccountSidebar() {
             type="button"
             onClick={() => void logout()}
             aria-label="Esci"
-            className="shrink-0 text-chrome hover:text-amber"
+            className="shrink-0 text-chrome hover:text-accent"
           >
             <LogoutIcon className="h-5 w-5" />
           </button>
@@ -106,7 +106,7 @@ export function AccountSidebar() {
                 key={href}
                 href={href}
                 aria-label={label}
-                className={`rounded-md p-2 ${isActive ? "text-amber" : "text-chrome"}`}
+                className={`rounded-md p-2 ${isActive ? "text-accent" : "text-chrome"}`}
               >
                 <Icon className="h-5 w-5" />
               </Link>

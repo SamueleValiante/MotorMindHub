@@ -47,7 +47,7 @@ export default function ManagerCategoriePage() {
         <button
           type="button"
           onClick={() => setModal({ mode: "create" })}
-          className="shrink-0 rounded-md bg-amber px-5 py-3 text-center font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
+          className="shrink-0 rounded-md bg-accent px-5 py-3 text-center font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
         >
           + Nuova categoria
         </button>

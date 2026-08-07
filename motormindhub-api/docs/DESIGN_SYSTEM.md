@@ -9,13 +9,51 @@ Questo file accompagna le immagini in `docs/mockups/`. Le screenshot mostrano il
 | Asphalt black | `#0A0B0D` | Sfondo principale |
 | Carbon surface | `#16181D` | Superfici/card |
 | Ember red | `#EE471D` | Accento secondario, urgenza/calore, azioni distruttive |
-| Voltage amber | `#FFB800` | Accento primario, CTA, energia |
+| Accent blue | `#3DA9FC` | Accento brand: nav, logo, CTA/bottoni primari, titoli hero, link, focus ring generico, gauge |
+| Status pending amber | `#FFB800` | Badge di stato "in corso/attesa" nelle code di lavoro — vedi "Due token, due ruoli" sotto |
 | Chrome line | `#B8BEC7` | Bordi, icone, testo secondario chiaro |
 | Fog gray | `#888E95` | Testo muto/secondario |
 | Fog gray (disabled) | `#8C8C8C` | Testo muto/secondario in stato disabled — colore dedicato, non fog con opacità ridotta |
 | Paper | `#EDEEF0` | Testo primario su sfondo scuro |
 
-Badge di stato — logica cromatica fissa: verde = attivo/ok, amber = in corso/attesa, ember = sospeso/criticità.
+Badge di stato — logica cromatica fissa: verde = attivo/ok, **status-pending** = in corso/attesa, ember = sospeso/criticità.
+
+### Due token, due ruoli: accent e status-pending
+
+Fino a una revisione precedente un solo token ("amber", `#FFB800`) copriva
+sia il ruolo di accento brand (nav, CTA, hero, gauge) sia quello di colore
+di stato "in attesa" nei badge di dominio — un'ambiguità che rendeva ogni
+nuovo elemento amber un'interpretazione caso per caso. I due ruoli sono
+ora due token CSS separati (`--color-accent`, `--color-status-pending`),
+con un criterio esplicito per assegnare un elemento nuovo all'uno o
+all'altro:
+
+- **`accent` (`#3DA9FC`, blu)** — tutto ciò che comunica "questo è il
+  brand/l'azione principale": nav, logo, bottoni primari/CTA, titoli hero,
+  link, focus ring generico, il gauge/contagiri. Include anche gli esiti
+  una-tantum di un flusso (es. icona di conferma "invito accettato"), i
+  tag di navigazione/contenuto (es. il chip categoria di un articolo) e
+  le notifiche generiche (es. il toast "info") — nessuno di questi è un
+  indicatore di stato di dominio persistente, quindi restano accent anche
+  se visivamente "attirano l'attenzione" in modo simile a un badge di
+  stato.
+- **`status-pending` (`#FFB800`, ambra — valore invariato dal vecchio
+  "amber")** — riservato **esclusivamente** a indicatori di stato di
+  dominio letti da un campo di stato reale, mostrati in una coda o
+  dashboard di lavoro (es. `StatoBadge` articolo "In revisione", pill
+  "In cancellazione"/richieste di cancellazione/segnalazioni in Gestione
+  Utenti). Il blu di `accent` non comunica "attesa" con lo stesso
+  significato universale di ambra/giallo: da qui la scelta di tenere i
+  due ruoli su token distinti invece di riunificarli, anche se in futuro
+  uno dei due valori esatti cambiasse ancora.
+- **Criterio pratico per un elemento nuovo**: chiediti se il colore sta
+  descrivendo *lo stato di un dato* (una riga di tabella, un record) che
+  cambierebbe visivamente se quel dato passasse a un altro stato — se sì,
+  `status-pending` (o il colore di stato appropriato: verde/ember). Se il
+  colore sta invece marcando *un'azione, una destinazione, o un elemento
+  di brand* — `accent`. Nel dubbio, preferisci `accent`: è il default più
+  sicuro, dato che il set di indicatori di stato reali è piccolo e già
+  interamente elencato sopra.
 
 **Correzione fog gray (era `#6B7178`)**: il valore originale falliva la soglia
 WCAG AA (4.5:1, testo normale) su tutti e tre gli sfondi scuri della
@@ -59,7 +97,7 @@ Soluzione a due parti, non un solo colore diverso:
    usato come testo lì in nessun punto del codice attuale — se un futuro
    componente lo introducesse su quello sfondo, andrebbe ricontrollato.
 2. I bottoni a sfondo pieno (`bg-ember`) sono passati da testo `paper` a
-   testo **`asphalt`** — stesso pattern già usato dai bottoni `bg-amber`
+   testo **`asphalt`** — stesso pattern già usato dai bottoni `bg-accent`
    (testo scuro su accento acceso, non testo chiaro). Necessario perché
    schiarire ember (punto 1) peggiora il contrasto di `paper` sopra
    `bg-ember` (scende a 3.26:1): un solo valore non poteva risolvere
@@ -76,7 +114,7 @@ In Tailwind, configura questi 3 come `font-heading`, `font-body`, `font-mono` in
 
 ## Elemento firma
 
-Un contagiri/tachimetro SVG (zone cromo → amber → ember) usato nell'hero della Home, metafora del percorso "dal neofita al professionista". Riutilizzabile come motivo decorativo ricorrente.
+Un contagiri/tachimetro SVG usato nell'hero della Home, metafora del percorso "dal neofita al professionista". Riutilizzabile come motivo decorativo ricorrente. Due zone, non tre (era cromo → amber → ember): un arco `accent` (blu) solido per l'80% del percorso, poi un salto diretto — un piccolo gap angolare, non una sfumatura — alla zona "redline" in `ember` per l'ultimo ~18%. Il confine cromo/amber/ember originale a tre zone non reggeva più dopo che l'accento è diventato blu: una transizione morbida tra blu e rosso (colori agli antipodi sulla ruota cromatica) leggeva come una zona intermedia blu-violacea poco leggibile, verificato in mockup — da qui il taglio netto invece della sfumatura organica.
 
 ## Componenti consolidati (coerenti su tutte le schermate)
 

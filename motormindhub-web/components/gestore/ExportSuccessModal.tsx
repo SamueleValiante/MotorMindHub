@@ -38,7 +38,7 @@ export function ExportSuccessModal({ targetNome, targetEmail, onClose }: ExportS
         <button
           type="button"
           onClick={onClose}
-          className="mt-6 w-full rounded-md bg-amber px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
+          className="mt-6 w-full rounded-md bg-accent px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
         >
           Torna alla scheda utente
         </button>

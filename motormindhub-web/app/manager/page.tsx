@@ -34,7 +34,7 @@ export default function ManagerDashboardPage() {
         <>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div className="rounded-lg bg-carbon p-6">
-              <p className="font-heading text-3xl font-bold text-amber">{state.stats.articoliPubblicati}</p>
+              <p className="font-heading text-3xl font-bold text-accent">{state.stats.articoliPubblicati}</p>
               <p className="mt-1 text-sm uppercase tracking-wide text-fog">Articoli pubblicati</p>
             </div>
             <div className="rounded-lg bg-carbon p-6">
@@ -75,7 +75,7 @@ export default function ManagerDashboardPage() {
               </div>
             )}
 
-            <Link href="/manager/articoli-in-attesa" className="font-heading text-sm font-bold uppercase text-amber">
+            <Link href="/manager/articoli-in-attesa" className="font-heading text-sm font-bold uppercase text-accent">
               Vedi tutti →
             </Link>
           </section>

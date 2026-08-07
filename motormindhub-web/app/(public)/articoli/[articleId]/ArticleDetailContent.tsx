@@ -67,7 +67,7 @@ export function ArticleDetailContent({ articleId }: { articleId: string }) {
         <p className="mt-2 text-sm text-fog">
           Questo articolo non esiste o non è più disponibile.
         </p>
-        <Link href="/esplora" className="mt-6 inline-block font-heading text-sm font-bold uppercase text-amber">
+        <Link href="/esplora" className="mt-6 inline-block font-heading text-sm font-bold uppercase text-accent">
           ← Torna a Esplora
         </Link>
       </div>
@@ -77,11 +77,11 @@ export function ArticleDetailContent({ articleId }: { articleId: string }) {
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
       <nav className="flex items-center gap-2 text-xs uppercase tracking-wide text-fog">
-        <Link href="/esplora" className="hover:text-amber">
+        <Link href="/esplora" className="hover:text-accent">
           Esplora
         </Link>
         <span aria-hidden="true">/</span>
-        <Link href={`/esplora?categoriaIds=${articolo.categoriaId}`} className="hover:text-amber">
+        <Link href={`/esplora?categoriaIds=${articolo.categoriaId}`} className="hover:text-accent">
           {articolo.categoriaNome}
         </Link>
         {articolo.tag[0] && (
@@ -92,7 +92,7 @@ export function ArticleDetailContent({ articleId }: { articleId: string }) {
         )}
       </nav>
 
-      <span className="mt-4 inline-block rounded bg-amber px-3 py-1 font-heading text-xs font-bold uppercase tracking-wide text-asphalt">
+      <span className="mt-4 inline-block rounded bg-accent px-3 py-1 font-heading text-xs font-bold uppercase tracking-wide text-asphalt">
         {articolo.categoriaNome}
       </span>
 
@@ -104,7 +104,7 @@ export function ArticleDetailContent({ articleId }: { articleId: string }) {
         <div className="flex items-center gap-3">
           <div
             aria-hidden="true"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-raised font-heading text-xs font-bold text-amber"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-raised font-heading text-xs font-bold text-accent"
           >
             {initials(articolo.autoreNome)}
           </div>

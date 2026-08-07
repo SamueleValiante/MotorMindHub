@@ -46,7 +46,7 @@ export function AutoreSidebar() {
                 href={href}
                 className={`flex items-center gap-3 rounded-md border-l-2 px-3 py-2.5 font-heading text-sm uppercase tracking-wide ${
                   isActive
-                    ? "border-amber bg-paper/5 text-amber"
+                    ? "border-accent bg-paper/5 text-accent"
                     : "border-transparent text-chrome hover:bg-paper/5"
                 }`}
               >
@@ -68,7 +68,7 @@ export function AutoreSidebar() {
             type="button"
             onClick={() => void logout()}
             aria-label="Esci"
-            className="shrink-0 text-chrome hover:text-amber"
+            className="shrink-0 text-chrome hover:text-accent"
           >
             <LogoutIcon className="h-5 w-5" />
           </button>
@@ -87,7 +87,7 @@ export function AutoreSidebar() {
                 key={href}
                 href={href}
                 aria-label={label}
-                className={`rounded-md p-2 ${isActive ? "text-amber" : "text-chrome"}`}
+                className={`rounded-md p-2 ${isActive ? "text-accent" : "text-chrome"}`}
               >
                 <Icon className="h-5 w-5" />
               </Link>

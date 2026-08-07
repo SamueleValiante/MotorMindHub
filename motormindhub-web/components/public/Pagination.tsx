@@ -32,7 +32,7 @@ export function Pagination({ pagina, totalPages, onChange }: PaginationProps) {
           onClick={() => onChange(p)}
           aria-current={p === pagina ? "page" : undefined}
           className={`rounded-md px-3 py-2 font-heading text-sm font-bold ${
-            p === pagina ? "bg-amber text-asphalt" : "border border-chrome/40 text-chrome"
+            p === pagina ? "bg-accent text-asphalt" : "border border-chrome/40 text-chrome"
           }`}
         >
           {p + 1}

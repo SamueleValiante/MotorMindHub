@@ -23,7 +23,7 @@ export function Avatar({ nome, cognome, fotoProfilo, className }: AvatarProps) {
   const initials = `${nome.charAt(0)}${cognome.charAt(0)}`.toUpperCase();
   return (
     <div
-      className={`${size} flex shrink-0 items-center justify-center rounded-full bg-surface-raised font-heading font-bold text-amber`}
+      className={`${size} flex shrink-0 items-center justify-center rounded-full bg-surface-raised font-heading font-bold text-accent`}
       aria-hidden="true"
     >
       {initials}

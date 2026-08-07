@@ -57,7 +57,7 @@ export function ConfirmDeletionModal({ targetNome, pending, onCancel, onConfirm 
             type="checkbox"
             checked={confermato}
             onChange={(event) => setConfermato(event.target.checked)}
-            className="h-4 w-4 accent-amber"
+            className="h-4 w-4 accent-accent"
           />
           Nessun contenuto in sospeso collegato all&apos;account
         </label>

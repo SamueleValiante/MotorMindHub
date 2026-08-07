@@ -19,7 +19,7 @@ interface EmptyStateProps {
 }
 
 const actionClassName =
-  "inline-flex items-center rounded-md bg-amber px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wide text-asphalt";
+  "inline-flex items-center rounded-md bg-accent px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wide text-asphalt";
 
 /**
  * Componente condiviso e riusabile (docs/mockups/51_component_empty_states.png):

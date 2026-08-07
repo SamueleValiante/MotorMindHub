@@ -103,7 +103,7 @@ export default function IMieiArticoliPage() {
         </div>
         <Link
           href="/autore/articoli/nuovo"
-          className="shrink-0 rounded-md bg-amber px-5 py-3 text-center font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
+          className="shrink-0 rounded-md bg-accent px-5 py-3 text-center font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
         >
           + Nuovo articolo
         </Link>
@@ -132,7 +132,7 @@ export default function IMieiArticoliPage() {
               value={search}
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Cerca tra i tuoi articoli…"
-              className="w-full max-w-sm rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-amber"
+              className="w-full max-w-sm rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent"
             />
 
             <div className="flex flex-wrap gap-2 rounded-lg bg-carbon p-2">
@@ -143,7 +143,7 @@ export default function IMieiArticoliPage() {
                   onClick={() => setTab(t)}
                   aria-pressed={tab === t}
                   className={`rounded-md px-4 py-2 font-heading text-xs font-bold uppercase tracking-wide ${
-                    tab === t ? "bg-amber text-asphalt" : "text-chrome"
+                    tab === t ? "bg-accent text-asphalt" : "text-chrome"
                   }`}
                 >
                   {TAB_LABELS[t]} ({counts[t]})
@@ -182,7 +182,7 @@ export default function IMieiArticoliPage() {
                         <Link
                           href={`/autore/articoli/${articolo.id}/modifica`}
                           aria-label="Modifica articolo"
-                          className="flex h-9 w-9 items-center justify-center rounded-md bg-asphalt/80 text-chrome hover:text-amber"
+                          className="flex h-9 w-9 items-center justify-center rounded-md bg-asphalt/80 text-chrome hover:text-accent"
                         >
                           <PencilIcon className="h-4 w-4" />
                         </Link>

@@ -7,7 +7,7 @@ import { login } from "@/lib/auth/login";
 import { ROLE_HOME_PATH } from "@/lib/auth/roleRedirect";
 
 const inputClassName =
-  "rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-amber";
+  "rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent";
 const labelClassName =
   "font-heading text-xs font-semibold uppercase tracking-wide text-chrome";
 
@@ -63,7 +63,7 @@ export default function LoginPage() {
             </label>
             <Link
               href="/recupero-password"
-              className="font-heading text-xs font-semibold uppercase tracking-wide text-amber"
+              className="font-heading text-xs font-semibold uppercase tracking-wide text-accent"
             >
               Dimenticata?
             </Link>
@@ -83,7 +83,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-md bg-amber px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-60"
+          className="rounded-md bg-accent px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-60"
         >
           {submitting ? "Accesso in corso…" : "Accedi"}
         </button>
@@ -91,7 +91,7 @@ export default function LoginPage() {
 
       <p className="text-center text-sm text-fog">
         Non hai un account?{" "}
-        <Link href="/registrazione" className="font-semibold text-amber">
+        <Link href="/registrazione" className="font-semibold text-accent">
           Registrati
         </Link>
       </p>

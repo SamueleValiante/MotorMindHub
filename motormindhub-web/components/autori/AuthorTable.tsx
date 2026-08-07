@@ -62,7 +62,7 @@ export function AuthorTable({ autori, onRemove }: AuthorTableProps) {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Cerca autore…"
-          className="w-full rounded-md bg-surface-raised py-3 pl-11 pr-4 text-sm text-chrome outline-none focus:ring-2 focus:ring-amber"
+          className="w-full rounded-md bg-surface-raised py-3 pl-11 pr-4 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent"
         />
       </div>
 

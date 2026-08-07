@@ -18,8 +18,8 @@ interface LegalPageLayoutProps {
 export function LegalPageLayout({ title, ultimoAggiornamento, sections }: LegalPageLayoutProps) {
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-      <p className="mb-3 flex items-center gap-2 font-heading text-xs font-bold uppercase tracking-wide text-amber">
-        <span aria-hidden="true" className="h-px w-6 bg-amber" />
+      <p className="mb-3 flex items-center gap-2 font-heading text-xs font-bold uppercase tracking-wide text-accent">
+        <span aria-hidden="true" className="h-px w-6 bg-accent" />
         Documento legale
       </p>
       <h1 className="font-heading text-3xl font-bold uppercase tracking-wide text-paper sm:text-4xl">

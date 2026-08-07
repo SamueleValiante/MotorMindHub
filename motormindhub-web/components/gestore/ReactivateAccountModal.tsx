@@ -39,7 +39,7 @@ export function ReactivateAccountModal({ targetNome, pending, onCancel, onConfir
             type="button"
             onClick={onConfirm}
             disabled={pending}
-            className="rounded-md bg-amber px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-50"
+            className="rounded-md bg-accent px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-50"
           >
             {pending ? "Riattivazione…" : "Conferma riattivazione"}
           </button>

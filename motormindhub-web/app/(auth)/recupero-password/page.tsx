@@ -7,7 +7,7 @@ import { ResultPanel } from "@/components/auth/ResultPanel";
 import { MailIcon } from "@/components/auth/icons";
 
 const inputClassName =
-  "rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-amber";
+  "rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent";
 const labelClassName =
   "font-heading text-xs font-semibold uppercase tracking-wide text-chrome";
 
@@ -66,13 +66,13 @@ export default function RecuperoPasswordPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-md bg-amber px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-60"
+          className="rounded-md bg-accent px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-60"
         >
           {submitting ? "Invio in corso…" : "Invia link di recupero"}
         </button>
       </form>
 
-      <p className="text-center text-sm text-amber">
+      <p className="text-center text-sm text-accent">
         <Link href="/login">← Torna al login</Link>
       </p>
     </div>

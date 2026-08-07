@@ -8,7 +8,7 @@ import { updateProfile } from "@/lib/auth/updateProfile";
 import { ImageUploadField } from "@/components/shared/ImageUploadField";
 
 const inputClassName =
-  "rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-amber";
+  "rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent";
 const labelClassName =
   "font-heading text-xs font-semibold uppercase tracking-wide text-chrome";
 
@@ -145,7 +145,7 @@ export function ProfileSettingsForm({ user, redirectTo }: ProfileSettingsFormPro
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-md bg-amber px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-60"
+          className="rounded-md bg-accent px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-60"
         >
           {submitting ? "Salvataggio…" : "Salva modifiche"}
         </button>

@@ -59,7 +59,7 @@ export default function GestoreDashboardPage() {
         <>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-lg bg-carbon p-6">
-              <p className="font-heading text-3xl font-bold text-amber">{dashboard.stats.utentiRegistrati}</p>
+              <p className="font-heading text-3xl font-bold text-accent">{dashboard.stats.utentiRegistrati}</p>
               <p className="mt-1 text-sm uppercase tracking-wide text-fog">Utenti registrati</p>
             </div>
             <div className="rounded-lg bg-carbon p-6">
@@ -103,7 +103,7 @@ export default function GestoreDashboardPage() {
               </div>
             )}
 
-            <Link href="/gestore/segnalazioni" className="font-heading text-sm font-bold uppercase text-amber">
+            <Link href="/gestore/segnalazioni" className="font-heading text-sm font-bold uppercase text-accent">
               Vai alla coda →
             </Link>
           </section>
@@ -136,7 +136,7 @@ export default function GestoreDashboardPage() {
 
             <Link
               href="/gestore/richieste-cancellazione"
-              className="font-heading text-sm font-bold uppercase text-amber"
+              className="font-heading text-sm font-bold uppercase text-accent"
             >
               Vai alla coda →
             </Link>

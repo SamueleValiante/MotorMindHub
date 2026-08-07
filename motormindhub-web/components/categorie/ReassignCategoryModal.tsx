@@ -72,7 +72,7 @@ export function ReassignCategoryModal({
             value={destinazioneId ?? ""}
             onChange={(event) => setDestinazioneId(event.target.value ? Number(event.target.value) : null)}
             disabled={opzioni.length === 0}
-            className="rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-amber disabled:opacity-50"
+            className="rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
           >
             {opzioni.length === 0 && <option value="">Nessuna categoria alternativa disponibile</option>}
             {opzioni.map((c) => (

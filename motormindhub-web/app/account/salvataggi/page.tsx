@@ -129,7 +129,7 @@ export default function SalvataggiPage() {
                 onClick={() => setFiltro(tab)}
                 aria-pressed={filtro === tab}
                 className={`rounded-md px-4 py-2 font-heading text-xs font-bold uppercase tracking-wide ${
-                  filtro === tab ? "bg-amber text-asphalt" : "text-chrome"
+                  filtro === tab ? "bg-accent text-asphalt" : "text-chrome"
                 }`}
               >
                 {TAB_LABELS[tab]} ({counts[tab]})
@@ -165,7 +165,7 @@ export default function SalvataggiPage() {
                           void handleRemove(s.articolo.id, s.tipoLista);
                         }}
                         aria-label={`Rimuovi da ${PILL_LABELS[s.tipoLista]}`}
-                        className="flex h-9 w-9 items-center justify-center rounded-md bg-asphalt/80 text-amber disabled:opacity-50"
+                        className="flex h-9 w-9 items-center justify-center rounded-md bg-asphalt/80 text-accent disabled:opacity-50"
                       >
                         <BookmarkIcon className="h-4 w-4" />
                       </button>

@@ -56,7 +56,7 @@ export default function RevisioneArticoloPage() {
         <h1 className="font-heading text-2xl font-bold uppercase tracking-wide text-paper">
           Articolo non trovato
         </h1>
-        <Link href="/manager/articoli-in-attesa" className="font-heading text-sm font-bold uppercase text-amber">
+        <Link href="/manager/articoli-in-attesa" className="font-heading text-sm font-bold uppercase text-accent">
           ← Torna alla coda di approvazione
         </Link>
       </div>
@@ -75,7 +75,7 @@ export default function RevisioneArticoloPage() {
       </div>
 
       <div className="rounded-lg border border-paper/10 bg-carbon p-6">
-        <span className="inline-block rounded bg-amber px-3 py-1 font-heading text-xs font-bold uppercase tracking-wide text-asphalt">
+        <span className="inline-block rounded bg-accent px-3 py-1 font-heading text-xs font-bold uppercase tracking-wide text-asphalt">
           {articolo.categoriaNome}
         </span>
 
@@ -115,7 +115,7 @@ export default function RevisioneArticoloPage() {
             type="button"
             onClick={() => void handleApprove()}
             disabled={pending !== null}
-            className="rounded-md bg-amber px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-50"
+            className="rounded-md bg-accent px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-50"
           >
             {pending === "approve" ? "Approvazione…" : "✓ Approva e pubblica"}
           </button>
@@ -140,7 +140,7 @@ export default function RevisioneArticoloPage() {
           onChange={(event) => setMotivazione(event.target.value)}
           rows={4}
           placeholder="Facoltativo se approvato…"
-          className="mt-2 w-full rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-amber"
+          className="mt-2 w-full rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent"
         />
       </div>
     </div>

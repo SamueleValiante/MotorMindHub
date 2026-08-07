@@ -10,7 +10,7 @@ import { PeopleIcon } from "@/components/manager/icons";
 import { CheckCircleIcon, ErrorCircleIcon } from "@/components/auth/icons";
 
 const inputClassName =
-  "rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-amber";
+  "rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent";
 const labelClassName = "font-heading text-xs font-semibold uppercase tracking-wide text-chrome";
 // Rispecchia PasswordSicuraValidator del backend, come registrazione/reimposta-password.
 const PASSWORD_PATTERN = "(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9]).{8,}";
@@ -88,7 +88,7 @@ export default function AccettaInvitoPage() {
           <div className="flex flex-col items-center gap-4 text-center">
             <div
               className={`flex h-16 w-16 items-center justify-center rounded-full ${
-                view.success ? "bg-amber/10 text-amber" : "bg-ember/10 text-ember"
+                view.success ? "bg-accent/10 text-accent" : "bg-ember/10 text-ember"
               }`}
             >
               {view.success ? <CheckCircleIcon className="h-7 w-7" /> : <ErrorCircleIcon className="h-7 w-7" />}
@@ -101,14 +101,14 @@ export default function AccettaInvitoPage() {
             </div>
             <Link
               href={view.success ? "/login" : "/"}
-              className="rounded-md bg-amber px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
+              className="rounded-md bg-accent px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
             >
               {view.success ? "Vai al login" : "Torna alla home"}
             </Link>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-4 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber/10 text-amber">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent/10 text-accent">
               <PeopleIcon className="h-7 w-7" />
             </div>
             <h1 className="font-heading text-xl font-bold uppercase tracking-wide text-paper">
@@ -131,7 +131,7 @@ export default function AccettaInvitoPage() {
                 <button
                   type="button"
                   onClick={() => setView({ step: "accept-form" })}
-                  className="rounded-md bg-amber px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
+                  className="rounded-md bg-accent px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
                 >
                   Accetta
                 </button>
@@ -186,7 +186,7 @@ export default function AccettaInvitoPage() {
                   <button
                     type="submit"
                     disabled={pending}
-                    className="rounded-md bg-amber px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-50"
+                    className="rounded-md bg-accent px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-50"
                   >
                     {pending ? "Attendere…" : "Conferma"}
                   </button>

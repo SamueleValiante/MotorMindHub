@@ -9,7 +9,7 @@ import { CloseIcon } from "@/components/public/icons";
 import type { CategoryTreeNode } from "@/lib/categorie/types";
 
 const inputClassName =
-  "rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-amber disabled:cursor-not-allowed disabled:opacity-50";
+  "rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent disabled:cursor-not-allowed disabled:opacity-50";
 const labelClassName = "font-heading text-xs font-semibold uppercase tracking-wide text-fog";
 
 interface CategoryFormModalProps {
@@ -135,7 +135,7 @@ export function CategoryFormModal({ tree, category, onClose, onSaved }: Category
             <button
               type="submit"
               disabled={pending}
-              className="rounded-md bg-amber px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-50"
+              className="rounded-md bg-accent px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-50"
             >
               {pending ? "Salvataggio…" : isEdit ? "Aggiorna categoria" : "Salva categoria"}
             </button>

@@ -51,11 +51,11 @@ export default function HomePage() {
       {/* Hero */}
       <section className="mx-auto grid w-full max-w-6xl items-center gap-10 md:grid-cols-2">
         <div className="flex flex-col gap-6">
-          <p className="font-heading text-xs font-bold uppercase tracking-wide text-amber">
+          <p className="font-heading text-xs font-bold uppercase tracking-wide text-accent">
             Il tuo hub tecnico automotive
           </p>
           <h1 className="font-heading text-4xl font-bold uppercase leading-tight text-paper sm:text-5xl">
-            Dal minimo al <span className="text-amber">redline</span> della conoscenza{" "}
+            Dal minimo al <span className="text-accent">redline</span> della conoscenza{" "}
             <span className="text-ember">automotive</span>.
           </h1>
           <p className="max-w-lg text-sm text-fog">
@@ -73,11 +73,11 @@ export default function HomePage() {
               value={searchValue}
               onChange={(event) => setSearchValue(event.target.value)}
               placeholder="Cerca impianto frenante, motorizzazioni, guide all'acquisto…"
-              className="w-full rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-amber"
+              className="w-full rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent"
             />
             <button
               type="submit"
-              className="shrink-0 rounded-md bg-amber px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
+              className="shrink-0 rounded-md bg-accent px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
             >
               Cerca
             </button>
@@ -86,7 +86,7 @@ export default function HomePage() {
           <div className="flex flex-wrap items-center gap-6">
             <Link
               href="/esplora"
-              className="rounded-md bg-amber px-6 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
+              className="rounded-md bg-accent px-6 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
             >
               Esplora gli articoli
             </Link>
@@ -97,7 +97,7 @@ export default function HomePage() {
           <SpeedometerGauge className="h-40 w-64" />
           {articoliPubblicatiCount !== null && (
             <p className="text-center">
-              <span className="font-heading text-3xl font-bold text-amber">
+              <span className="font-heading text-3xl font-bold text-accent">
                 {articoliPubblicatiCount}+
               </span>
               <br />

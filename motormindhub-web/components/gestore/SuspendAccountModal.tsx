@@ -67,7 +67,7 @@ export function SuspendAccountModal({ targetNome, pending, onCancel, onConfirm }
             id="motivazione-sospensione"
             value={motivazione}
             onChange={(event) => setMotivazione(event.target.value as MotivazioneSospensione)}
-            className="rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-amber"
+            className="rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent"
           >
             {MOTIVAZIONI_SOSPENSIONE.map((m) => (
               <option key={m.value} value={m.value}>
@@ -88,7 +88,7 @@ export function SuspendAccountModal({ targetNome, pending, onCancel, onConfirm }
               onChange={(event) => setNoteAggiuntive(event.target.value)}
               rows={3}
               maxLength={1000}
-              className="rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-amber"
+              className="rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent"
             />
           </div>
         )}
@@ -108,7 +108,7 @@ export function SuspendAccountModal({ targetNome, pending, onCancel, onConfirm }
               value={durataGiorni}
               onChange={(event) => setDurataGiorni(event.target.value)}
               disabled={permanente}
-              className="w-24 rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-amber disabled:opacity-50"
+              className="w-24 rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
             />
             <span className="text-sm text-fog">Giorni</span>
             <label className="ml-auto flex cursor-pointer items-center gap-2 text-sm text-chrome">
@@ -116,7 +116,7 @@ export function SuspendAccountModal({ targetNome, pending, onCancel, onConfirm }
                 type="checkbox"
                 checked={permanente}
                 onChange={(event) => setPermanente(event.target.checked)}
-                className="h-4 w-4 accent-amber"
+                className="h-4 w-4 accent-accent"
               />
               Permanente
             </label>

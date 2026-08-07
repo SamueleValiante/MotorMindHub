@@ -79,7 +79,7 @@ export default function CronologiaPage() {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Cerca nella cronologia…"
-            className="w-full rounded-md bg-surface-raised py-3 pl-11 pr-4 text-sm text-chrome outline-none focus:ring-2 focus:ring-amber"
+            className="w-full rounded-md bg-surface-raised py-3 pl-11 pr-4 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent"
           />
         </div>
 
@@ -90,7 +90,7 @@ export default function CronologiaPage() {
               type="button"
               onClick={() => setTab(value)}
               className={`whitespace-nowrap rounded px-4 py-2 font-heading text-xs font-bold uppercase tracking-wide ${
-                tab === value ? "bg-amber text-asphalt" : "text-chrome hover:text-paper"
+                tab === value ? "bg-accent text-asphalt" : "text-chrome hover:text-paper"
               }`}
             >
               {label}
@@ -126,7 +126,7 @@ export default function CronologiaPage() {
                   <td className="px-6 py-4">
                     <Link
                       href={`/gestore/gestione-account/${azione.utenteTargetId}`}
-                      className="text-amber hover:underline"
+                      className="text-accent hover:underline"
                     >
                       {azione.utenteTargetNome}
                     </Link>

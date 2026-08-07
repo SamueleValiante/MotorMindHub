@@ -107,7 +107,7 @@ export function ReportUserModal() {
             value={motivazione}
             onChange={(event) => setMotivazione(event.target.value)}
             placeholder="Descrivi il problema riscontrato…"
-            className="rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-amber"
+            className="rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent"
           />
 
           <div className="mt-4 flex justify-end gap-6">

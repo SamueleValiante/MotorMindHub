@@ -2,14 +2,14 @@ import type { StatoArticolo } from "@/lib/articoli/types";
 
 const STATO_CONFIG: Record<StatoArticolo, { label: string; className: string }> = {
   BOZZA: { label: "Bozza", className: "text-chrome" },
-  IN_ATTESA_APPROVAZIONE: { label: "In revisione", className: "text-amber" },
+  IN_ATTESA_APPROVAZIONE: { label: "In revisione", className: "text-status-pending" },
   PUBBLICATO: { label: "Pubblicato", className: "text-success" },
   RIFIUTATO: { label: "Rifiutato", className: "text-ember" },
 };
 
 /**
  * Badge di stato articolo (mockup 21/22/25): verde=pubblicato,
- * amber=in revisione, ember=rifiutato (logica cromatica fissa di
+ * status-pending=in revisione, ember=rifiutato (logica cromatica fissa di
  * DESIGN_SYSTEM.md), chrome neutro per bozza. Condiviso da Dashboard
  * Autore, I Miei Articoli, Le Mie Bozze.
  */

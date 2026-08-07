@@ -111,7 +111,7 @@ export default function LeMieBozzePage() {
               <div className="flex gap-2">
                 <Link
                   href={`/autore/articoli/${articolo.id}/modifica`}
-                  className="flex-1 rounded-md bg-asphalt/80 px-5 py-3 text-center font-heading text-sm font-bold uppercase tracking-wide text-chrome hover:text-amber"
+                  className="flex-1 rounded-md bg-asphalt/80 px-5 py-3 text-center font-heading text-sm font-bold uppercase tracking-wide text-chrome hover:text-accent"
                 >
                   Riprendi
                 </Link>

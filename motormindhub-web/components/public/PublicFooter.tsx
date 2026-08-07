@@ -51,10 +51,10 @@ export function PublicFooter() {
           <h3 className="font-heading text-xs font-bold uppercase tracking-wide text-fog">
             Piattaforma
           </h3>
-          <Link href="/esplora" className="text-sm text-chrome hover:text-amber">
+          <Link href="/esplora" className="text-sm text-chrome hover:text-accent">
             Esplora articoli
           </Link>
-          <Link href="/chi-siamo" className="text-sm text-chrome hover:text-amber">
+          <Link href="/chi-siamo" className="text-sm text-chrome hover:text-accent">
             Chi siamo
           </Link>
         </div>
@@ -63,22 +63,22 @@ export function PublicFooter() {
           <h3 className="font-heading text-xs font-bold uppercase tracking-wide text-fog">
             Legale
           </h3>
-          <Link href="/termini" className="text-sm text-chrome hover:text-amber">
+          <Link href="/termini" className="text-sm text-chrome hover:text-accent">
             Termini e Condizioni
           </Link>
-          <Link href="/cookie-policy" className="text-sm text-chrome hover:text-amber">
+          <Link href="/cookie-policy" className="text-sm text-chrome hover:text-accent">
             Cookie Policy
           </Link>
-          <Link href="/informativa-privacy" className="text-sm text-chrome hover:text-amber">
+          <Link href="/informativa-privacy" className="text-sm text-chrome hover:text-accent">
             Informativa Privacy
           </Link>
-          <Link href="/accessibilita" className="text-sm text-chrome hover:text-amber">
+          <Link href="/accessibilita" className="text-sm text-chrome hover:text-accent">
             Accessibilità
           </Link>
           <button
             type="button"
             onClick={openPreferences}
-            className="text-left text-sm text-chrome hover:text-amber"
+            className="text-left text-sm text-chrome hover:text-accent"
           >
             Preferenze cookie
           </button>
@@ -88,10 +88,10 @@ export function PublicFooter() {
           <h3 className="font-heading text-xs font-bold uppercase tracking-wide text-fog">
             Community
           </h3>
-          <a href={`mailto:${SUPPORTO_EMAIL}`} className="text-sm text-chrome hover:text-amber">
+          <a href={`mailto:${SUPPORTO_EMAIL}`} className="text-sm text-chrome hover:text-accent">
             Segnala un problema
           </a>
-          <a href={`mailto:${SUPPORTO_EMAIL}`} className="text-sm text-chrome hover:text-amber">
+          <a href={`mailto:${SUPPORTO_EMAIL}`} className="text-sm text-chrome hover:text-accent">
             Contatti
           </a>
         </div>

@@ -92,7 +92,7 @@ export function SaveMenu({ articleId }: { articleId: number }) {
         disabled={authStatus === "loading" || loadingStatus}
         aria-label="Salva articolo"
         aria-expanded={open}
-        className="flex h-9 w-9 items-center justify-center rounded-md border border-chrome/40 text-chrome hover:text-amber disabled:opacity-50"
+        className="flex h-9 w-9 items-center justify-center rounded-md border border-chrome/40 text-chrome hover:text-accent disabled:opacity-50"
       >
         <BookmarkIcon className="h-4 w-4" />
       </button>
@@ -115,7 +115,7 @@ export function SaveMenu({ articleId }: { articleId: number }) {
                   onClick={() => void toggle(tipo)}
                   className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-paper hover:bg-paper/5 disabled:opacity-50"
                 >
-                  <Icon className="h-4 w-4 shrink-0 text-amber" />
+                  <Icon className="h-4 w-4 shrink-0 text-accent" />
                   {saved.has(tipo) ? remove : add}
                 </button>
               )

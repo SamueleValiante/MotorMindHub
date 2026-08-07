@@ -53,7 +53,7 @@ export function CategoryTable({ tree, canDelete, onEdit, onDelete }: CategoryTab
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Cerca categoria…"
-          className="w-full rounded-md bg-surface-raised py-3 pl-11 pr-4 text-sm text-chrome outline-none focus:ring-2 focus:ring-amber"
+          className="w-full rounded-md bg-surface-raised py-3 pl-11 pr-4 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent"
         />
       </div>
 
@@ -86,7 +86,7 @@ export function CategoryTable({ tree, canDelete, onEdit, onDelete }: CategoryTab
                         type="button"
                         onClick={() => onEdit(row.id)}
                         aria-label={`Modifica ${row.nome}`}
-                        className="flex h-9 w-9 items-center justify-center rounded-md bg-asphalt/80 text-chrome hover:text-amber"
+                        className="flex h-9 w-9 items-center justify-center rounded-md bg-asphalt/80 text-chrome hover:text-accent"
                       >
                         <PencilIcon className="h-4 w-4" />
                       </button>

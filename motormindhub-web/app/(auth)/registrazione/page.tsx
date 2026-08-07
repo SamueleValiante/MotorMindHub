@@ -7,7 +7,7 @@ import { ResultPanel } from "@/components/auth/ResultPanel";
 import { MailIcon } from "@/components/auth/icons";
 
 const inputClassName =
-  "rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-amber";
+  "rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent";
 const labelClassName =
   "font-heading text-xs font-semibold uppercase tracking-wide text-chrome";
 
@@ -142,15 +142,15 @@ export default function RegistrazionePage() {
             required
             checked={consensoPrivacy}
             onChange={(event) => setConsensoPrivacy(event.target.checked)}
-            className="mt-1 h-4 w-4 accent-amber"
+            className="mt-1 h-4 w-4 accent-accent"
           />
           <span>
             Accetto i{" "}
-            <Link href="/termini" className="text-amber underline">
+            <Link href="/termini" className="text-accent underline">
               Termini di Servizio
             </Link>{" "}
             e ho letto l&apos;
-            <Link href="/informativa-privacy" className="text-amber underline">
+            <Link href="/informativa-privacy" className="text-accent underline">
               Informativa Privacy
             </Link>
           </span>
@@ -159,7 +159,7 @@ export default function RegistrazionePage() {
         <button
           type="submit"
           disabled={submitting}
-          className="rounded-md bg-amber px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-60"
+          className="rounded-md bg-accent px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-60"
         >
           {submitting ? "Creazione in corso…" : "Crea account"}
         </button>
@@ -167,7 +167,7 @@ export default function RegistrazionePage() {
 
       <p className="text-center text-sm text-fog">
         Hai già un account?{" "}
-        <Link href="/login" className="font-semibold text-amber">
+        <Link href="/login" className="font-semibold text-accent">
           Accedi
         </Link>
       </p>

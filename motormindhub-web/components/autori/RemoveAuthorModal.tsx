@@ -58,7 +58,7 @@ export function RemoveAuthorModal({ autore, onCancel, onRemoved }: RemoveAuthorM
               name="policy-articoli"
               checked={mantieniArticoli}
               onChange={() => setMantieniArticoli(true)}
-              className="mt-1 h-4 w-4 accent-amber"
+              className="mt-1 h-4 w-4 accent-accent"
             />
             <span className="text-sm text-paper">
               <span className="font-semibold">Mantieni gli articoli</span>
@@ -72,7 +72,7 @@ export function RemoveAuthorModal({ autore, onCancel, onRemoved }: RemoveAuthorM
               name="policy-articoli"
               checked={!mantieniArticoli}
               onChange={() => setMantieniArticoli(false)}
-              className="mt-1 h-4 w-4 accent-amber"
+              className="mt-1 h-4 w-4 accent-accent"
             />
             <span className="text-sm text-paper">
               <span className="font-semibold">Elimina gli articoli</span>

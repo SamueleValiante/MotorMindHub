@@ -41,7 +41,7 @@ export function PublicHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className="font-heading text-sm font-semibold uppercase tracking-wide text-chrome hover:text-amber"
+              className="font-heading text-sm font-semibold uppercase tracking-wide text-chrome hover:text-accent"
             >
               {item.label}
             </Link>
@@ -58,7 +58,7 @@ export function PublicHeader() {
               </Link>
               <Link
                 href="/registrazione"
-                className="rounded-md bg-amber px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
+                className="rounded-md bg-accent px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
               >
                 Registrati
               </Link>
@@ -101,7 +101,7 @@ export function PublicHeader() {
                 </Link>
                 <Link
                   href="/registrazione"
-                  className="rounded-md bg-amber px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
+                  className="rounded-md bg-accent px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
                 >
                   Registrati
                 </Link>

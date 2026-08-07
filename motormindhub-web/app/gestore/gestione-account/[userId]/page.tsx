@@ -64,7 +64,7 @@ export default function SchedaUtentePage() {
     return (
       <div className="flex flex-col gap-4">
         <h1 className="font-heading text-2xl font-bold uppercase tracking-wide text-paper">Utente non trovato</h1>
-        <Link href="/gestore/gestione-account" className="font-heading text-sm font-bold uppercase text-amber">
+        <Link href="/gestore/gestione-account" className="font-heading text-sm font-bold uppercase text-accent">
           ← Torna a Gestione Account
         </Link>
       </div>
@@ -156,7 +156,7 @@ export default function SchedaUtentePage() {
             <button
               type="button"
               onClick={() => setPopup("riattiva")}
-              className="rounded-md bg-amber px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
+              className="rounded-md bg-accent px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
             >
               Riattiva account
             </button>

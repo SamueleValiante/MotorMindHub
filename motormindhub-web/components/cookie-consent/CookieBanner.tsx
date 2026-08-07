@@ -6,7 +6,7 @@ import { useCookieConsentStore } from "@/lib/cookie-consent/store";
 import { useFocusTrap } from "@/lib/shared/useFocusTrap";
 
 const primaryButtonClassName =
-  "rounded-md bg-amber px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wide text-asphalt";
+  "rounded-md bg-accent px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wide text-asphalt";
 const secondaryButtonClassName =
   "rounded-md border border-chrome/60 px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wide text-paper";
 const tertiaryButtonClassName =
@@ -20,7 +20,7 @@ const tertiaryButtonClassName =
  * tutti / rifiuta tutti / personalizza per categoria), persistenza
  * ~12 mesi senza ripresentazione ripetuta, e nessun dark pattern (il
  * bottone "rifiuta" non è meno visibile di "accetta": stessa dimensione,
- * stesso peso testo Paper, entrambi bordati vs. il riempimento amber di
+ * stesso peso testo Paper, entrambi bordati vs. il riempimento accent di
  * "accetta" che segnala solo l'azione predefinita, non ne nasconde una).
  *
  * I cookie tecnici sono sempre attivi (RNF6.2, nessun consenso richiesto);
@@ -108,7 +108,7 @@ export function CookieBanner() {
               Usiamo cookie tecnici necessari al funzionamento del sito e,
               previo consenso, cookie analitici per migliorare l&apos;esperienza.
               Consulta la{" "}
-              <Link href="/cookie-policy" className="text-amber underline">
+              <Link href="/cookie-policy" className="text-accent underline">
                 Cookie Policy
               </Link>
               .
@@ -169,7 +169,7 @@ export function CookieBanner() {
                 type="checkbox"
                 checked={draftAnalitici}
                 onChange={(e) => setDraftAnalitici(e.target.checked)}
-                className="mt-1 h-4 w-4 accent-amber"
+                className="mt-1 h-4 w-4 accent-accent"
               />
               <span className="text-sm text-chrome">
                 <span className="font-heading font-bold text-paper">

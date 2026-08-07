@@ -8,8 +8,8 @@ const INFO_SOCIETARIE = [
 export default function ChiSiamoPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-      <p className="mb-3 flex items-center gap-2 font-heading text-xs font-bold uppercase tracking-wide text-amber">
-        <span aria-hidden="true" className="h-px w-6 bg-amber" />
+      <p className="mb-3 flex items-center gap-2 font-heading text-xs font-bold uppercase tracking-wide text-accent">
+        <span aria-hidden="true" className="h-px w-6 bg-accent" />
         Chi siamo
       </p>
       <h1 className="font-heading text-3xl font-bold uppercase leading-tight tracking-wide text-paper sm:text-4xl">

@@ -18,7 +18,7 @@ interface ResultPanelProps {
 export function ResultPanel({ icon, title, description, action }: ResultPanelProps) {
   return (
     <div className="flex flex-col items-center gap-4 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber/10 text-amber">
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-accent/10 text-accent">
         {icon}
       </div>
       <div className="space-y-2">
@@ -30,7 +30,7 @@ export function ResultPanel({ icon, title, description, action }: ResultPanelPro
       {action && (
         <Link
           href={action.href}
-          className="rounded-md bg-amber px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
+          className="rounded-md bg-accent px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
         >
           {action.label}
         </Link>

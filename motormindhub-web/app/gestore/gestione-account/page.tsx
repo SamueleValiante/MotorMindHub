@@ -93,7 +93,7 @@ export default function GestioneAccountPage() {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Cerca utente per nome o email…"
-            className="w-full rounded-md bg-surface-raised py-3 pl-11 pr-4 text-sm text-chrome outline-none focus:ring-2 focus:ring-amber"
+            className="w-full rounded-md bg-surface-raised py-3 pl-11 pr-4 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent"
           />
         </div>
 
@@ -104,7 +104,7 @@ export default function GestioneAccountPage() {
               type="button"
               onClick={() => setTab(value)}
               className={`whitespace-nowrap rounded px-4 py-2 font-heading text-xs font-bold uppercase tracking-wide ${
-                tab === value ? "bg-amber text-asphalt" : "text-chrome hover:text-paper"
+                tab === value ? "bg-accent text-asphalt" : "text-chrome hover:text-paper"
               }`}
             >
               {label}
@@ -152,7 +152,7 @@ export default function GestioneAccountPage() {
                       {STATO_LABEL[utente.stato]}
                     </span>
                     {idsInCancellazione.has(utente.id) && (
-                      <span className="ml-2 rounded-full border border-amber/40 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-amber">
+                      <span className="ml-2 rounded-full border border-status-pending/40 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-status-pending">
                         In cancellazione
                       </span>
                     )}

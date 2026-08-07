@@ -50,7 +50,7 @@ export default function DashboardAutorePage() {
         <>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div className="rounded-lg bg-carbon p-6">
-              <p className="font-heading text-3xl font-bold text-amber">{pubblicati}</p>
+              <p className="font-heading text-3xl font-bold text-accent">{pubblicati}</p>
               <p className="mt-1 text-sm uppercase tracking-wide text-fog">Articoli pubblicati</p>
             </div>
             <div className="rounded-lg bg-carbon p-6">
@@ -74,7 +74,7 @@ export default function DashboardAutorePage() {
               </h2>
               <Link
                 href="/autore/articoli/nuovo"
-                className="shrink-0 rounded-md bg-amber px-4 py-2.5 font-heading text-xs font-bold uppercase tracking-wide text-asphalt"
+                className="shrink-0 rounded-md bg-accent px-4 py-2.5 font-heading text-xs font-bold uppercase tracking-wide text-asphalt"
               >
                 + Nuovo articolo
               </Link>

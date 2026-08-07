@@ -74,7 +74,7 @@ export default function RichiesteCancellazionePage() {
                   </td>
                   <td className="px-6 py-4 text-chrome">{formatData(richiesta.dataRichiesta)}</td>
                   <td className="px-6 py-4">
-                    <span className="rounded-full border border-amber/40 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber">
+                    <span className="rounded-full border border-status-pending/40 px-3 py-1 text-xs font-bold uppercase tracking-wide text-status-pending">
                       {STATO_LABEL[richiesta.stato]}
                     </span>
                   </td>

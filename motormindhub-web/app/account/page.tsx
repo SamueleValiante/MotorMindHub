@@ -34,7 +34,7 @@ export default function PanoramicaPage() {
       ) : (
         <>
           <section className="max-w-xs rounded-lg bg-carbon p-6">
-            <p className="font-heading text-3xl font-bold text-amber">
+            <p className="font-heading text-3xl font-bold text-accent">
               {formatMonthYear(user.dataRegistrazione)}
             </p>
             <p className="mt-1 text-sm uppercase tracking-wide text-fog">Iscritto dal</p>

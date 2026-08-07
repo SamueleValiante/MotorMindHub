@@ -39,7 +39,7 @@ export default function DettaglioSegnalazionePage() {
         <h1 className="font-heading text-2xl font-bold uppercase tracking-wide text-paper">
           Segnalazione non trovata
         </h1>
-        <Link href="/gestore/segnalazioni" className="font-heading text-sm font-bold uppercase text-amber">
+        <Link href="/gestore/segnalazioni" className="font-heading text-sm font-bold uppercase text-accent">
           ← Torna alla coda segnalazioni
         </Link>
       </div>
@@ -123,7 +123,7 @@ export default function DettaglioSegnalazionePage() {
             type="button"
             onClick={() => void handleRichiediModifica()}
             disabled={pending !== null || nonLavorabile}
-            className="rounded-md bg-amber px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-50"
+            className="rounded-md bg-accent px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-50"
           >
             {pending === "modifica" ? "Invio richiesta…" : "Richiedi modifica (7 gg)"}
           </button>

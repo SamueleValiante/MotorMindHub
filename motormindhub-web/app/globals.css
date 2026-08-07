@@ -8,7 +8,23 @@
      valore non risolveva; i bottoni bg-ember sono passati a text-asphalt
      invece di text-paper per lo stesso motivo, cfr. docs/DESIGN_SYSTEM.md). */
   --color-ember: #EE471D;
-  --color-amber: #FFB800;
+  /* Accento brand (nav, CTA, hero, focus ring, gauge) — prima "amber"
+     #FFB800, scorporato in due token separati per non far coincidere il
+     ruolo "brand" con quello "stato in attesa" (cfr. docs/DESIGN_SYSTEM.md,
+     sezione "Due token amber/blu: criterio di scelta"). Contrasto verificato
+     (non solo testo su sfondo scuro, anche il caso reale bottone
+     bg-accent/text-asphalt): 7.76:1 su asphalt, 7.0:1 su carbon, 6.14:1 su
+     surface-raised, 7.76:1 come testo-asphalt sopra bg-accent. */
+  --color-accent: #3DA9FC;
+  /* Stato "in attesa/in corso" (badge di dominio in code di lavoro, es.
+     StatoBadge articolo "In revisione", pill "In cancellazione") — valore
+     ORIGINALE di "amber" invariato apposta: il blu di --color-accent non
+     comunica "attesa" con lo stesso significato universale di ambra/giallo,
+     quindi i due ruoli restano su token distinti anche se in futuro uno dei
+     due valori cambiasse di nuovo. Riservato esclusivamente a indicatori di
+     stato persistenti letti da dati di dominio, mai a esiti una-tantum, tag
+     di navigazione/contenuto o notifiche generiche (cfr. DESIGN_SYSTEM.md). */
+  --color-status-pending: #FFB800;
   --color-chrome: #B8BEC7;
   /* Corretto da #6B7178 (falliva WCAG AA 4.5:1 su tutti gli sfondi scuri
      della palette, cfr. docs/DESIGN_SYSTEM.md per i rapporti misurati). */

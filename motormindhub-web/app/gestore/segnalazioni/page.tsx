@@ -53,7 +53,7 @@ export default function CodaSegnalazioniPage() {
                   type="button"
                   onClick={() => setTab(stato)}
                   className={`rounded px-4 py-2 font-heading text-xs font-bold uppercase tracking-wide ${
-                    isActive ? "bg-amber text-asphalt" : "text-chrome hover:text-paper"
+                    isActive ? "bg-accent text-asphalt" : "text-chrome hover:text-paper"
                   }`}
                 >
                   {label} ({count})
@@ -92,7 +92,7 @@ export default function CodaSegnalazioniPage() {
                         <td className="px-6 py-4 text-chrome">{segnalazione.motivazione}</td>
                         <td className="px-6 py-4 text-chrome">{formatData(segnalazione.dataCreazione)}</td>
                         <td className="px-6 py-4">
-                          <span className="rounded-full border border-amber/40 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber">
+                          <span className="rounded-full border border-status-pending/40 px-3 py-1 text-xs font-bold uppercase tracking-wide text-status-pending">
                             {STATO_LABEL[segnalazione.stato]}
                           </span>
                         </td>

@@ -94,7 +94,7 @@ export function EsploraContent() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-12 sm:px-6">
       <div>
-        <p className="font-heading text-xs font-bold uppercase tracking-wide text-amber">
+        <p className="font-heading text-xs font-bold uppercase tracking-wide text-accent">
           Catalogo articoli
         </p>
         <h1 className="font-heading text-3xl font-bold uppercase tracking-wide text-paper sm:text-4xl">
@@ -124,7 +124,7 @@ export function EsploraContent() {
             value={draftQuery}
             onChange={(event) => setDraftQuery(event.target.value)}
             placeholder="Cerca impianto frenante, motorizzazioni, guide all'acquisto…"
-            className="rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-amber"
+            className="rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent"
           />
         </div>
 
@@ -139,7 +139,7 @@ export function EsploraContent() {
             id="esplora-categoria"
             value={draftCategoriaId}
             onChange={(event) => setDraftCategoriaId(event.target.value)}
-            className="rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-amber"
+            className="rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent"
           >
             <option value="">Tutte le categorie</option>
             {flatCategorie.map((c) => (
@@ -153,7 +153,7 @@ export function EsploraContent() {
 
         <button
           type="submit"
-          className="rounded-md bg-amber px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
+          className="rounded-md bg-accent px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
         >
           Applica filtri
         </button>
@@ -177,7 +177,7 @@ export function EsploraContent() {
               aria-pressed={ordinamento === opt.value}
               className={`rounded-md px-4 py-2 font-heading text-xs font-bold uppercase tracking-wide ${
                 ordinamento === opt.value
-                  ? "bg-amber text-asphalt"
+                  ? "bg-accent text-asphalt"
                   : "border border-chrome/40 text-chrome"
               }`}
             >

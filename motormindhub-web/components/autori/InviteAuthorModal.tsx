@@ -6,7 +6,7 @@ import { toast } from "@/lib/toast/toast";
 import { CloseIcon } from "@/components/public/icons";
 
 const inputClassName =
-  "rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-amber";
+  "rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent";
 const labelClassName = "font-heading text-xs font-semibold uppercase tracking-wide text-fog";
 
 interface InviteAuthorModalProps {
@@ -124,7 +124,7 @@ export function InviteAuthorModal({ onClose, onSent }: InviteAuthorModalProps) {
             <button
               type="submit"
               disabled={pending}
-              className="rounded-md bg-amber px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-50"
+              className="rounded-md bg-accent px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-50"
             >
               {pending ? "Invio…" : "Invia invito"}
             </button>

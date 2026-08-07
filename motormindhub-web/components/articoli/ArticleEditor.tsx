@@ -20,10 +20,10 @@ import { ImageUploadField } from "@/components/shared/ImageUploadField";
 import type { ArticleDetail } from "@/lib/articoli/types";
 
 const inputClassName =
-  "rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-amber";
+  "rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent";
 const labelClassName = "font-heading text-xs font-semibold uppercase tracking-wide text-fog";
 const primaryButtonClassName =
-  "w-full rounded-md bg-amber px-5 py-3 text-center font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-60";
+  "w-full rounded-md bg-accent px-5 py-3 text-center font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-60";
 const secondaryButtonClassName =
   "w-full rounded-md bg-carbon px-5 py-3 text-center font-heading text-sm font-bold uppercase tracking-wide text-paper disabled:opacity-60";
 
@@ -188,7 +188,7 @@ function TagInput({ tags, onChange }: { tags: string[]; onChange: (next: string[
             }
           }}
           placeholder="Nuovo tag…"
-          className="rounded bg-surface-raised px-3 py-1.5 font-mono text-xs uppercase tracking-wide text-chrome outline-none focus:ring-2 focus:ring-amber"
+          className="rounded bg-surface-raised px-3 py-1.5 font-mono text-xs uppercase tracking-wide text-chrome outline-none focus:ring-2 focus:ring-accent"
         />
       ) : (
         <button

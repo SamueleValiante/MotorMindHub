@@ -4,7 +4,7 @@ import { useToastStore, type ToastVariant } from "@/lib/toast/store";
 import { useCookieConsentStore } from "@/lib/cookie-consent/store";
 import { CheckIcon, ErrorIcon, InfoIcon } from "./icons";
 
-// Colori da docs/DESIGN_SYSTEM.md: errore e info coincidono con ember/amber,
+// Colori da docs/DESIGN_SYSTEM.md: errore e info coincidono con ember/accent,
 // successo con "Success green" (--color-success, campionato dal mockup
 // 50_component_toast.png e poi aggiunto in tabella).
 const VARIANT_STYLES: Record<
@@ -23,7 +23,7 @@ const VARIANT_STYLES: Record<
   },
   info: {
     Icon: InfoIcon,
-    accentClassName: "border-amber text-amber",
+    accentClassName: "border-accent text-accent",
     ariaLive: "polite",
   },
 };
