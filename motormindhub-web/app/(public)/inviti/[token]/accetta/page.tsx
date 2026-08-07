@@ -81,7 +81,7 @@ export default function AccettaInvitoPage() {
     <div className="flex min-h-[60vh] items-center justify-center px-4 py-16">
       <div className="w-full max-w-md rounded-xl bg-carbon p-8 shadow-xl">
         <div className="mb-8 flex justify-center">
-          <Logo />
+          <Logo className="h-16 w-16" />
         </div>
 
         {view.step === "result" ? (

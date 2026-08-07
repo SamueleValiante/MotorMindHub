@@ -46,15 +46,6 @@ export function CloseIcon({ className }: IconProps) {
   );
 }
 
-export function BellIcon({ className }: IconProps) {
-  return (
-    <svg {...base} className={className}>
-      <path d="M6 9a6 6 0 1 1 12 0c0 3.5 1 5 1.5 6H4.5C5 14 6 12.5 6 9z" />
-      <path d="M10 19a2 2 0 0 0 4 0" />
-    </svg>
-  );
-}
-
 export function ClockIcon({ className }: IconProps) {
   return (
     <svg {...base} className={className}>

@@ -28,7 +28,15 @@ export function UserMenu() {
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-2 text-sm text-paper"
         aria-expanded={open}
+        aria-label={`${user.nome} ${user.cognome}`}
       >
+        {/*
+          Il nome accessibile del bottone vive nell'aria-label sopra, non nel
+          contenuto: l'Avatar è aria-hidden quando mostra le iniziali
+          (fallback decorativo) e lo <span> col nome è nascosto sotto sm: -
+          senza l'aria-label il bottone non aveva alcun nome discernibile su
+          mobile (trovato da un audit axe reale, non per ispezione).
+        */}
         <Avatar nome={user.nome} cognome={user.cognome} fotoProfilo={user.fotoProfilo} className="h-8 w-8 text-xs" />
         <span className="hidden font-heading uppercase tracking-wide sm:inline">
           {user.nome} {user.cognome.charAt(0)}.
@@ -44,7 +52,20 @@ export function UserMenu() {
             onClick={() => setOpen(false)}
             className="fixed inset-0 z-10 cursor-default"
           />
-          <div className="absolute right-0 z-20 mt-2 w-48 rounded-md border border-paper/10 bg-carbon py-1 shadow-xl">
+          {/*
+            left-0 di base, right-0 solo da md in su: il trigger sta vicino
+            al bordo SINISTRO nel pannello mobile (riga propria, allineato a
+            inizio) ma vicino al bordo DESTRO nell'header desktop (ultimo
+            elemento della riga) - ancorare sempre a destra (right-0, unico
+            valore prima di questo fix) spinge il dropdown w-48 quasi
+            interamente fuori dal viewport a sinistra sul pannello mobile,
+            lasciando visibile solo un lembo vuoto del box: bug riprodotto
+            con Playwright (boundingBox.x negativo, elementFromPoint nullo
+            al centro delle voci). md:left-auto cancella left-0 prima che
+            md:right-0 prenda effetto (left+right+width tutti espliciti
+            sarebbero sovra-vincolati).
+          */}
+          <div className="absolute left-0 z-20 mt-2 w-48 rounded-md border border-paper/10 bg-carbon py-1 shadow-xl md:left-auto md:right-0">
             <Link
               href="/account"
               onClick={() => setOpen(false)}

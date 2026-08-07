@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
 import { useAuthStore } from "@/lib/auth/store";
 import { UserMenu } from "./UserMenu";
-import { BellIcon, MenuIcon, CloseIcon } from "./icons";
+import { MenuIcon, CloseIcon } from "./icons";
 
 const NAV_ITEMS = [
   { href: "/", label: "Home" },
@@ -19,9 +19,11 @@ const NAV_ITEMS = [
  * della Home e nei filtri di Esplora, non e' un elemento ricorrente da
  * riprodurre qui.
  *
- * La campanella (mockup 03/03b) e' decorativa: GestioneNotifiche non
- * espone una lista di notifiche in-app (solo invio email, SDD 4.6), quindi
- * niente dropdown/badge finti dietro un'icona che sembra funzionare.
+ * Nessuna campanella notifiche (era nel mockup 03/03b, decorativa e mai
+ * cliccabile): rimossa, stessa disciplina già applicata ad altri elementi
+ * che promettevano funzionalità inesistenti (es. "Diventa Autore") —
+ * GestioneNotifiche non espone una lista di notifiche in-app, solo invio
+ * email (SDD 4.6), niente da collegarci dietro.
  */
 export function PublicHeader() {
   const status = useAuthStore((s) => s.status);
@@ -48,10 +50,7 @@ export function PublicHeader() {
 
         <div className="hidden items-center gap-4 md:flex">
           {status === "authenticated" ? (
-            <>
-              <BellIcon className="h-5 w-5 text-chrome" aria-hidden="true" />
-              <UserMenu />
-            </>
+            <UserMenu />
           ) : status === "anonymous" ? (
             <>
               <Link href="/login" className="font-heading text-sm font-bold uppercase tracking-wide text-paper">
