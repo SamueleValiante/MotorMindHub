@@ -143,7 +143,7 @@ export function ArticleDetailContent({ articleId }: { articleId: string }) {
           <h2 className="mb-6 font-heading text-lg font-bold uppercase tracking-wide text-paper">
             Altri articoli in {articolo.categoriaNome}
           </h2>
-          <div className="flex flex-col gap-6 rounded-lg border border-paper/10 bg-carbon p-6">
+          <div className="grid gap-6 rounded-lg border border-paper/10 bg-carbon p-6 md:grid-cols-2">
             {altriArticoli.map((a) => (
               <ArticleCard key={a.id} articolo={a} />
             ))}

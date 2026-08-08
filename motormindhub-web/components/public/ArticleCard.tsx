@@ -35,18 +35,17 @@ function ArticleCardContent({ articolo, muted = false }: { articolo: ArticleSumm
   return (
     <>
       {/*
-        max-h-80: la card non impone una larghezza propria, si affida al
-        contenitore del chiamante — corretto per restare fluida, ma aspect-
-        video da solo lascia l'altezza crescere senza limiti quando quel
-        contenitore è una lista verticale a piena larghezza (I Miei
-        Salvataggi, I Miei Articoli, Dashboard Autore, articoli correlati,
-        Esplora): unico posto dove succede per caso a non avere il problema
-        è la Home, la cui grid md:grid-cols-2 dimezza la larghezza. ~320px
-        è la stessa altezza che la card raggiunge già naturalmente lì
-        (colonna ~560px, aspect-video); object-cover sull'<img> sotto
-        continua a riempire senza distorsioni quando il cap si attiva.
+        Nessuna larghezza propria: la card si affida al contenitore del
+        chiamante per la colonna, aspect-video ne deriva l'altezza — corretto
+        SOLO se quel contenitore è a sua volta vincolato (grid md:grid-cols-2,
+        stessa griglia in Home/Esplora/I Miei Salvataggi/I Miei Articoli/
+        Dashboard Autore/correlati). Un max-h qui dentro sarebbe una seconda
+        regola ridondante (e in potenziale conflitto, se mai il contenitore
+        cambiasse) rispetto a quella già imposta dalla griglia lato
+        chiamante — l'altezza corretta è già una conseguenza della larghezza
+        corretta, non serve imporla due volte.
       */}
-      <div className="aspect-video max-h-80 w-full overflow-hidden rounded-md bg-surface-raised">
+      <div className="aspect-video w-full overflow-hidden rounded-md bg-surface-raised">
         {articolo.immagineCopertina && (
           // eslint-disable-next-line @next/next/no-img-element -- URL arbitraria fornita dall'autore, non ottimizzabile da next/image senza un dominio remoto configurato
           <img

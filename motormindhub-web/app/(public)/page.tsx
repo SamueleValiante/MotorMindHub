@@ -174,6 +174,15 @@ export default function HomePage() {
             description="Non appena un autore pubblicherà il primo articolo, lo troverai qui."
           />
         ) : featured.status === "ready" ? (
+          // md:grid-cols-2, non 3 anche su schermi molto larghi: la
+          // sezione è già dentro max-w-6xl (riga sopra), che non cresce
+          // oltre 1152px indipendentemente dal viewport — una terza
+          // colonna qui non risolverebbe nulla (il problema delle card a
+          // piena larghezza era altrove, contenitori senza max-w propria)
+          // e renderebbe solo le card più strette (~368px, testo/excerpt
+          // compressi) senza motivo. Stessa griglia riusata identica in
+          // Esplora/I Miei Salvataggi/I Miei Articoli/Dashboard Autore/
+          // correlati, così la card ha sempre la stessa proporzione.
           <div className="grid gap-6 md:grid-cols-2">
             {featured.result.articoli.map((articolo) => (
               <ArticleCard key={articolo.id} articolo={articolo} />

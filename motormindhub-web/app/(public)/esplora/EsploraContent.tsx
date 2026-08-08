@@ -194,7 +194,7 @@ export function EsploraContent() {
           description="Nessun articolo corrisponde ai filtri applicati. Prova a modificarli."
         />
       ) : results.status === "ready" ? (
-        <div className="flex flex-col gap-6 rounded-lg border border-paper/10 bg-carbon p-6">
+        <div className="grid gap-6 rounded-lg border border-paper/10 bg-carbon p-6 md:grid-cols-2">
           {results.result.articoli.map((articolo) => (
             <ArticleCard key={articolo.id} articolo={articolo} />
           ))}

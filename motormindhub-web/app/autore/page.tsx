@@ -88,7 +88,7 @@ export default function DashboardAutorePage() {
                 action={{ label: "Nuovo articolo", href: "/autore/articoli/nuovo" }}
               />
             ) : (
-              <div className="flex flex-col gap-6">
+              <div className="grid gap-6 md:grid-cols-2">
                 {ultimiArticoli.map((articolo) => (
                   <ArticleCard
                     key={articolo.id}

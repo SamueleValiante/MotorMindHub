@@ -159,7 +159,7 @@ export default function IMieiArticoliPage() {
               description="Nessun articolo corrisponde alla ricerca o al filtro applicato."
             />
           ) : (
-            <div className="flex flex-col gap-6 rounded-lg border border-paper/10 bg-carbon p-6">
+            <div className="grid gap-6 rounded-lg border border-paper/10 bg-carbon p-6 md:grid-cols-2">
               {filtrati.map((articolo) => (
                 <ArticleCard
                   key={articolo.id}

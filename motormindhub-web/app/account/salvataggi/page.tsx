@@ -144,7 +144,7 @@ export default function SalvataggiPage() {
               description="Non hai ancora salvato nessun articolo in questa lista."
             />
           ) : (
-            <div className="flex flex-col gap-6 rounded-lg border border-paper/10 bg-carbon p-6">
+            <div className="grid gap-6 rounded-lg border border-paper/10 bg-carbon p-6 md:grid-cols-2">
               {visibili.map((s) => {
                 const key = `${s.articolo.id}-${s.tipoLista}`;
                 return (
