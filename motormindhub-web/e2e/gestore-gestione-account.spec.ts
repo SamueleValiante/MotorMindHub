@@ -1,4 +1,5 @@
 import { test, expect } from "./fixtures";
+import { AxeBuilder } from "@axe-core/playwright";
 import { loginViaUi } from "./helpers/ui";
 import { requestAccountDeletion, reportUser } from "./helpers/test-amministrazione-utenti";
 import { getUserId } from "./helpers/test-users";
@@ -93,6 +94,36 @@ test.describe("Gestione Account + Scheda Utente (Gestore Utenti)", () => {
     const segnalazioniRicevute = page.locator("dl > div", { hasText: "Segnalazioni ricevute" });
     await expect(segnalazioniRicevute.getByText("1", { exact: true })).toBeVisible();
     await expect(page.getByText(motivazione)).toBeVisible();
+  });
+
+  test("lista: la colonna Ruolo mostra dati reali per ruoli diversi, senza filtro (backend commit 175e162)", async ({
+    page,
+    testUsers,
+  }) => {
+    const gestore = await testUsers.create({ ruolo: "GESTORE_UTENTI" });
+    const iscritto = await testUsers.create();
+    const autore = await testUsers.create({ ruolo: "AUTORE" });
+
+    await loginViaUi(page, gestore.email, gestore.password);
+    await page.goto("/gestore/gestione-account");
+    await expect(page.getByRole("heading", { name: "Gestione Account" })).toBeVisible();
+
+    const rigaIscritto = page.locator("tr", { hasText: iscritto.email });
+    const rigaAutore = page.locator("tr", { hasText: autore.email });
+    await expect(rigaIscritto).toBeVisible();
+    await expect(rigaAutore).toBeVisible();
+    await expect(rigaIscritto.getByText("Iscritto", { exact: true })).toBeVisible();
+    await expect(rigaAutore.getByText("Autore", { exact: true })).toBeVisible();
+
+    // Nessun controllo di filtro per ruolo (RF4.2 non lo prevede, mockup 39
+    // ha solo tab di stato): le uniche voci interattive restano le 4 tab
+    // già esistenti (Tutti/Attivi/Sospesi/In cancellazione) e la ricerca
+    // testuale — nessun elemento aggiuntivo introdotto da questo cambio.
+    await expect(page.getByRole("button", { name: /iscritto/i, exact: false })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /autore/i, exact: false })).toHaveCount(0);
+
+    const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+    expect(results.violations).toEqual([]);
   });
 
   test("nessun utente: EmptyState invece di una tabella vuota", async ({ page, testUsers }) => {

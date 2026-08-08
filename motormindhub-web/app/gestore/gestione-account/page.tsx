@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/empty-state/EmptyState";
 import { SearchIcon } from "@/components/public/icons";
 import { PeopleIcon } from "@/components/manager/icons";
 import type { StatoUtente } from "@/lib/amministrazioneUtenti/types";
+import type { Ruolo } from "@/lib/auth/jwt";
 
 function formatData(iso: string): string {
   return new Date(iso).toLocaleDateString("it-IT");
@@ -34,6 +35,21 @@ const STATO_CLASS: Record<StatoUtente, string> = {
   ATTIVO: "text-success",
   SOSPESO: "text-ember",
   CANCELLATO: "text-fog",
+};
+
+/**
+ * Solo esposizione (backend commit 175e162): nessun filtro per ruolo nella
+ * UI, searchUsers non lo supporta lato query e il mockup 39 non lo prevede
+ * (solo tab di stato) — un controllo che sembra funzionare senza esserlo.
+ * Stile a pill neutro (bordo, nessun pallino) per restare distinto dal
+ * badge a pallino colorato di "Stato": qui il colore non ha significato
+ * semantico (buono/cattivo) come per lo stato account, è solo categoria.
+ */
+const RUOLO_LABEL: Record<Ruolo, string> = {
+  ISCRITTO: "Iscritto",
+  AUTORE: "Autore",
+  MANAGER_AUTORI: "Manager Autori",
+  GESTORE_UTENTI: "Gestore Utenti",
 };
 
 /** Gestione Account (mockup 39, RF4.2, UC_22) — solo GESTORE_UTENTI. */
@@ -121,10 +137,11 @@ export default function GestioneAccountPage() {
         />
       ) : (
         <div className="overflow-x-auto rounded-lg border border-paper/10 bg-carbon">
-          <table className="w-full min-w-[560px] text-left text-sm">
+          <table className="w-full min-w-[680px] text-left text-sm">
             <thead>
               <tr className="border-b border-paper/10 text-xs uppercase tracking-wide text-fog">
                 <th className="px-6 py-4 font-heading font-semibold">Utente</th>
+                <th className="px-6 py-4 font-heading font-semibold">Ruolo</th>
                 <th className="px-6 py-4 font-heading font-semibold">Stato</th>
                 <th className="px-6 py-4 font-heading font-semibold">Iscritto dal</th>
                 <th className="px-6 py-4" />
@@ -143,6 +160,11 @@ export default function GestioneAccountPage() {
                         <p className="truncate text-xs text-fog">{utente.email}</p>
                       </div>
                     </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className="inline-flex items-center rounded-full border border-paper/20 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-chrome">
+                      {RUOLO_LABEL[utente.ruolo]}
+                    </span>
                   </td>
                   <td className="px-6 py-4">
                     <span

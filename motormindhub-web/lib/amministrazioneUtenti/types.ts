@@ -1,3 +1,5 @@
+import type { Ruolo } from "@/lib/auth/jwt";
+
 export type StatoSegnalazione = "APERTA" | "IN_GESTIONE" | "ARCHIVIATA";
 
 /** ReportQueueItemDTO (GestioneAmministrazioneUtenti.getReportsQueue, RF4.5/RF4.6, UC_26). */
@@ -55,13 +57,20 @@ export interface SuspensionInput {
 
 export type StatoUtente = "NON_VERIFICATO" | "ATTIVO" | "SOSPESO" | "CANCELLATO";
 
-/** UserSummaryDTO (GestioneAmministrazioneUtenti.searchUsers, RF4.2, UC_22). */
+/**
+ * UserSummaryDTO (GestioneAmministrazioneUtenti.searchUsers, RF4.2, UC_22).
+ * `ruolo` (backend commit 175e162): solo esposizione del dato, searchUsers
+ * non supporta ancora un filtro per ruolo (mockup 39 non lo prevede,
+ * solo tab di stato) — non aggiungere un filtro lato UI che sembrerebbe
+ * funzionare senza avere un parametro query reale dietro.
+ */
 export interface UserSummary {
   id: number;
   nome: string;
   cognome: string;
   email: string;
   stato: StatoUtente;
+  ruolo: Ruolo;
   dataRegistrazione: string;
 }
 
