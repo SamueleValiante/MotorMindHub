@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
 import { useAuthStore } from "@/lib/auth/store";
+import { ROLE_HOME_PATH } from "@/lib/auth/roleRedirect";
 import { UserMenu } from "./UserMenu";
 import { MenuIcon, CloseIcon } from "./icons";
 
@@ -27,17 +28,28 @@ const NAV_ITEMS = [
  */
 export function PublicHeader() {
   const status = useAuthStore((s) => s.status);
+  const ruolo = useAuthStore((s) => s.ruolo);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Per AUTORE/MANAGER_AUTORI/GESTORE_UTENTI "casa" è la propria dashboard,
+  // non l'home pubblica pensata per anonimi/Iscritto (ROLE_HOME_PATH,
+  // ISCRITTO -> "/") — stessa logica già applicata al Logo di ogni Sidebar
+  // di ruolo e alla voce del menu profilo (UserMenu): un Autore autenticato
+  // non deve avere un modo per "tornare" sull'home dell'Iscritto, né dal
+  // Logo né dalla voce "Home" (quest'ultima va quindi rimossa per loro,
+  // sarebbe un secondo link ridondante e fuorviante verso la stessa "/").
+  const homeHref = status === "authenticated" && ruolo ? ROLE_HOME_PATH[ruolo] : "/";
+  const navItems = homeHref === "/" ? NAV_ITEMS : NAV_ITEMS.filter((item) => item.href !== "/");
 
   return (
     <header className="border-b border-paper/10 bg-asphalt">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-        <Link href="/">
+        <Link href={homeHref}>
           <Logo />
         </Link>
 
         <nav className="hidden items-center gap-6 md:flex">
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
@@ -79,7 +91,7 @@ export function PublicHeader() {
       {mobileOpen && (
         <div className="flex flex-col gap-4 border-t border-paper/10 px-4 py-4 md:hidden">
           <nav className="flex flex-col gap-3">
-            {NAV_ITEMS.map((item) => (
+            {navItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
