@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -75,5 +76,14 @@ class SearchUsersIntegrationTest {
                         .param("stato", "ATTIVO")
                         .header("Authorization", "Bearer " + jwt))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void searchUsers_includeIlCampoRuoloNellaRispostaJson() throws Exception {
+        String jwt = creaGestoreELogga("search-con-ruolo@provider.it");
+
+        mockMvc.perform(get("/api/v1/amministrazione-utenti/utenti").header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].ruolo").value("GESTORE_UTENTI"));
     }
 }

@@ -35,6 +35,8 @@ import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.exception.Uten
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -381,6 +383,18 @@ class GestioneAmministrazioneUtentiTest {
 
         assertThat(risultati).hasSize(1);
         assertThat(risultati.get(0).email()).isEqualTo("paolo@provider.it");
+    }
+
+    @ParameterizedTest
+    @EnumSource(Ruolo.class)
+    void searchUsers_popolaIlRuoloPerCiascunValoreDellEnum(Ruolo ruolo) {
+        Utente utente = utente(1L, "paolo@provider.it", StatoUtente.ATTIVO, ruolo);
+        when(utenteRepository.search("paolo", null)).thenReturn(List.of(utente));
+
+        var risultati = gestione.searchUsers(new UserSearchCriteriaDTO("paolo", null));
+
+        assertThat(risultati).hasSize(1);
+        assertThat(risultati.get(0).ruolo()).isEqualTo(ruolo);
     }
 
     @Test

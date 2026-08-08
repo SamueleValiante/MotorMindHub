@@ -813,10 +813,12 @@ Nota di collaborazione tra sottosistemi: acceptInvite crea un nuovo record Utent
 |-------------------------------------|-------------------------------------------------------------------------------------------------------|
 | **Metodo (query)**                  | **Descrizione**                                                                                       |
 | getUserManagementDashboard()        | Recupera numero utenti registrati, segnalazioni aperte e richieste GDPR in coda. (cfr. RF4.1)         |
-| searchUsers(criteria)               | Ricerca, filtra e restituisce la lista degli utenti registrati con stato account. (cfr. RF4.2, UC_22) |
+| searchUsers(criteria)               | Ricerca, filtra e restituisce la lista degli utenti registrati con stato account e ruolo. (cfr. RF4.2, UC_22) |
 | getReportsQueue()                   | Recupera la coda di lavorazione delle segnalazioni ricevute dagli utenti. (cfr. RF4.5, UC_26)         |
 | getDeletionRequestsQueue()          | Recupera la coda delle richieste di cancellazione account. (cfr. RF4.6, UC_25)                        |
 | getAdministrativeActionLog(filters) | Recupera la cronologia consultabile delle azioni amministrative. (cfr. RF4.8)                         |
+
+**Nota** UserSummaryDTO (il tipo restituito da searchUsers) espone anche il campo **ruolo** (Ruolo), popolato da Utente.getRuolo() — utile alla lista "Gestione Account" del mockup 39_gestore_gestione_account.png per mostrare il ruolo di ciascun utente in colonna. UserSearchCriteriaDTO (i parametri di ricerca) non include invece un filtro per ruolo: il mockup 39 mostra solo tab di filtro per stato account (Tutti/Attivi/Sospesi/In Cancellazione), nessun filtro per ruolo — RF4.2 non lo richiede esplicitamente. Un filtro `ruolo` opzionale su UtenteRepository.search resta un'estensione separata, da valutare solo se richiesta esplicitamente lato frontend.
 
 > **2.6 GestioneNotifiche**
 

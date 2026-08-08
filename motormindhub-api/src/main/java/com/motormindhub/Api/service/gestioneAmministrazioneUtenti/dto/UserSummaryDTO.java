@@ -1,5 +1,6 @@
 package com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto;
 
+import com.motormindhub.Api.model.entity.Ruolo;
 import com.motormindhub.Api.model.entity.StatoUtente;
 
 import java.time.Instant;
@@ -11,6 +12,7 @@ public record UserSummaryDTO(
         String cognome,
         String email,
         StatoUtente stato,
+        Ruolo ruolo,
         Instant dataRegistrazione
 ) {
 }

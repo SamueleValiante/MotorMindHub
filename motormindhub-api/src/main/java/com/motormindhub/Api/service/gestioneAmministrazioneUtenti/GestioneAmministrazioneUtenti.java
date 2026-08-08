@@ -269,7 +269,7 @@ public class GestioneAmministrazioneUtenti {
         String query = criteria.query() == null ? "" : criteria.query();
         return utenteRepository.search(query, criteria.stato()).stream()
                 .map(u -> new UserSummaryDTO(u.getId(), u.getNome(), u.getCognome(), u.getEmail(),
-                        u.getStato(), u.getDataRegistrazione()))
+                        u.getStato(), u.getRuolo(), u.getDataRegistrazione()))
                 .toList();
     }
 
