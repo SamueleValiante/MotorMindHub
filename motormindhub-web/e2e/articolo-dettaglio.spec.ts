@@ -1,4 +1,5 @@
 import { test, expect } from "./fixtures";
+import { AxeBuilder } from "@axe-core/playwright";
 import { loginViaUi } from "./helpers/ui";
 import {
   createPublishedArticle,
@@ -315,6 +316,58 @@ test.describe("Dettaglio Articolo", () => {
       await page.goto(`/articoli/${id}`);
       await expect(page.getByRole("heading", { name: titolo })).toBeVisible();
       await expect(page.getByRole("button", { name: "Salva articolo" })).toBeVisible();
+    } finally {
+      await deleteArticle(manager.email, manager.password, id);
+    }
+  });
+
+  /**
+   * Regressione: il corpo dell'articolo (i paragrafi) usava text-chrome
+   * (#B8BEC7, DESIGN_SYSTEM.md: "bordi, icone, testo secondario chiaro")
+   * invece di text-paper (#EDEEF0, "testo primario su sfondo scuro") —
+   * stesso problema semantico già corretto in ArticleEditor.tsx per il
+   * testo che l'autore scrive, qui sul lato lettura. chrome supera comunque
+   * la soglia WCAG AA, ma è il colore sbagliato per il contenuto principale
+   * che il lettore è lì per leggere. Titolo e nome autore erano già in
+   * paper (invariati); breadcrumb e data/tempo di lettura restano in fog
+   * di proposito (sono davvero metadata secondari) — verificato che il fix
+   * non li abbia toccati.
+   */
+  test("il corpo dell'articolo è in paper (colore primario), non chrome/fog: leggibile quanto il titolo", async ({
+    page,
+    testUsers,
+  }) => {
+    const manager = await testUsers.create({ ruolo: "MANAGER_AUTORI" });
+    const stamp = Date.now();
+    const titolo = `Articolo contrasto corpo ${stamp}`;
+    const id = await createPublishedArticle(manager.email, manager.password, {
+      titolo,
+      categoriaNome: `Categoria contrasto corpo ${stamp}`,
+    });
+
+    try {
+      await page.goto(`/articoli/${id}`);
+      await expect(page.getByRole("heading", { name: titolo })).toBeVisible();
+
+      const colors = await page.evaluate(() => ({
+        titolo: getComputedStyle(document.querySelector("h1")!).color,
+        corpo: getComputedStyle(document.querySelector(".leading-relaxed p")!).color,
+        // Metadata secondari (fog, invariati): il fix non deve averli toccati.
+        // "nav" da solo prenderebbe il primo <nav> in ordine DOM, quello di
+        // PublicHeader (Home/Esplora/Chi Siamo) — serve lo scope a <main>
+        // per arrivare al breadcrumb di ArticleDetailContent.
+        breadcrumb: getComputedStyle(document.querySelector("main nav")!).color,
+      }));
+      // #EDEEF0 = rgb(237, 238, 240) — non più #B8BEC7 (chrome, rgb(184, 190, 199)).
+      expect(colors.corpo).toBe("rgb(237, 238, 240)");
+      expect(colors.corpo).toBe(colors.titolo);
+      // #888E95 (fog) = rgb(136, 142, 149) — resta secondario, non toccato dal fix.
+      expect(colors.breadcrumb).toBe("rgb(136, 142, 149)");
+
+      const axeResults = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+        .analyze();
+      expect(axeResults.violations).toEqual([]);
     } finally {
       await deleteArticle(manager.email, manager.password, id);
     }

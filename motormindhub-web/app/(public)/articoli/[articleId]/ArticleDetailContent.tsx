@@ -130,7 +130,17 @@ export function ArticleDetailContent({ articleId }: { articleId: string }) {
         <div className="mt-8 aspect-video w-full rounded-lg bg-surface-raised" />
       )}
 
-      <div className="mt-8 flex flex-col gap-4 text-sm leading-relaxed text-chrome">
+      {/*
+        text-paper, non text-chrome: il corpo dell'articolo è il contenuto
+        principale che il lettore è lì per leggere, non testo secondario —
+        chrome (DESIGN_SYSTEM.md: "bordi, icone, testo secondario chiaro")
+        supera comunque la soglia WCAG AA qui, ma è il ruolo semantico
+        sbagliato. Stesso fix già applicato al testo scritto dall'autore in
+        ArticleEditor.tsx. Titolo (h1), nome autore e "Altri articoli in
+        {categoria}" erano già in paper; breadcrumb e data/tempo di lettura
+        restano in fog, sono davvero metadata secondari.
+      */}
+      <div className="mt-8 flex flex-col gap-4 text-sm leading-relaxed text-paper">
         {articolo.testo.split(/\n{2,}/).map((paragrafo, i) => (
           <p key={i} className="whitespace-pre-wrap">
             {paragrafo}
