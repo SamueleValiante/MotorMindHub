@@ -1,4 +1,5 @@
 import { test, expect } from "./fixtures";
+import { AxeBuilder } from "@axe-core/playwright";
 import { loginViaUi } from "./helpers/ui";
 import { createCategory, rejectArticle, approveArticle, deleteArticle } from "./helpers/test-articles";
 
@@ -131,5 +132,38 @@ test.describe("Editor articolo", () => {
     ).toBeVisible();
     await expect(page).toHaveURL(/\/autore\/articoli\/nuovo$/);
     expect(bozzaCreata).toBe(false);
+  });
+
+  /**
+   * Regressione: titolo e testo usavano text-chrome (#B8BEC7, DESIGN_SYSTEM.md:
+   * "bordi, icone, testo secondario chiaro") invece di text-paper (#EDEEF0,
+   * "testo primario su sfondo scuro") — chrome supera comunque la soglia WCAG
+   * AA su surface-raised, ma è il ruolo semantico sbagliato per il contenuto
+   * che l'autore sta scrivendo, risultando poco leggibile. Verifica sia il
+   * colore calcolato sia — audit axe — che il contrasto resti conforme.
+   */
+  test("titolo e testo sono in paper (colore primario), non chrome/fog: leggibili mentre si scrive", async ({
+    page,
+    testUsers,
+  }) => {
+    const autore = await testUsers.create({ ruolo: "AUTORE" });
+
+    await loginViaUi(page, autore.email, autore.password);
+    await page.goto("/autore/articoli/nuovo");
+    await expect(page.getByRole("heading", { name: "Nuovo Articolo" })).toBeVisible();
+
+    await page.getByLabel("Titolo dell'articolo").fill("Titolo di prova leggibilità");
+    await page.getByLabel("Testo dell'articolo").fill("Testo di prova per verificare che il colore sia primario.");
+
+    const colors = await page.evaluate(() => ({
+      titolo: getComputedStyle(document.getElementById("editor-titolo")!).color,
+      testo: getComputedStyle(document.getElementById("editor-testo")!).color,
+    }));
+    // #EDEEF0 = rgb(237, 238, 240) — non più #B8BEC7 (chrome, rgb(184, 190, 199)).
+    expect(colors.titolo).toBe("rgb(237, 238, 240)");
+    expect(colors.testo).toBe("rgb(237, 238, 240)");
+
+    const axeResults = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
+    expect(axeResults.violations).toEqual([]);
   });
 });

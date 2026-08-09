@@ -21,6 +21,17 @@ import type { ArticleDetail } from "@/lib/articoli/types";
 
 const inputClassName =
   "rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent";
+/**
+ * Stessa base di inputClassName, ma text-paper invece di text-chrome: per
+ * titolo e testo dell'articolo, cioè il contenuto che l'autore sta
+ * scrivendo, non un campo di form come categoria/tag. chrome (`#B8BEC7`,
+ * DESIGN_SYSTEM.md: "bordi, icone, testo secondario chiaro") supera comunque
+ * la soglia WCAG AA qui (8.33:1 su surface-raised), ma è il ruolo
+ * semantico sbagliato — paper (`#EDEEF0`, "testo primario su sfondo
+ * scuro", 13.41:1) è il colore documentato per questo caso, non chrome.
+ */
+const contentInputClassName =
+  "rounded-md bg-surface-raised px-4 py-3 text-sm text-paper outline-none focus:ring-2 focus:ring-accent";
 const labelClassName = "font-heading text-xs font-semibold uppercase tracking-wide text-fog";
 const primaryButtonClassName =
   "w-full rounded-md bg-accent px-5 py-3 text-center font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-60";
@@ -328,7 +339,7 @@ function ArticleEditorForm({ articolo }: { articolo: ArticleDetail | null }) {
           value={titolo}
           onChange={(event) => setTitolo(event.target.value)}
           placeholder="Titolo dell'articolo…"
-          className={`${inputClassName} text-base`}
+          className={`${contentInputClassName} text-base`}
         />
       </div>
 
@@ -342,7 +353,7 @@ function ArticleEditorForm({ articolo }: { articolo: ArticleDetail | null }) {
           value={testo}
           onChange={(event) => setTesto(event.target.value)}
           placeholder="Scrivi qui il contenuto dell'articolo…"
-          className={`${inputClassName} resize-y leading-relaxed`}
+          className={`${contentInputClassName} resize-y leading-relaxed`}
         />
       </div>
 
