@@ -36,7 +36,18 @@ export function AccountSidebar() {
 
   return (
     <>
-      <aside className="hidden h-screen w-64 shrink-0 flex-col border-r border-paper/10 bg-carbon md:flex">
+      {/*
+        sticky top-0: senza, l'aside è un blocco statico normale — quando
+        il contenuto di <main> nel layout supera i 100vh (una lista lunga),
+        la pagina scrolla (non main internamente: overflow-y-auto lì non
+        ha nulla su cui attivarsi, main è alto quanto il suo contenuto) e
+        l'aside, statico, scorre via col resto invece di restare agganciato
+        in alto. Il "binario" per lo sticky è già alto quanto serve — il
+        div flex del layout cresce naturalmente con main, nessun vincolo
+        di altezza lo trattiene a 100vh — mancava solo la posizione sticky
+        sull'aside stesso.
+      */}
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-paper/10 bg-carbon md:flex">
         <div className="px-6 py-6">
           <Link href="/">
             <Logo className="h-14 w-14" />
