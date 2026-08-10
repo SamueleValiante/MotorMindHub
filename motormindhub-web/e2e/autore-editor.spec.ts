@@ -166,4 +166,28 @@ test.describe("Editor articolo", () => {
     const axeResults = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
     expect(axeResults.violations).toEqual([]);
   });
+
+  /**
+   * Stessa dimensione/interlinea del corpo articolo in
+   * ArticleDetailContent.tsx (cfr. articolo-dettaglio.spec.ts), per
+   * coerenza tra scrittura e lettura: text-base/leading-loose, non più
+   * text-sm/leading-relaxed.
+   */
+  test("il testo dell'articolo usa la stessa dimensione/interlinea della pagina di lettura", async ({
+    page,
+    testUsers,
+  }) => {
+    const autore = await testUsers.create({ ruolo: "AUTORE" });
+
+    await loginViaUi(page, autore.email, autore.password);
+    await page.goto("/autore/articoli/nuovo");
+    await expect(page.getByRole("heading", { name: "Nuovo Articolo" })).toBeVisible();
+
+    const metrics = await page.evaluate(() => {
+      const style = getComputedStyle(document.getElementById("editor-testo")!);
+      return { fontSize: style.fontSize, lineHeight: parseFloat(style.lineHeight) };
+    });
+    expect(metrics.fontSize).toBe("16px"); // text-base, non più text-sm (14px)
+    expect(metrics.lineHeight).toBeCloseTo(32, 0); // leading-loose (2 × 16px), non più leading-relaxed
+  });
 });

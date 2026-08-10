@@ -139,8 +139,19 @@ export function ArticleDetailContent({ articleId }: { articleId: string }) {
         ArticleEditor.tsx. Titolo (h1), nome autore e "Altri articoli in
         {categoria}" erano già in paper; breadcrumb e data/tempo di lettura
         restano in fog, sono davvero metadata secondari.
+
+        text-base (non più text-sm) + leading-loose (non più leading-relaxed):
+        un corpo articolo lungo va letto comodamente, non compresso come un
+        elemento UI secondario — verificato dal vivo con screenshot che il
+        risultato non sia eccessivamente ariosa. gap-6 (non più gap-4) tra
+        paragrafi: con leading-loose l'altezza riga (~32px a text-base) supera
+        gap-4 (16px), rendendo lo stacco tra paragrafi indistinguibile da un
+        semplice a-capo — gap-6 (24px) lo rende di nuovo uno stacco chiaro.
+        Stessa dimensione/interlinea applicata al textarea di ArticleEditor.tsx
+        per coerenza tra scrittura e lettura (lì niente gap: è testo semplice
+        dentro un unico <textarea>, non paragrafi <p> separati).
       */}
-      <div className="mt-8 flex flex-col gap-4 text-sm leading-relaxed text-paper">
+      <div className="mt-8 flex flex-col gap-6 text-base leading-loose text-paper">
         {articolo.testo.split(/\n{2,}/).map((paragrafo, i) => (
           <p key={i} className="whitespace-pre-wrap">
             {paragrafo}

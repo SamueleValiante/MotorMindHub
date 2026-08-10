@@ -29,9 +29,17 @@ const inputClassName =
  * la soglia WCAG AA qui (8.33:1 su surface-raised), ma è il ruolo
  * semantico sbagliato — paper (`#EDEEF0`, "testo primario su sfondo
  * scuro", 13.41:1) è il colore documentato per questo caso, non chrome.
+ *
+ * Nessuna classe text-* qui (a differenza di inputClassName sopra, che ha
+ * text-sm): titolo e testo vogliono entrambi text-base, aggiunta da ogni
+ * chiamante — un text-sm qui e un text-base aggiunto dopo nella stessa
+ * stringa di classi sono due utility Tailwind per la stessa proprietà,
+ * l'ordine con cui vincono dipende dall'ordine nel CSS generato, non
+ * dall'ordine nella stringa: verificato che così si rompeva davvero
+ * (il textarea restava a 14px, non 16px, nonostante `text-base` in coda).
  */
 const contentInputClassName =
-  "rounded-md bg-surface-raised px-4 py-3 text-sm text-paper outline-none focus:ring-2 focus:ring-accent";
+  "rounded-md bg-surface-raised px-4 py-3 text-paper outline-none focus:ring-2 focus:ring-accent";
 const labelClassName = "font-heading text-xs font-semibold uppercase tracking-wide text-fog";
 const primaryButtonClassName =
   "w-full rounded-md bg-accent px-5 py-3 text-center font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-60";
@@ -347,13 +355,19 @@ function ArticleEditorForm({ articolo }: { articolo: ArticleDetail | null }) {
         <label htmlFor="editor-testo" className="sr-only">
           Testo dell&apos;articolo
         </label>
+        {/*
+          text-base + leading-loose (non più leading-relaxed, già ereditava
+          text-sm da contentInputClassName): stessa dimensione/interlinea del
+          corpo articolo in ArticleDetailContent.tsx, per coerenza tra
+          scrittura e lettura — verificato dal vivo con screenshot.
+        */}
         <textarea
           id="editor-testo"
           rows={16}
           value={testo}
           onChange={(event) => setTesto(event.target.value)}
           placeholder="Scrivi qui il contenuto dell'articolo…"
-          className={`${contentInputClassName} resize-y leading-relaxed`}
+          className={`${contentInputClassName} resize-y text-base leading-loose`}
         />
       </div>
 

@@ -351,7 +351,11 @@ test.describe("Dettaglio Articolo", () => {
 
       const colors = await page.evaluate(() => ({
         titolo: getComputedStyle(document.querySelector("h1")!).color,
-        corpo: getComputedStyle(document.querySelector(".leading-relaxed p")!).color,
+        // whitespace-pre-wrap, non una classe tipografica (leading-*/text-*):
+        // quelle sono soggette a tuning (dimensione/interlinea/spacing), non
+        // vanno usate come selettore o ogni ritocco tipografico romperebbe
+        // silenziosamente questo test.
+        corpo: getComputedStyle(document.querySelector("p.whitespace-pre-wrap")!).color,
         // Metadata secondari (fog, invariati): il fix non deve averli toccati.
         // "nav" da solo prenderebbe il primo <nav> in ordine DOM, quello di
         // PublicHeader (Home/Esplora/Chi Siamo) — serve lo scope a <main>
@@ -368,6 +372,66 @@ test.describe("Dettaglio Articolo", () => {
         .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
         .analyze();
       expect(axeResults.violations).toEqual([]);
+    } finally {
+      await deleteArticle(manager.email, manager.password, id);
+    }
+  });
+
+  /**
+   * Regressione: il corpo articolo era text-sm/leading-relaxed/gap-4 —
+   * compresso, poco arioso per una lettura lunga (ispirato al riferimento
+   * Quattroruote fornito dall'utente). Con leading-loose (line-height 32px
+   * a text-base) il gap-4 originale (16px, pensato per leading-relaxed)
+   * rendeva lo stacco tra paragrafi visivamente debole rispetto al nuovo
+   * interlinea più ampio — verificato con screenshot prima/dopo, risolto
+   * passando a gap-6 (24px).
+   */
+  test("corpo articolo: text-base/leading-loose/gap-6, non più compresso come un elemento UI secondario", async ({
+    page,
+    testUsers,
+  }) => {
+    const manager = await testUsers.create({ ruolo: "MANAGER_AUTORI" });
+    const stamp = Date.now();
+    const titolo = `Articolo tipografia corpo ${stamp}`;
+    const id = await createPublishedArticle(manager.email, manager.password, {
+      titolo,
+      categoriaNome: `Categoria tipografia corpo ${stamp}`,
+    });
+
+    try {
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await page.goto(`/articoli/${id}`);
+      await expect(page.getByRole("heading", { name: titolo })).toBeVisible();
+
+      const metrics = await page.evaluate(() => {
+        const p = document.querySelector("p.whitespace-pre-wrap")!;
+        const wrapper = p.parentElement!;
+        const style = getComputedStyle(p);
+        const wrapperStyle = getComputedStyle(wrapper);
+        return {
+          fontSize: style.fontSize,
+          lineHeight: parseFloat(style.lineHeight),
+          gap: parseFloat(wrapperStyle.rowGap || wrapperStyle.gap),
+        };
+      });
+      expect(metrics.fontSize).toBe("16px"); // text-base, non più text-sm (14px)
+      expect(metrics.lineHeight).toBeCloseTo(32, 0); // leading-loose (2 × 16px), non più leading-relaxed (1.625 × 14px ≈ 22.75px)
+      expect(metrics.gap).toBeCloseTo(24, 0); // gap-6, non più gap-4 (16px)
+
+      // Mobile: testo più grande + interlinea più ampio non deve causare
+      // overflow orizzontale né sovrapposizioni — solo più scroll verticale,
+      // atteso e accettabile.
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.waitForTimeout(200);
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth
+      );
+      expect(overflow).toBe(false);
+
+      const axeMobile = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+        .analyze();
+      expect(axeMobile.violations).toEqual([]);
     } finally {
       await deleteArticle(manager.email, manager.password, id);
     }
