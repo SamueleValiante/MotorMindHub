@@ -333,6 +333,24 @@ Per ciascun sottosistema, le sezioni seguenti riportano gli invarianti di classe
 >
 > post: result = -- URL pubblico del file appena caricato su Cloud Storage
 
+**Nome metodo uploadImmagineCorpoArticolo(file: MultipartFile)**
+
+**Descrizione** Carica un'immagine su Cloud Storage per l'uso INLINE nel corpo Markdown dell'articolo (Articolo.testo), non come copertina. Stessa validazione di uploadImmagineCopertina (ImageUploadValidator: formato JPEG/PNG/WEBP, dimensione massima 5MB, contenuto verificato come immagine reale via decodifica) e stessi ruoli autorizzati (AUTORE, MANAGER_AUTORI) - l'unica differenza e' la cartella di destinazione su Cloud Storage (separata dalla copertina, cosi' da non mischiare le due categorie nel media library del provider). Come uploadImmagineCopertina, non lega l'upload a un articolo/bozza esistente e non tocca Articolo: il chiamante incolla l'URL restituito nel Markdown di dto.testo e lo persiste passando l'intero testo a createDraft/updateDraft/updatePublishedArticle. (SDD 3.2)
+
+**Pre-condizioni**
+
+> *context GestioneArticoli::uploadImmagineCorpoArticolo(file: MultipartFile)*
+>
+> pre: file.oclIsUndefined() = false and file.size \<= 5242880
+>
+> and Set{'image/jpeg', 'image/png', 'image/webp'}-\>includes(file.contentType)
+
+**Post-condizioni**
+
+> *context GestioneArticoli::uploadImmagineCorpoArticolo(file: MultipartFile)*
+>
+> post: result = -- URL pubblico del file appena caricato su Cloud Storage
+
 **Nome metodo createDraft(authorId: Long, dto: ArticleDraftDTO)**
 
 **Descrizione** Crea un nuovo articolo in stato BOZZA. (cfr. RF2.7, UC_16)

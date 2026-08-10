@@ -264,6 +264,19 @@ class GestioneArticoliTest {
         assertThat(url).isEqualTo("https://cdn/copertina.jpg");
     }
 
+    // --- uploadImmagineCorpoArticolo ------------------------------------------
+
+    @Test
+    void uploadImmagineCorpoArticolo_valida_eDelegaAlCloudStorageServiceConCartellaSeparataDallaCopertina() {
+        MultipartFile file = new MockMultipartFile("file", "diagramma.jpg", "image/jpeg", "dati".getBytes());
+        when(cloudStorageService.upload(file, "immagini-corpo-articoli")).thenReturn("https://cdn/diagramma.jpg");
+
+        String url = gestioneArticoli.uploadImmagineCorpoArticolo(file);
+
+        verify(imageUploadValidator).validate(file, 5L * 1024 * 1024);
+        assertThat(url).isEqualTo("https://cdn/diagramma.jpg");
+    }
+
     // --- publishArticle -----------------------------------------------------
 
     @Test

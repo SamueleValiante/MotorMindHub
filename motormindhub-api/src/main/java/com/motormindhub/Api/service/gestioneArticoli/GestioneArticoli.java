@@ -61,10 +61,14 @@ public class GestioneArticoli {
     private static final int PAROLE_AL_MINUTO = 200;
     private static final int LUNGHEZZA_ESTRATTO = 160;
 
-    // Upload copertina articolo (SDD 3.2): limite piu' permissivo della foto profilo
-    // (GestioneUtenti) perche' e' un'immagine hero, non un piccolo avatar.
-    private static final long MAX_DIMENSIONE_IMMAGINE_COPERTINA_BYTES = 5L * 1024 * 1024;
+    // Upload immagini articolo (copertina o inline nel corpo Markdown, SDD 3.2): limite piu'
+    // permissivo della foto profilo (GestioneUtenti) perche' sono immagini hero/di contenuto, non
+    // un piccolo avatar. Stesso limite per entrambi gli usi, non solo la stessa validazione.
+    private static final long MAX_DIMENSIONE_IMMAGINE_ARTICOLO_BYTES = 5L * 1024 * 1024;
     private static final String CARTELLA_IMMAGINI_COPERTINA = "copertine-articoli";
+    // Cartella separata da CARTELLA_IMMAGINI_COPERTINA: tiene distinte nel media library del
+    // provider le immagini di copertina da quelle incollate inline nel corpo dell'articolo.
+    private static final String CARTELLA_IMMAGINI_CORPO_ARTICOLO = "immagini-corpo-articoli";
 
     private final ArticoloRepository articoloRepository;
     private final ArticoloSalvatoRepository articoloSalvatoRepository;
@@ -97,8 +101,23 @@ public class GestioneArticoli {
      * (SDD 3.2)
      */
     public String uploadImmagineCopertina(MultipartFile file) {
-        imageUploadValidator.validate(file, MAX_DIMENSIONE_IMMAGINE_COPERTINA_BYTES);
+        imageUploadValidator.validate(file, MAX_DIMENSIONE_IMMAGINE_ARTICOLO_BYTES);
         return cloudStorageService.upload(file, CARTELLA_IMMAGINI_COPERTINA);
+    }
+
+    /**
+     * pre: file valido (formato JPEG/PNG/WEBP, dimensione <= 5MB, contenuto verificato come
+     * immagine reale - ImageUploadValidator, stessa validazione di uploadImmagineCopertina)
+     * post: il file e' caricato su Cloud Storage in una cartella separata dalla copertina
+     * (CARTELLA_IMMAGINI_CORPO_ARTICOLO) e viene restituito il suo URL pubblico. Non tocca
+     * Articolo: il client incolla l'URL come immagine inline nel Markdown di dto.testo e lo
+     * persiste passando l'intero testo a createDraft/updateDraft/updatePublishedArticle - stesso
+     * pattern di uploadImmagineCopertina, nessuno stato nuovo lato backend.
+     * (SDD 3.2)
+     */
+    public String uploadImmagineCorpoArticolo(MultipartFile file) {
+        imageUploadValidator.validate(file, MAX_DIMENSIONE_IMMAGINE_ARTICOLO_BYTES);
+        return cloudStorageService.upload(file, CARTELLA_IMMAGINI_CORPO_ARTICOLO);
     }
 
     /**

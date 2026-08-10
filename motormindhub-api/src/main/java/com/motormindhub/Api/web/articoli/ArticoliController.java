@@ -89,6 +89,18 @@ public class ArticoliController {
         return ResponseEntity.ok(new UploadResponseDTO(gestioneArticoli.uploadImmagineCopertina(file)));
     }
 
+    /**
+     * Upload di immagini INLINE nel corpo Markdown dell'articolo (Articolo.testo) - cartella
+     * Cloudinary separata da /copertine, stessi ruoli e stessa validazione. Come per /copertine,
+     * restituisce solo l'URL: il client lo incolla nel Markdown, nessun legame con un articolo/
+     * bozza esistente.
+     */
+    @PostMapping(value = "/immagini-corpo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('AUTORE', 'MANAGER_AUTORI')")
+    public ResponseEntity<UploadResponseDTO> uploadImmagineCorpoArticolo(@RequestParam("file") MultipartFile file) {
+        return ResponseEntity.ok(new UploadResponseDTO(gestioneArticoli.uploadImmagineCorpoArticolo(file)));
+    }
+
     @PostMapping("/bozze")
     @PreAuthorize("hasAnyRole('AUTORE', 'MANAGER_AUTORI')")
     public ResponseEntity<DraftCreatedResponseDTO> createDraft(@AuthenticationPrincipal UserPrincipal principal,
