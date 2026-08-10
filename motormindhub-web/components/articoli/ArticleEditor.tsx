@@ -17,6 +17,7 @@ import { StatoBadge } from "@/components/articoli/StatoBadge";
 import { WarningIcon } from "@/components/account/icons";
 import { CloseIcon } from "@/components/public/icons";
 import { ImageUploadField } from "@/components/shared/ImageUploadField";
+import { ArticleBodyEditor } from "@/components/articoli/ArticleBodyEditor";
 import type { ArticleDetail } from "@/lib/articoli/types";
 
 const inputClassName =
@@ -228,11 +229,12 @@ function TagInput({ tags, onChange }: { tags: string[]; onChange: (next: string[
  * in background — coerente con updateDraft/updatePublishedArticle come azioni
  * mutanti che vanno confermate da un click, non scatenate dalla digitazione.
  *
- * Niente toolbar di formattazione (B/I/H1/H2/citazione del mockup): il testo
- * è reso in sola lettura come paragrafi di testo semplice (cfr.
- * ArticleDetailContent, split su doppio a-capo), non esiste alcun motore di
- * rendering HTML/Markdown lato pubblico — una toolbar la simulerebbe senza
- * che l'effetto sia mai visibile all'autore.
+ * Toolbar di formattazione Markdown (B/I/H2/H3/immagine inline, mockup):
+ * ArticleBodyEditor (TipTap) tiene lo stato in JSON internamente e propaga
+ * Markdown via onChange — lo stesso Markdown che ArticleDetailContent.tsx
+ * rende lato pubblico con react-markdown, quindi l'effetto della toolbar è
+ * davvero visibile all'autore in anteprima dopo la pubblicazione. H1 è
+ * riservato al titolo (campo separato sopra), non selezionabile qui.
  *
  * Immagine di copertina: upload reale (ImageUploadField, condiviso con
  * impostazioni/page.tsx), non più un campo URL testuale — ArticleDraftDTO la
@@ -352,23 +354,15 @@ function ArticleEditorForm({ articolo }: { articolo: ArticleDetail | null }) {
       </div>
 
       <div className="flex flex-col gap-2">
-        <label htmlFor="editor-testo" className="sr-only">
-          Testo dell&apos;articolo
-        </label>
         {/*
-          text-base + leading-loose (non più leading-relaxed, già ereditava
-          text-sm da contentInputClassName): stessa dimensione/interlinea del
-          corpo articolo in ArticleDetailContent.tsx, per coerenza tra
-          scrittura e lettura — verificato dal vivo con screenshot.
+          ArticleBodyEditor tiene già text-base/leading-loose al suo interno
+          (stessa dimensione/interlinea del corpo articolo pubblico in
+          ArticleDetailContent.tsx, per coerenza tra scrittura e lettura) e
+          si auto-etichetta via aria-label (l'area editabile di TipTap non è
+          un elemento nativo associabile a <label htmlFor>, a differenza del
+          <textarea> che sostituisce).
         */}
-        <textarea
-          id="editor-testo"
-          rows={16}
-          value={testo}
-          onChange={(event) => setTesto(event.target.value)}
-          placeholder="Scrivi qui il contenuto dell'articolo…"
-          className={`${contentInputClassName} resize-y text-base leading-loose`}
-        />
+        <ArticleBodyEditor value={testo} onChange={setTesto} />
       </div>
 
       <div className="flex flex-col gap-6 rounded-lg border border-paper/10 bg-carbon p-6">

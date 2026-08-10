@@ -351,11 +351,12 @@ test.describe("Dettaglio Articolo", () => {
 
       const colors = await page.evaluate(() => ({
         titolo: getComputedStyle(document.querySelector("h1")!).color,
-        // whitespace-pre-wrap, non una classe tipografica (leading-*/text-*):
-        // quelle sono soggette a tuning (dimensione/interlinea/spacing), non
-        // vanno usate come selettore o ogni ritocco tipografico romperebbe
-        // silenziosamente questo test.
-        corpo: getComputedStyle(document.querySelector("p.whitespace-pre-wrap")!).color,
+        // data-testid, non una classe tipografica (leading-*/text-*) né il
+        // markup interno di react-markdown: quelle sono soggette a tuning
+        // (dimensione/interlinea/spacing) o a scelte di libreria, non vanno
+        // usate come selettore o ogni ritocco romperebbe silenziosamente
+        // questo test.
+        corpo: getComputedStyle(document.querySelector('[data-testid="articolo-corpo"] p')!).color,
         // Metadata secondari (fog, invariati): il fix non deve averli toccati.
         // "nav" da solo prenderebbe il primo <nav> in ordine DOM, quello di
         // PublicHeader (Home/Esplora/Chi Siamo) — serve lo scope a <main>
@@ -384,9 +385,14 @@ test.describe("Dettaglio Articolo", () => {
    * a text-base) il gap-4 originale (16px, pensato per leading-relaxed)
    * rendeva lo stacco tra paragrafi visivamente debole rispetto al nuovo
    * interlinea più ampio — verificato con screenshot prima/dopo, risolto
-   * passando a gap-6 (24px).
+   * passando a gap-6 (24px). Con react-markdown (motore Markdown, sostituisce
+   * lo split manuale su doppio a-capo) i <p> sono generati dalla libreria,
+   * non più separati da un flex gap ma nel flusso normale: lo stacco è ora
+   * un margin-top su "p + p" ([&_p+p]:mt-6 sul wrapper) — stesso 24px,
+   * verificato qui misurando la distanza tra due paragrafi reali invece del
+   * CSS gap (che con markup generato da libreria non esiste più).
    */
-  test("corpo articolo: text-base/leading-loose/gap-6, non più compresso come un elemento UI secondario", async ({
+  test("corpo articolo: text-base/leading-loose, spaziatura tra paragrafi non più compressa come un elemento UI secondario", async ({
     page,
     testUsers,
   }) => {
@@ -396,6 +402,7 @@ test.describe("Dettaglio Articolo", () => {
     const id = await createPublishedArticle(manager.email, manager.password, {
       titolo,
       categoriaNome: `Categoria tipografia corpo ${stamp}`,
+      testo: "Primo paragrafo di prova.\n\nSecondo paragrafo di prova.",
     });
 
     try {
@@ -404,19 +411,18 @@ test.describe("Dettaglio Articolo", () => {
       await expect(page.getByRole("heading", { name: titolo })).toBeVisible();
 
       const metrics = await page.evaluate(() => {
-        const p = document.querySelector("p.whitespace-pre-wrap")!;
-        const wrapper = p.parentElement!;
-        const style = getComputedStyle(p);
-        const wrapperStyle = getComputedStyle(wrapper);
+        const paragraphs = document.querySelectorAll('[data-testid="articolo-corpo"] p');
+        const [first, second] = [paragraphs[0], paragraphs[1]] as [HTMLElement, HTMLElement];
+        const style = getComputedStyle(first);
         return {
           fontSize: style.fontSize,
           lineHeight: parseFloat(style.lineHeight),
-          gap: parseFloat(wrapperStyle.rowGap || wrapperStyle.gap),
+          paragraphGap: second.getBoundingClientRect().top - first.getBoundingClientRect().bottom,
         };
       });
       expect(metrics.fontSize).toBe("16px"); // text-base, non più text-sm (14px)
       expect(metrics.lineHeight).toBeCloseTo(32, 0); // leading-loose (2 × 16px), non più leading-relaxed (1.625 × 14px ≈ 22.75px)
-      expect(metrics.gap).toBeCloseTo(24, 0); // gap-6, non più gap-4 (16px)
+      expect(metrics.paragraphGap).toBeCloseTo(24, 0); // margin-top 24px (mt-6) tra paragrafi, non più i 16px di gap-4
 
       // Mobile: testo più grande + interlinea più ampio non deve causare
       // overflow orizzontale né sovrapposizioni — solo più scroll verticale,
@@ -432,6 +438,91 @@ test.describe("Dettaglio Articolo", () => {
         .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
         .analyze();
       expect(axeMobile.violations).toEqual([]);
+    } finally {
+      await deleteArticle(manager.email, manager.password, id);
+    }
+  });
+
+  /**
+   * Editor Markdown (ArticleBodyEditor/TipTap) -> lib/articoli/markdown.ts
+   * (docToMarkdown) -> Articolo.testo -> react-markdown qui in lettura: il
+   * round-trip completo, non solo il rendering. Il Markdown iniettato qui
+   * imita esattamente quello che docToMarkdown produrrebbe per H2/H3/
+   * grassetto/corsivo/immagine (## , ### , **grassetto**, *corsivo*,
+   * ![alt](src) su una riga a sé) — un test end-to-end che passasse anche
+   * per un articolo digitato a mano nell'editor, verificato separatamente
+   * dal vivo (non automatizzabile qui: l'upload reale dell'immagine
+   * richiederebbe un file e l'endpoint /immagini-corpo).
+   */
+  test("Markdown: H2/H3/grassetto/corsivo/immagine si rendono correttamente, contrasto e alt text ok", async ({
+    page,
+    testUsers,
+  }) => {
+    const manager = await testUsers.create({ ruolo: "MANAGER_AUTORI" });
+    const stamp = Date.now();
+    const titolo = `Articolo markdown ${stamp}`;
+    const testo = [
+      "## Il sistema frenante",
+      "Un paragrafo con **grassetto** e *corsivo* insieme.",
+      "### Dettaglio tecnico",
+      "![Schema del sistema ABS](https://res.cloudinary.com/demo/image/upload/sample.jpg)",
+    ].join("\n\n");
+    const id = await createPublishedArticle(manager.email, manager.password, {
+      titolo,
+      categoriaNome: `Categoria markdown ${stamp}`,
+      testo,
+    });
+
+    try {
+      await page.goto(`/articoli/${id}`);
+      await expect(page.getByRole("heading", { name: titolo })).toBeVisible();
+
+      const corpo = page.getByTestId("articolo-corpo");
+      await expect(corpo.getByRole("heading", { name: "Il sistema frenante", level: 2 })).toBeVisible();
+      await expect(corpo.getByRole("heading", { name: "Dettaglio tecnico", level: 3 })).toBeVisible();
+      await expect(corpo.locator("strong")).toHaveText("grassetto");
+      await expect(corpo.locator("em")).toHaveText("corsivo");
+      const immagine = corpo.getByRole("img", { name: "Schema del sistema ABS" });
+      await expect(immagine).toBeVisible();
+      await expect(immagine).toHaveAttribute("alt", "Schema del sistema ABS");
+
+      const axeResults = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+        .analyze();
+      expect(axeResults.violations).toEqual([]);
+    } finally {
+      await deleteArticle(manager.email, manager.password, id);
+    }
+  });
+
+  /**
+   * I due articoli di test storici (ABS, Problemi Frequenti ABS) e in
+   * generale ogni Articolo.testo scritto prima di questa funzionalità sono
+   * testo semplice, senza sintassi Markdown: devono continuare a rendersi
+   * come un unico paragrafo leggibile, non riscritti né spezzati - nessuna
+   * migrazione dati necessaria (RF confermato con l'utente prima del piano).
+   */
+  test("testo semplice preesistente (nessuna sintassi Markdown) resta un unico paragrafo", async ({
+    page,
+    testUsers,
+  }) => {
+    const manager = await testUsers.create({ ruolo: "MANAGER_AUTORI" });
+    const stamp = Date.now();
+    const titolo = `Articolo testo semplice ${stamp}`;
+    const testo = "Questo è un testo semplice preesistente, senza alcuna sintassi Markdown al suo interno.";
+    const id = await createPublishedArticle(manager.email, manager.password, {
+      titolo,
+      categoriaNome: `Categoria testo semplice ${stamp}`,
+      testo,
+    });
+
+    try {
+      await page.goto(`/articoli/${id}`);
+      await expect(page.getByRole("heading", { name: titolo })).toBeVisible();
+
+      const corpo = page.getByTestId("articolo-corpo");
+      await expect(corpo.locator("p")).toHaveCount(1);
+      await expect(corpo.locator("p")).toHaveText(testo);
     } finally {
       await deleteArticle(manager.email, manager.password, id);
     }

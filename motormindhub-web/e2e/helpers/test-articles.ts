@@ -80,6 +80,8 @@ export async function login(email: string, password: string): Promise<string> {
 interface CreateArticleOptions {
   titolo: string;
   categoriaNome: string;
+  /** Default: un'unica frase semplice, coerente col vecchio comportamento plain-text. */
+  testo?: string;
 }
 
 /**
@@ -96,7 +98,7 @@ interface CreateArticleOptions {
 async function createDraftArticleInternal(
   authorEmail: string,
   authorPassword: string,
-  { titolo, categoriaNome }: CreateArticleOptions,
+  { titolo, categoriaNome, testo }: CreateArticleOptions,
   token?: string
 ): Promise<{ id: number; headers: Record<string, string> }> {
   const accessToken = token ?? (await login(authorEmail, authorPassword));
@@ -126,7 +128,7 @@ async function createDraftArticleInternal(
       headers,
       body: JSON.stringify({
         titolo,
-        testo: "Testo di prova generato per la verifica e2e.",
+        testo: testo ?? "Testo di prova generato per la verifica e2e.",
         categoriaId: categoria.id,
         tag: [],
       }),

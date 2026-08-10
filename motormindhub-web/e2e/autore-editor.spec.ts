@@ -1,7 +1,10 @@
+import path from "node:path";
 import { test, expect } from "./fixtures";
 import { AxeBuilder } from "@axe-core/playwright";
 import { loginViaUi } from "./helpers/ui";
 import { createCategory, rejectArticle, approveArticle, deleteArticle } from "./helpers/test-articles";
+
+const INLINE_IMAGE_PATH = path.join(__dirname, "fixtures", "inline-image.png");
 
 test.describe("Editor articolo", () => {
   // Il cookie banner (fixed, in basso) e i pulsanti primari dell'editor
@@ -42,7 +45,13 @@ test.describe("Editor articolo", () => {
     // sulla pagina di modifica (createDraft non prende body ma restituisce
     // l'id, cfr. DraftCreatedResponseDTO).
     await page.getByLabel("Titolo dell'articolo").fill(titoloOriginale);
-    await page.getByLabel("Testo dell'articolo").fill("Testo di prova per il ciclo end-to-end dell'editor.");
+    // .fill() non è affidabile su un'area contenteditable ProseMirror (TipTap):
+    // click + pressSequentially digita carattere per carattere, innescando gli
+    // eventi beforeinput/input nativi da cui ProseMirror ricostruisce il
+    // proprio stato — stesso motivo per cui è usato per tutti i campi
+    // "Testo dell'articolo" in questo file.
+    await page.getByLabel("Testo dell'articolo").click();
+    await page.getByLabel("Testo dell'articolo").pressSequentially("Testo di prova per il ciclo end-to-end dell'editor.");
     await page.getByLabel("Categoria").selectOption({ label: categoriaNome });
     await page.getByRole("button", { name: "+ Aggiungi" }).click();
     await page.getByPlaceholder("Nuovo tag…").fill("prova-e2e");
@@ -100,12 +109,17 @@ test.describe("Editor articolo", () => {
       // PUBBLICATO: nessun passaggio per bozza, un solo pulsante diretto.
       await expect(page.getByRole("button", { name: "Salva bozza" })).not.toBeVisible();
 
-      await page.getByLabel("Testo dell'articolo").fill("Testo aggiornato dopo la pubblicazione.");
+      await page.getByLabel("Testo dell'articolo").click();
+      // Il documento TipTap parte da "Testo di prova...": seleziona tutto
+      // prima di digitare il nuovo testo, altrimenti pressSequentially lo
+      // appenderebbe invece di sostituirlo (a differenza di .fill()).
+      await page.keyboard.press("ControlOrMeta+A");
+      await page.getByLabel("Testo dell'articolo").pressSequentially("Testo aggiornato dopo la pubblicazione.");
       await page.getByRole("button", { name: "Aggiorna articolo" }).click();
       await expect(page.getByText("Articolo aggiornato con successo.")).toBeVisible();
 
       await page.reload();
-      await expect(page.getByLabel("Testo dell'articolo")).toHaveValue("Testo aggiornato dopo la pubblicazione.");
+      await expect(page.getByLabel("Testo dell'articolo")).toHaveText("Testo aggiornato dopo la pubblicazione.");
     } finally {
       await deleteArticle(manager.email, manager.password, id);
     }
@@ -153,7 +167,8 @@ test.describe("Editor articolo", () => {
     await expect(page.getByRole("heading", { name: "Nuovo Articolo" })).toBeVisible();
 
     await page.getByLabel("Titolo dell'articolo").fill("Titolo di prova leggibilità");
-    await page.getByLabel("Testo dell'articolo").fill("Testo di prova per verificare che il colore sia primario.");
+    await page.getByLabel("Testo dell'articolo").click();
+    await page.getByLabel("Testo dell'articolo").pressSequentially("Testo di prova per verificare che il colore sia primario.");
 
     const colors = await page.evaluate(() => ({
       titolo: getComputedStyle(document.getElementById("editor-titolo")!).color,
@@ -189,5 +204,91 @@ test.describe("Editor articolo", () => {
     });
     expect(metrics.fontSize).toBe("16px"); // text-base, non più text-sm (14px)
     expect(metrics.lineHeight).toBeCloseTo(32, 0); // leading-loose (2 × 16px), non più leading-relaxed
+  });
+
+  /**
+   * Piano Markdown: verifica dal vivo dell'intero round-trip attraverso la
+   * UI reale (non Markdown iniettato via API come in articolo-dettaglio.spec.ts)
+   * — toolbar H2/H3/grassetto/corsivo, upload reale di un'immagine inline
+   * (endpoint /immagini-corpo) con testo alternativo obbligatorio, salvataggio
+   * come Markdown (lib/articoli/markdown.ts) e rendering pubblico via
+   * react-markdown. MANAGER_AUTORI scrive e approva lo stesso articolo,
+   * stesso pattern già usato da createPublishedArticle per gli helper API.
+   */
+  test("editor Markdown: H2/H3/grassetto/corsivo/immagine inline scritti dalla UI si pubblicano e si leggono correttamente", async ({
+    page,
+    testUsers,
+  }) => {
+    const manager = await testUsers.create({ ruolo: "MANAGER_AUTORI" });
+    const stamp = Date.now();
+    const categoriaNome = `Editor Markdown E2E ${stamp}`;
+    const titolo = `Guida editor Markdown ${stamp}`;
+
+    await createCategory(manager.email, manager.password, categoriaNome);
+
+    await loginViaUi(page, manager.email, manager.password);
+    await page.goto("/autore/articoli/nuovo");
+    await expect(page.getByRole("heading", { name: "Nuovo Articolo" })).toBeVisible();
+
+    await page.getByLabel("Titolo dell'articolo").fill(titolo);
+
+    const corpo = page.getByLabel("Testo dell'articolo");
+    await corpo.click();
+    await page.getByRole("button", { name: "H2", exact: true }).click();
+    await corpo.pressSequentially("Il sistema frenante");
+    await corpo.press("Enter");
+    await corpo.pressSequentially("Un paragrafo con testo in ");
+    await page.getByRole("button", { name: "Grassetto" }).click();
+    await corpo.pressSequentially("grassetto");
+    await page.getByRole("button", { name: "Grassetto" }).click();
+    await corpo.pressSequentially(" e in ");
+    await page.getByRole("button", { name: "Corsivo" }).click();
+    await corpo.pressSequentially("corsivo");
+    await page.getByRole("button", { name: "Corsivo" }).click();
+    await corpo.pressSequentially(".");
+    await corpo.press("Enter");
+    await page.getByRole("button", { name: "H3", exact: true }).click();
+    await corpo.pressSequentially("Dettaglio tecnico");
+    await corpo.press("Enter");
+
+    await page.getByTestId("inline-image-input").setInputFiles(INLINE_IMAGE_PATH);
+    await expect(page.getByRole("heading", { name: "Descrivi l'immagine" })).toBeVisible();
+    await page.getByLabel("Testo alternativo").fill("Schema del sistema frenante ABS");
+    await page.getByRole("button", { name: "Inserisci", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Descrivi l'immagine" })).not.toBeVisible();
+    await expect(corpo.getByRole("img", { name: "Schema del sistema frenante ABS" })).toBeVisible();
+
+    await page.getByLabel("Categoria").selectOption({ label: categoriaNome });
+
+    await page.getByRole("button", { name: "Salva bozza" }).click();
+    await page.waitForURL(/\/autore\/articoli\/\d+\/modifica$/);
+    const id = Number(page.url().match(/\/autore\/articoli\/(\d+)\/modifica$/)![1]);
+
+    await expect(page.getByRole("button", { name: "Invia in approvazione" })).toBeVisible();
+    await page.getByRole("button", { name: "Invia in approvazione" }).click();
+    await expect(page.getByText("Articolo inviato in approvazione.")).toBeVisible();
+    await page.waitForURL("**/autore/articoli");
+
+    try {
+      await approveArticle(manager.email, manager.password, id);
+
+      await page.goto(`/articoli/${id}`);
+      await expect(page.getByRole("heading", { name: titolo })).toBeVisible();
+
+      const articolo = page.getByTestId("articolo-corpo");
+      await expect(articolo.getByRole("heading", { name: "Il sistema frenante", level: 2 })).toBeVisible();
+      await expect(articolo.getByRole("heading", { name: "Dettaglio tecnico", level: 3 })).toBeVisible();
+      await expect(articolo.locator("strong")).toHaveText("grassetto");
+      await expect(articolo.locator("em")).toHaveText("corsivo");
+      const immaginePubblica = articolo.getByRole("img", { name: "Schema del sistema frenante ABS" });
+      await expect(immaginePubblica).toBeVisible();
+
+      const axeResults = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+        .analyze();
+      expect(axeResults.violations).toEqual([]);
+    } finally {
+      await deleteArticle(manager.email, manager.password, id);
+    }
   });
 });

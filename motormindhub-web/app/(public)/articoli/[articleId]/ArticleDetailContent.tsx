@@ -1,10 +1,33 @@
 "use client";
 
 import Link from "next/link";
+import ReactMarkdown, { type Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { useArticle } from "@/lib/articoli/useArticle";
 import { useArticleSearch } from "@/lib/articoli/useArticleSearch";
 import { ArticleCard } from "@/components/public/ArticleCard";
 import { SaveMenu } from "@/components/articoli/SaveMenu";
+
+/**
+ * Solo h2/h3/img hanno bisogno di uno stile esplicito qui: p/strong/em non
+ * lo richiedono, ereditano già color/font-size/line-height dal div
+ * wrapper (text-base leading-loose text-paper) per normale cascata CSS —
+ * aggiungere qui una regola identica sarebbe una ridondanza. article-body-image
+ * usa i18n minimale: alt e' obbligatorio lato editor (InsertImageAltModal),
+ * quindi qui non serve un fallback.
+ */
+const markdownComponents: Components = {
+  h2: ({ children }) => (
+    <h2 className="mt-8 font-heading text-xl font-bold uppercase tracking-wide text-paper">{children}</h2>
+  ),
+  h3: ({ children }) => (
+    <h3 className="mt-6 font-heading text-lg font-bold uppercase tracking-wide text-paper">{children}</h3>
+  ),
+  img: ({ src, alt }) => (
+    // eslint-disable-next-line @next/next/no-img-element -- URL Cloudinary arbitraria inserita dall'autore, stesso pattern della copertina sopra
+    <img src={typeof src === "string" ? src : undefined} alt={alt ?? ""} className="my-2 w-full rounded-lg" />
+  ),
+};
 
 function initials(nomeCompleto: string): string {
   const parts = nomeCompleto.trim().split(/\s+/);
@@ -140,23 +163,26 @@ export function ArticleDetailContent({ articleId }: { articleId: string }) {
         {categoria}" erano già in paper; breadcrumb e data/tempo di lettura
         restano in fog, sono davvero metadata secondari.
 
-        text-base (non più text-sm) + leading-loose (non più leading-relaxed):
-        un corpo articolo lungo va letto comodamente, non compresso come un
-        elemento UI secondario — verificato dal vivo con screenshot che il
-        risultato non sia eccessivamente ariosa. gap-6 (non più gap-4) tra
-        paragrafi: con leading-loose l'altezza riga (~32px a text-base) supera
-        gap-4 (16px), rendendo lo stacco tra paragrafi indistinguibile da un
-        semplice a-capo — gap-6 (24px) lo rende di nuovo uno stacco chiaro.
-        Stessa dimensione/interlinea applicata al textarea di ArticleEditor.tsx
-        per coerenza tra scrittura e lettura (lì niente gap: è testo semplice
-        dentro un unico <textarea>, non paragrafi <p> separati).
+        text-base + leading-loose: un corpo articolo lungo va letto
+        comodamente, non compresso come un elemento UI secondario —
+        verificato dal vivo con screenshot che il risultato non sia
+        eccessivamente arioso. Stessa dimensione/interlinea di
+        ArticleBodyEditor.tsx per coerenza tra scrittura e lettura.
+
+        react-markdown (+ remark-gfm) sostituisce lo split manuale su
+        doppio a-capo: i due articoli di test preesistenti (testo semplice,
+        nessuna sintassi Markdown) restano un unico <p>, stesso identico
+        risultato di prima — nessuna riscrittura necessaria in database.
+        gap-6 non serve più qui (era lo spazio tra i <p> generati a mano):
+        i <p> di react-markdown si susseguono nel flusso normale, la
+        spaziatura tra paragrafi/heading è nelle classi margin-top sopra
+        (h2/h3) o, per i <p> stessi, ereditata implicitamente dal margin di
+        default dell'elemento — verificato dal vivo che resti leggibile.
       */}
-      <div className="mt-8 flex flex-col gap-6 text-base leading-loose text-paper">
-        {articolo.testo.split(/\n{2,}/).map((paragrafo, i) => (
-          <p key={i} className="whitespace-pre-wrap">
-            {paragrafo}
-          </p>
-        ))}
+      <div data-testid="articolo-corpo" className="mt-8 text-base leading-loose text-paper [&_p+p]:mt-6">
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+          {articolo.testo}
+        </ReactMarkdown>
       </div>
 
       {altriArticoli.length > 0 && (
