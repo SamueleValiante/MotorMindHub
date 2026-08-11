@@ -37,14 +37,14 @@ public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final UtenteRepository utenteRepository;
-    private final long durataGiorni;
+    private final long durataOre;
 
     public RefreshTokenService(RefreshTokenRepository refreshTokenRepository,
                                 UtenteRepository utenteRepository,
-                                @Value("${security.refresh-token.expiration-days}") long durataGiorni) {
+                                @Value("${security.refresh-token.expiration-hours}") long durataOre) {
         this.refreshTokenRepository = refreshTokenRepository;
         this.utenteRepository = utenteRepository;
-        this.durataGiorni = durataGiorni;
+        this.durataOre = durataOre;
     }
 
     /**
@@ -56,7 +56,7 @@ public class RefreshTokenService {
     @Transactional
     public String generate(Long utenteId) {
         String rawToken = generaTokenCasuale();
-        Instant scadenza = Instant.now().plus(durataGiorni, ChronoUnit.DAYS);
+        Instant scadenza = Instant.now().plus(durataOre, ChronoUnit.HOURS);
         refreshTokenRepository.save(new RefreshToken(utenteRepository.getReferenceById(utenteId), hash(rawToken), scadenza));
         return rawToken;
     }
