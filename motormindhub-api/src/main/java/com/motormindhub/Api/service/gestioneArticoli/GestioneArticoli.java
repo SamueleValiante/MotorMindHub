@@ -327,18 +327,20 @@ public class GestioneArticoli {
 
     /**
      * Query di sola lettura (RF1.1) - nessun contratto OCL formale. Incrementa il contatore
-     * "letture" mostrato nel mockup 22_autore_articoli.png, tranne quando a chiamare e' l'autore
-     * stesso dell'articolo (es. lo riapre dall'Editor per correggerlo): altrimenti le proprie
-     * riletture in fase di editing gonfierebbero "Letture totali" nella Dashboard Autore e
-     * l'ordinamento "Più lette" in Esplora. callerId e' null per un chiamante non autenticato
-     * (Guest) - in quel caso non puo' mai coincidere con l'autore, quindi il contatore incrementa
-     * normalmente. Endpoint pubblico invariato: JwtAuthenticationFilter valorizza comunque il
-     * principal se il chiamante e' autenticato, anche su un path permitAll (SecurityConfig).
+     * "letture" mostrato nel mockup 22_autore_articoli.png solo per un pubblico di lettori reali
+     * (Guest o Iscritto): mai per un ruolo redazionale (Autore, Manager Autori, Gestore Utenti),
+     * a prescindere che l'articolo sia proprio o altrui - altrimenti le riletture in fase di
+     * editing/revisione/moderazione gonfierebbero "Letture totali" nella Dashboard Autore e
+     * l'ordinamento "Più lette" in Esplora. Un controllo basato solo sull'ownership (come in una
+     * versione precedente di questo metodo) non basta: un Autore che legge l'articolo di un
+     * collega, o un Manager/Gestore che lo apre per moderarlo, non e' un lettore e non deve
+     * incrementare il contatore. callerRuolo e' null per un chiamante non autenticato (Guest), che
+     * incrementa sempre normalmente.
      */
     @Transactional
-    public ArticleDetailDTO getArticleById(Long articleId, Long callerId) {
+    public ArticleDetailDTO getArticleById(Long articleId, Ruolo callerRuolo) {
         Articolo articolo = trovaArticoloOLancia(articleId);
-        if (callerId == null || !articolo.getAutore().getId().equals(callerId)) {
+        if (callerRuolo == null || callerRuolo == Ruolo.ISCRITTO) {
             articolo.incrementaVisualizzazioni();
         }
         return mappaDettaglio(articolo);

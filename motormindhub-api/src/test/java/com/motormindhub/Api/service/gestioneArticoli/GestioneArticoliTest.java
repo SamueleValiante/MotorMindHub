@@ -30,6 +30,8 @@ import com.motormindhub.Api.service.storage.ImageUploadValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -596,14 +598,27 @@ class GestioneArticoliTest {
     }
 
     @Test
-    void getArticleById_incrementaVisualizzazioni_quandoAutoreSuArticoloAltrui() {
+    void getArticleById_incrementaVisualizzazioni_quandoLettoreIscritto() {
         Utente autore = utente(1L, Ruolo.AUTORE);
         Articolo pubblicato = articolo(10L, autore, categoria(5L), StatoArticolo.PUBBLICATO, "Titolo");
         when(articoloRepository.findById(10L)).thenReturn(Optional.of(pubblicato));
 
-        gestioneArticoli.getArticleById(10L, 2L);
+        gestioneArticoli.getArticleById(10L, Ruolo.ISCRITTO);
 
         assertThat(pubblicato.getNumeroVisualizzazioni()).isEqualTo(1L);
+    }
+
+    @Test
+    void getArticleById_nonIncrementaVisualizzazioni_quandoAutoreSuArticoloAltrui() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo pubblicato = articolo(10L, autore, categoria(5L), StatoArticolo.PUBBLICATO, "Titolo");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(pubblicato));
+
+        // callerRuolo = AUTORE, ma non e' l'autore di QUESTO articolo (autore.id = 1L): non deve
+        // comunque incrementare, perche' la restrizione e' sul ruolo, non sull'ownership.
+        gestioneArticoli.getArticleById(10L, Ruolo.AUTORE);
+
+        assertThat(pubblicato.getNumeroVisualizzazioni()).isZero();
     }
 
     @Test
@@ -612,9 +627,21 @@ class GestioneArticoliTest {
         Articolo pubblicato = articolo(10L, autore, categoria(5L), StatoArticolo.PUBBLICATO, "Titolo");
         when(articoloRepository.findById(10L)).thenReturn(Optional.of(pubblicato));
 
-        gestioneArticoli.getArticleById(10L, 1L);
-        gestioneArticoli.getArticleById(10L, 1L);
-        gestioneArticoli.getArticleById(10L, 1L);
+        gestioneArticoli.getArticleById(10L, Ruolo.AUTORE);
+        gestioneArticoli.getArticleById(10L, Ruolo.AUTORE);
+        gestioneArticoli.getArticleById(10L, Ruolo.AUTORE);
+
+        assertThat(pubblicato.getNumeroVisualizzazioni()).isZero();
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Ruolo.class, names = {"AUTORE", "MANAGER_AUTORI", "GESTORE_UTENTI"})
+    void getArticleById_nonIncrementaVisualizzazioni_perNessunRuoloRedazionale(Ruolo ruoloRedazionale) {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo pubblicato = articolo(10L, autore, categoria(5L), StatoArticolo.PUBBLICATO, "Titolo");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(pubblicato));
+
+        gestioneArticoli.getArticleById(10L, ruoloRedazionale);
 
         assertThat(pubblicato.getNumeroVisualizzazioni()).isZero();
     }

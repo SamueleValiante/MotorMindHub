@@ -1,5 +1,6 @@
 package com.motormindhub.Api.web.articoli;
 
+import com.motormindhub.Api.model.entity.Ruolo;
 import com.motormindhub.Api.model.entity.TipoLista;
 import com.motormindhub.Api.security.UserPrincipal;
 import com.motormindhub.Api.service.gestioneArticoli.GestioneArticoli;
@@ -62,8 +63,8 @@ public class ArticoliController {
     @GetMapping("/{articleId:[0-9]+}")
     public ResponseEntity<ArticleDetailDTO> getArticleById(@AuthenticationPrincipal UserPrincipal principal,
                                                              @PathVariable Long articleId) {
-        Long callerId = principal == null ? null : principal.getId();
-        return ResponseEntity.ok(gestioneArticoli.getArticleById(articleId, callerId));
+        Ruolo callerRuolo = principal == null ? null : principal.getRuolo();
+        return ResponseEntity.ok(gestioneArticoli.getArticleById(articleId, callerRuolo));
     }
 
     @GetMapping("/me")

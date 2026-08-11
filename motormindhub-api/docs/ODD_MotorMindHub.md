@@ -536,7 +536,7 @@ articolo che *era* pubblicato). (cfr. RF1.7, UC_6)
 |-------------------------------|---------------------------------------------------------------------------------------------|
 | **Metodo (query)**            | **Descrizione**                                                                             |
 | searchArticles(criteria)      | Ricerca full-text (PostgreSQL tsvector/GIN) combinata con filtri di categoria. (cfr. RF1.2) |
-| getArticleById(articleId, callerId) | Recupera il dettaglio di un articolo e incrementa il contatore letture, tranne quando callerId coincide con l'autore dell'articolo (es. l'autore lo riapre dall'Editor per correggerlo) - altrimenti le proprie riletture in fase di editing gonfierebbero "Letture totali" (Dashboard Autore) e l'ordinamento "Più lette" (Esplora). callerId e' null per un Guest non autenticato. (cfr. RF1.1) |
+| getArticleById(articleId, callerRuolo) | Recupera il dettaglio di un articolo e incrementa il contatore letture solo per Guest (callerRuolo null) e Iscritto, mai per un ruolo redazionale (Autore, Manager Autori, Gestore Utenti) a prescindere che l'articolo sia proprio o altrui - altrimenti editing/revisione/moderazione gonfierebbero "Letture totali" (Dashboard Autore) e l'ordinamento "Più lette" (Esplora). (cfr. RF1.1) |
 | getArticlesByAuthor(authorId) | Recupera gli articoli (pubblicati e bozze) di un autore. (cfr. RF2.1)                       |
 | getSavedArticles(userId)      | Recupera la sezione “I miei salvataggi”. (cfr. RF1.8, UC_7)                                 |
 
