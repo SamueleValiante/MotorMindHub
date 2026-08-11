@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/empty-state/EmptyState";
 import { DocumentIcon } from "@/components/autore/icons";
 
 const ULTIMI_ARTICOLI_COUNT = 4;
+const PIU_LETTI_COUNT = 5;
 
 /**
  * Dashboard Autore (mockup 21). Le 4 stat vengono tutte da
@@ -32,6 +33,20 @@ export default function DashboardAutorePage() {
   const lettureTotali = articoli.reduce((sum, a) => sum + a.numeroVisualizzazioni, 0);
 
   const ultimiArticoli = articoli.slice(0, ULTIMI_ARTICOLI_COUNT);
+
+  // Solo PUBBLICATO: numeroVisualizzazioni ha senso solo per un lettore
+  // reale (cfr. GestioneArticoli.viewArticle, mai incrementato per un ruolo
+  // redazionale che rilegge/rivede il proprio articolo) - bozze/in revisione/
+  // rifiutati sarebbero comunque sempre a 0, elencarli in una classifica
+  // "più letti" sarebbe fuorviante. Stessa lista già caricata da useMyArticles,
+  // nessuna nuova chiamata: getArticlesByAuthor non e' paginato, e' l'intero
+  // elenco dell'autore, ordinarlo client-side per numeroVisualizzazioni e'
+  // sufficiente (a differenza di Esplora, dove il backend deve ordinare
+  // prima di paginare).
+  const piuLetti = articoli
+    .filter((a) => a.stato === "PUBBLICATO")
+    .toSorted((a, b) => b.numeroVisualizzazioni - a.numeroVisualizzazioni)
+    .slice(0, PIU_LETTI_COUNT);
 
   return (
     <div className="flex flex-col gap-6">
@@ -96,6 +111,41 @@ export default function DashboardAutorePage() {
                     linkable={articolo.stato === "PUBBLICATO"}
                     badge={<StatoBadge stato={articolo.stato} />}
                   />
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/*
+            Lista compatta (titolo + conteggio letture), non ArticleCard: una
+            classifica va scansionata rapidamente riga per riga, non sfogliata
+            come una griglia di copertine - stesso pattern già usato per
+            "Articoli in coda di approvazione" nella Dashboard Manageriale
+            (app/manager/page.tsx), qui riadattato a un ranking.
+          */}
+          <section className="flex flex-col gap-6 rounded-lg bg-carbon p-6">
+            <h2 className="font-heading text-lg font-bold uppercase tracking-wide text-paper">
+              I tuoi articoli più letti
+            </h2>
+
+            {piuLetti.length === 0 ? (
+              <p className="text-sm text-fog">
+                Nessun articolo pubblicato ancora: le letture compariranno qui una volta approvato il primo.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {piuLetti.map((articolo, i) => (
+                  <Link
+                    key={articolo.id}
+                    href={`/articoli/${articolo.id}`}
+                    className="flex items-center justify-between gap-4 border-b border-paper/10 pb-4 last:border-0 last:pb-0"
+                  >
+                    <span className="flex items-center gap-3 min-w-0">
+                      <span className="shrink-0 font-heading text-sm font-bold text-fog">{i + 1}</span>
+                      <span className="truncate text-sm text-paper">{articolo.titolo}</span>
+                    </span>
+                    <span className="shrink-0 text-xs text-fog">{articolo.numeroVisualizzazioni} letture</span>
+                  </Link>
                 ))}
               </div>
             )}

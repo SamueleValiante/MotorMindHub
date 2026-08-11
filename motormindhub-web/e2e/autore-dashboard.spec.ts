@@ -171,8 +171,14 @@ test.describe("Dashboard Autore", () => {
       await loginViaUi(page, autore.email, autore.password);
       await page.goto("/autore");
 
-      await expect(page.getByRole("link", { name: new RegExp(titoloPubblicato) })).toHaveCount(1);
-      await expect(page.getByRole("link", { name: new RegExp(titoloBozza) })).toHaveCount(0);
+      // Scoped a "I tuoi ultimi articoli": da quando esiste anche "I tuoi
+      // articoli più letti" (sezione distinta, sotto), un articolo pubblicato
+      // può legittimamente comparire come link in ENTRAMBE le sezioni - un
+      // conteggio sull'intera pagina non distinguerebbe più "cliccabile" da
+      // "linkato due volte per motivi indipendenti".
+      const ultimiArticoliSection = page.locator("section", { hasText: "I tuoi ultimi articoli" });
+      await expect(ultimiArticoliSection.getByRole("link", { name: new RegExp(titoloPubblicato) })).toHaveCount(1);
+      await expect(ultimiArticoliSection.getByRole("link", { name: new RegExp(titoloBozza) })).toHaveCount(0);
 
       // Non solo "non è un link": una spiegazione visibile del perché, non
       // una card identica alle altre che sembra semplicemente rotta al click.
@@ -182,6 +188,60 @@ test.describe("Dashboard Autore", () => {
     } finally {
       await deleteDraftArticle(autore.email, autore.password, idBozza);
       await deleteArticle(manager.email, manager.password, idPubblicato);
+    }
+  });
+
+  test("Articoli più letti: ordinati per numeroVisualizzazioni decrescente, solo pubblicati", async ({
+    page,
+    testUsers,
+  }) => {
+    const autore = await testUsers.create({ ruolo: "AUTORE" });
+    const manager = await testUsers.create({ ruolo: "MANAGER_AUTORI" });
+    const stamp = Date.now();
+
+    const titoloPneumatici = `Pneumatici invernali ${stamp}`;
+    const titoloAbs = `Problemi frequenti ABS ${stamp}`;
+    const titoloBozza = `Bozza mai pubblicata ${stamp}`;
+
+    const idPneumatici = await createPendingArticle(autore.email, autore.password, {
+      titolo: titoloPneumatici,
+      categoriaNome: `Categoria piu letti pneumatici ${stamp}`,
+    });
+    await approveArticle(manager.email, manager.password, idPneumatici);
+    await viewArticle(idPneumatici, 7);
+
+    const idAbs = await createPendingArticle(autore.email, autore.password, {
+      titolo: titoloAbs,
+      categoriaNome: `Categoria piu letti abs ${stamp}`,
+    });
+    await approveArticle(manager.email, manager.password, idAbs);
+    await viewArticle(idAbs, 3);
+
+    // Una bozza non pubblicata non deve comparire nella classifica (0
+    // letture per definizione, elencarla sarebbe fuorviante).
+    const idBozza = await createDraftArticle(autore.email, autore.password, {
+      titolo: titoloBozza,
+      categoriaNome: `Categoria piu letti bozza ${stamp}`,
+    });
+
+    try {
+      await loginViaUi(page, autore.email, autore.password);
+      await page.goto("/autore");
+      await expect(page.getByRole("heading", { name: "I tuoi articoli più letti" })).toBeVisible();
+
+      // Solo 2 righe (i due pubblicati): la bozza non compare in classifica.
+      const righe = page
+        .locator("h2", { hasText: "I tuoi articoli più letti" })
+        .locator("xpath=following-sibling::div[1]/a");
+      await expect(righe).toHaveCount(2);
+      await expect(righe.nth(0)).toContainText(titoloPneumatici);
+      await expect(righe.nth(0)).toContainText("7 letture");
+      await expect(righe.nth(1)).toContainText(titoloAbs);
+      await expect(righe.nth(1)).toContainText("3 letture");
+    } finally {
+      await deleteDraftArticle(autore.email, autore.password, idBozza);
+      await deleteArticle(manager.email, manager.password, idAbs);
+      await deleteArticle(manager.email, manager.password, idPneumatici);
     }
   });
 
