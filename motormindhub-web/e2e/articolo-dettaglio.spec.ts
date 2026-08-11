@@ -486,6 +486,20 @@ test.describe("Dettaglio Articolo", () => {
       await expect(immagine).toBeVisible();
       await expect(immagine).toHaveAttribute("alt", "Schema del sistema ABS");
 
+      // Regressione: h2/h3 erano troppo vicini in dimensione (20px/18px, un
+      // solo gradino Tailwind) per leggersi come una gerarchia distinta —
+      // non basta che i tag siano diversi nel DOM, devono esserlo anche
+      // visivamente (computed font-size, non solo presenza del tag).
+      const sizes = await page.evaluate(() => {
+        const h2 = document.querySelector('[data-testid="articolo-corpo"] h2')!;
+        const h3 = document.querySelector('[data-testid="articolo-corpo"] h3')!;
+        return {
+          h2: parseFloat(getComputedStyle(h2).fontSize),
+          h3: parseFloat(getComputedStyle(h3).fontSize),
+        };
+      });
+      expect(sizes.h2).toBeGreaterThan(sizes.h3);
+
       const axeResults = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
         .analyze();

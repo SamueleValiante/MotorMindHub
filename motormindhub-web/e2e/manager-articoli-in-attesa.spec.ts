@@ -1,4 +1,5 @@
 import { test, expect } from "./fixtures";
+import { AxeBuilder } from "@axe-core/playwright";
 import { loginViaUi } from "./helpers/ui";
 import { createPendingArticle, deleteArticle } from "./helpers/test-articles";
 
@@ -101,6 +102,74 @@ test.describe("Articoli in Attesa di Approvazione (Manager)", () => {
     const hasRows = await page.locator("table tbody tr").count();
     if (hasRows === 0) {
       await expect(page.getByRole("heading", { name: "Nessun articolo in attesa" })).toBeVisible();
+    }
+  });
+
+  /**
+   * Regressione: la revisione aveva un rendering Markdown tutto suo (split
+   * manuale su doppio a-capo, mai aggiornato quando è stato introdotto
+   * l'editor Markdown) — ##, ** ecc. comparivano come testo grezzo invece
+   * che H2/H3/grassetto renderizzati. Fix: ArticleMarkdownBody, lo stesso
+   * componente condiviso col dettaglio pubblico (ArticleDetailContent.tsx) —
+   * qui verifichiamo che i tag siano quelli veri (getByRole heading), non
+   * solo che il testo "sembri" formattato, e che il Manager veda esattamente
+   * quello che verrà pubblicato prima di approvare.
+   */
+  test("il corpo dell'articolo si rende come Markdown formattato, non testo grezzo (##, **)", async ({
+    page,
+    testUsers,
+  }) => {
+    const manager = await testUsers.create({ ruolo: "MANAGER_AUTORI" });
+    const autore = await testUsers.create({ ruolo: "AUTORE" });
+    const stamp = Date.now();
+    const titolo = `Articolo markdown revisione ${stamp}`;
+    const testo = [
+      "## Pressione degli pneumatici",
+      "Un paragrafo con **grassetto** e *corsivo*.",
+      "### Controllo a freddo",
+      "Un altro paragrafo di dettaglio tecnico.",
+    ].join("\n\n");
+    const articleId = await createPendingArticle(autore.email, autore.password, {
+      titolo,
+      categoriaNome: `Categoria markdown revisione ${stamp}`,
+      testo,
+    });
+
+    try {
+      await loginViaUi(page, manager.email, manager.password);
+      await page.goto(`/manager/articoli-in-attesa/${articleId}`);
+      await expect(page.getByRole("heading", { name: titolo })).toBeVisible();
+
+      const corpo = page.getByTestId("articolo-corpo");
+      // I tag veri (getByRole), non solo testo che "sembra" un titolo.
+      await expect(corpo.getByRole("heading", { name: "Pressione degli pneumatici", level: 2 })).toBeVisible();
+      await expect(corpo.getByRole("heading", { name: "Controllo a freddo", level: 3 })).toBeVisible();
+      await expect(corpo.locator("strong")).toHaveText("grassetto");
+      await expect(corpo.locator("em")).toHaveText("corsivo");
+
+      // Nessun marcatore Markdown grezzo visibile nel testo reso (## , **).
+      const bodyText = await corpo.innerText();
+      expect(bodyText).not.toContain("##");
+      expect(bodyText).not.toContain("**");
+
+      // H2 e H3 devono essere visivamente distinti, non solo tag diversi
+      // nel DOM con la stessa dimensione calcolata.
+      const sizes = await page.evaluate(() => {
+        const h2 = document.querySelector('[data-testid="articolo-corpo"] h2')!;
+        const h3 = document.querySelector('[data-testid="articolo-corpo"] h3')!;
+        return {
+          h2: parseFloat(getComputedStyle(h2).fontSize),
+          h3: parseFloat(getComputedStyle(h3).fontSize),
+        };
+      });
+      expect(sizes.h2).toBeGreaterThan(sizes.h3);
+
+      const axeResults = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+        .analyze();
+      expect(axeResults.violations).toEqual([]);
+    } finally {
+      await deleteArticle(manager.email, manager.password, articleId);
     }
   });
 

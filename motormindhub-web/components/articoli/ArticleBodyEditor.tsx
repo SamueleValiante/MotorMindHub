@@ -78,7 +78,12 @@ export function ArticleBodyEditor({ value, onChange }: ArticleBodyEditorProps) {
         "aria-multiline": "true",
         "aria-label": "Testo dell'articolo",
         class:
-          "min-h-64 rounded-b-md bg-surface-raised px-4 py-3 text-base leading-loose text-paper outline-none focus:ring-2 focus:ring-accent [&_h2]:font-heading [&_h2]:text-xl [&_h2]:font-bold [&_h2]:uppercase [&_h2]:tracking-wide [&_h3]:font-heading [&_h3]:text-lg [&_h3]:font-bold [&_h3]:uppercase [&_h3]:tracking-wide [&_img]:my-2 [&_img]:w-full [&_img]:rounded-md [&_p+p]:mt-4",
+          // Stessa scala h2/h3 di ArticleMarkdownBody.tsx (text-2xl/text-xl,
+          // non text-xl/text-lg: un gradino intero, non due punti troppo
+          // vicini per leggersi come gerarchia distinta) - l'anteprima in
+          // scrittura deve rispecchiare come apparirà pubblicato, altrimenti
+          // è un terzo punto di rendering pronto a disallinearsi in silenzio.
+          "min-h-64 rounded-b-md bg-surface-raised px-4 py-3 text-base leading-loose text-paper outline-none focus:ring-2 focus:ring-accent [&_h2]:font-heading [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:uppercase [&_h2]:tracking-wide [&_h3]:font-heading [&_h3]:text-xl [&_h3]:font-bold [&_h3]:uppercase [&_h3]:tracking-wide [&_img]:my-2 [&_img]:w-full [&_img]:rounded-md [&_p+p]:mt-4",
       },
     },
   });

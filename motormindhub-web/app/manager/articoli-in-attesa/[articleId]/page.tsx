@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useArticle } from "@/lib/articoli/useArticle";
 import { approveArticle, rejectArticle } from "@/lib/autori/authorMutations";
 import { toast } from "@/lib/toast/toast";
+import { ArticleMarkdownBody } from "@/components/articoli/ArticleMarkdownBody";
 
 function formatData(iso: string): string {
   return new Date(iso).toLocaleDateString("it-IT");
@@ -98,12 +99,18 @@ export default function RevisioneArticoloPage() {
           <div className="mt-6 aspect-video w-full rounded-lg bg-surface-raised" />
         )}
 
-        <div className="mt-6 flex flex-col gap-4 text-sm leading-relaxed text-chrome">
-          {articolo.testo.split(/\n{2,}/).map((paragrafo, i) => (
-            <p key={i} className="whitespace-pre-wrap">
-              {paragrafo}
-            </p>
-          ))}
+        {/*
+          ArticleMarkdownBody (condiviso con ArticleDetailContent.tsx, il
+          dettaglio pubblico): prima di questo fix la revisione mostrava
+          Markdown grezzo (##, ** ecc. visibili come testo) - un secondo
+          rendering scritto a mano, mai aggiornato quando è stato introdotto
+          l'editor Markdown. Il Manager deve approvare/rifiutare guardando
+          esattamente ciò che verrà pubblicato, non un'approssimazione in
+          testo semplice - niente più text-chrome/text-sm attenuati: stessa
+          resa (text-paper/text-base) della pagina pubblica.
+        */}
+        <div className="mt-6">
+          <ArticleMarkdownBody testo={articolo.testo} />
         </div>
       </div>
 

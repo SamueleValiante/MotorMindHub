@@ -283,6 +283,18 @@ test.describe("Editor articolo", () => {
       const immaginePubblica = articolo.getByRole("img", { name: "Schema del sistema frenante ABS" });
       await expect(immaginePubblica).toBeVisible();
 
+      // H2/H3 devono essere visivamente distinti, non solo tag diversi nel
+      // DOM con la stessa dimensione calcolata (regressione: erano 20px/18px).
+      const sizes = await page.evaluate(() => {
+        const h2 = document.querySelector('[data-testid="articolo-corpo"] h2')!;
+        const h3 = document.querySelector('[data-testid="articolo-corpo"] h3')!;
+        return {
+          h2: parseFloat(getComputedStyle(h2).fontSize),
+          h3: parseFloat(getComputedStyle(h3).fontSize),
+        };
+      });
+      expect(sizes.h2).toBeGreaterThan(sizes.h3);
+
       const axeResults = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
         .analyze();
