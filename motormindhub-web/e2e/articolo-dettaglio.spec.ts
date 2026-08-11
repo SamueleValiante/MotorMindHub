@@ -80,6 +80,86 @@ test.describe("Dettaglio Articolo", () => {
     }
   });
 
+  /**
+   * Regressione: useArticle allegava `skipAuth: true` alla GET su questo
+   * endpoint partendo dalla premessa sbagliata che "pubblico" (permitAll,
+   * nessuna autenticazione richiesta) significasse "il token va nascosto
+   * se esiste" — apiFetch gestisce già correttamente l'assenza di token,
+   * skipAuth ne sopprimeva invece uno VALIDO già in memoria. Effetto
+   * concreto: getArticleById incrementa numeroVisualizzazioni solo per un
+   * ruolo non redazionale (Guest/Iscritto) - un Autore che rileggeva un
+   * proprio articolo pubblicato ne gonfiava artificialmente le letture,
+   * indistinguibile lato backend da una visita reale. Verificato anche
+   * l'header Authorization stesso (non solo l'effetto sul contatore): la
+   * richiesta deve includerlo per un Autore autenticato, ometterlo per un
+   * Guest davvero anonimo.
+   */
+  test("il contatore letture rispetta il ruolo: un Autore che rilegge non incrementa, un Guest sì", async ({
+    page,
+    testUsers,
+  }) => {
+    const manager = await testUsers.create({ ruolo: "MANAGER_AUTORI" });
+    const autore = await testUsers.create({ ruolo: "AUTORE" });
+    const stamp = Date.now();
+    const titolo = `Articolo skipAuth ${stamp}`;
+    const id = await createPublishedArticle(manager.email, manager.password, {
+      titolo,
+      categoriaNome: `Categoria skipAuth ${stamp}`,
+    });
+
+    try {
+      const authHeaders: (string | undefined)[] = [];
+      page.on("request", (req) => {
+        if (req.url().endsWith(`/api/v1/articoli/${id}`) && req.method() === "GET") {
+          authHeaders.push(req.headers()["authorization"]);
+        }
+      });
+
+      await loginViaUi(page, autore.email, autore.password);
+      expect(await getViewCount(id)).toBe(0);
+
+      for (let i = 0; i < 3; i++) {
+        await page.goto(`/articoli/${id}`);
+        await expect(page.getByRole("heading", { name: titolo })).toBeVisible();
+      }
+      await page.waitForTimeout(300);
+
+      expect(authHeaders.length).toBeGreaterThan(0);
+      for (const header of authHeaders) {
+        expect(header).toMatch(/^Bearer /);
+      }
+      expect(await getViewCount(id)).toBe(0);
+
+      // Guest: nuovo context, nessuna sessione/cookie ereditati.
+      authHeaders.length = 0;
+      const guestContext = await page.context().browser()!.newContext();
+      const guestPage = await guestContext.newPage();
+      guestPage.on("request", (req) => {
+        if (req.url().endsWith(`/api/v1/articoli/${id}`) && req.method() === "GET") {
+          authHeaders.push(req.headers()["authorization"]);
+        }
+      });
+
+      try {
+        for (let i = 0; i < 3; i++) {
+          await guestPage.goto(`/articoli/${id}`);
+          await expect(guestPage.getByRole("heading", { name: titolo })).toBeVisible();
+        }
+        await guestPage.waitForTimeout(300);
+
+        expect(authHeaders.length).toBeGreaterThan(0);
+        for (const header of authHeaders) {
+          expect(header).toBeUndefined();
+        }
+        expect(await getViewCount(id)).toBe(3);
+      } finally {
+        await guestContext.close();
+      }
+    } finally {
+      await deleteArticle(manager.email, manager.password, id);
+    }
+  });
+
   test("nessuna icona di segnalazione contenuto: solo il salvataggio", async ({ page, testUsers }) => {
     const manager = await testUsers.create({ ruolo: "MANAGER_AUTORI" });
     const stamp = Date.now();

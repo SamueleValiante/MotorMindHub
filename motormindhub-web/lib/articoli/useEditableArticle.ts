@@ -13,10 +13,15 @@ type State =
  * dopo una mutazione — reopenRejectedArticle riporta un RIFIUTATO a BOZZA,
  * l'editor deve rileggere il nuovo stato sul posto, senza un giro di
  * navigazione (cfr. ArticleEditor). Stessa chiamata pubblica di useArticle
- * (GET /api/v1/articoli/{id}, incrementa numeroVisualizzazioni ad ogni
- * chiamata — side effect già documentato lì, qui inevitabile: è l'unico
- * endpoint che restituisce testo/tag/categoriaId, getArticlesByAuthor
- * (ArticleSummaryDTO) non basta a popolare l'editor).
+ * (GET /api/v1/articoli/{id} — è l'unico endpoint che restituisce
+ * testo/tag/categoriaId, getArticlesByAuthor (ArticleSummaryDTO) non basta
+ * a popolare l'editor), niente skipAuth per lo stesso motivo lì corretto:
+ * chi apre l'editor è sempre un Autore/Manager Autori autenticato (mai un
+ * Guest, la route è già protetta a monte), e getArticleById incrementa
+ * numeroVisualizzazioni solo per un ruolo non redazionale — con skipAuth
+ * ogni apertura dell'editor sul proprio articolo pubblicato ne avrebbe
+ * gonfiato artificialmente le letture, non "inevitabile" come si pensava
+ * prima di questo fix.
  *
  * A differenza di useArticle, la "richiesta ancora valida?" non è un
  * booleano `cancelled` per-effetto: in React StrictMode il ciclo sincrono
@@ -38,7 +43,7 @@ export function useEditableArticle(articleId: number | null): State & { reload: 
     if (articleId === null) return;
     const targetId = articleId;
 
-    apiFetch(`/api/v1/articoli/${targetId}`, { skipAuth: true })
+    apiFetch(`/api/v1/articoli/${targetId}`)
       .then(async (response) => {
         if (requestedIdRef.current !== targetId) return;
         if (response.ok) {
