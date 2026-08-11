@@ -178,6 +178,74 @@ test.describe("ArticleCard: la card (non solo l'immagine) ha la stessa griglia o
     }
   });
 
+  /**
+   * Regressione: con un solo correlato, md:grid-cols-2 riservava comunque
+   * 2 tracce (CSS Grid le definisce a prescindere dal numero di figli) —
+   * l'unica card occupava solo la prima, lasciando la seconda vuota nello
+   * stesso riquadro bordato ("Altri articoli"): sembrava che l'immagine non
+   * riempisse la card, in realtà la card stessa riempiva solo metà del
+   * riquadro. Fix: niente md:grid-cols-2 quando altriArticoli.length === 1,
+   * la card unica occupa l'intera larghezza del riquadro (stesso
+   * comportamento a una colonna già corretto su mobile).
+   */
+  test("Dettaglio Articolo (correlati): un solo risultato riempie l'intera larghezza del riquadro, non solo metà", async ({
+    page,
+    testUsers,
+  }) => {
+    const manager = await testUsers.create({ ruolo: "MANAGER_AUTORI" });
+    const stamp = Date.now();
+    const categoriaNome = `Categoria correlati singolo ${stamp}`;
+
+    const idCorrente = await createPublishedArticle(manager.email, manager.password, {
+      titolo: `Corrente singolo ${stamp}`,
+      categoriaNome,
+    });
+    const idCorrelato = await createPublishedArticle(manager.email, manager.password, {
+      titolo: `Correlato singolo ${stamp}`,
+      categoriaNome,
+    });
+
+    try {
+      await page.goto(`/articoli/${idCorrente}`, { waitUntil: "domcontentloaded" });
+      await expect(page.getByRole("heading", { name: `Altri articoli in ${categoriaNome}` })).toBeVisible();
+
+      const metrics = await page.evaluate(() => {
+        const section = Array.from(document.querySelectorAll("section")).find((s) =>
+          s.textContent?.includes("Altri articoli")
+        )!;
+        const panel = section.querySelector(":scope > div.grid")!;
+        const cover = panel.querySelector(":scope .aspect-video")!;
+        const panelStyle = getComputedStyle(panel);
+        // p-6 su entrambi i lati: la copertina riempie il CONTENT box del
+        // riquadro (border-box meno il padding), non il suo border-box —
+        // panel.getBoundingClientRect() include p-6, cover no.
+        const panelContentWidth =
+          panel.getBoundingClientRect().width -
+          parseFloat(panelStyle.paddingLeft) -
+          parseFloat(panelStyle.paddingRight);
+        return {
+          gridTemplateColumns: panelStyle.gridTemplateColumns,
+          panelContentWidth,
+          coverWidth: cover.getBoundingClientRect().width,
+        };
+      });
+      // Una sola traccia di grid (niente md:grid-cols-2 riservato a vuoto)...
+      expect(metrics.gridTemplateColumns.trim().split(/\s+/)).toHaveLength(1);
+      // ...e la copertina riempie l'intero content box del riquadro, non solo
+      // metà (tolleranza 3px: il border 1px del riquadro, non sottratto sopra
+      // insieme al padding, entra nella differenza).
+      expect(Math.abs(metrics.coverWidth - metrics.panelContentWidth)).toBeLessThan(3);
+
+      const axeResults = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+        .analyze();
+      expect(axeResults.violations).toEqual([]);
+    } finally {
+      await deleteArticle(manager.email, manager.password, idCorrente);
+      await deleteArticle(manager.email, manager.password, idCorrelato);
+    }
+  });
+
   test("mobile: la griglia collassa a una colonna ovunque, come già in Home", async ({ page, testUsers }) => {
     const manager = await testUsers.create({ ruolo: "MANAGER_AUTORI" });
     const iscritto = await testUsers.create();

@@ -190,7 +190,24 @@ export function ArticleDetailContent({ articleId }: { articleId: string }) {
           <h2 className="mb-6 font-heading text-lg font-bold uppercase tracking-wide text-paper">
             Altri articoli in {articolo.categoriaNome}
           </h2>
-          <div className="grid gap-6 rounded-lg border border-paper/10 bg-carbon p-6 md:grid-cols-2">
+          {/*
+            md:grid-cols-2 solo con 2+ risultati: con un solo elemento, quella
+            seconda colonna resterebbe comunque riservata da CSS Grid (le
+            tracce sono definite a prescindere dal numero di figli) - l'unica
+            card occuperebbe solo la prima, lasciando la seconda vuota nello
+            stesso riquadro bordato (bug segnalato: sembra che l'immagine non
+            riempia la card, in realtà è la card stessa a occupare solo metà
+            del riquadro). Senza md:grid-cols-2 il grid resta a una colonna
+            (stesso comportamento già corretto di mobile), la card unica
+            occupa l'intera larghezza del riquadro. Il caso 3 risultati (2+1,
+            ultima riga a metà) non rientra in questo fix: è un trailing row
+            parziale comune, diverso dall'intero riquadro semi-vuoto segnalato.
+          */}
+          <div
+            className={`grid gap-6 rounded-lg border border-paper/10 bg-carbon p-6 ${
+              altriArticoli.length > 1 ? "md:grid-cols-2" : ""
+            }`}
+          >
             {altriArticoli.map((a) => (
               <ArticleCard key={a.id} articolo={a} />
             ))}
