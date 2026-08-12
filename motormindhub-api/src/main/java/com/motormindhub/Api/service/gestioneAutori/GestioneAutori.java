@@ -232,8 +232,10 @@ public class GestioneAutori {
 
     /**
      * Query di sola lettura (RF3.1) - nessun contratto OCL formale. Il grafico "Andamento visite"
-     * del mockup 29_manager_dashboard.png non e' incluso: richiederebbe un tracciamento delle
-     * visualizzazioni per data assente dall'Object Model (RAD 3.4.4).
+     * del mockup 29_manager_dashboard.png non e' incluso qui: il tracciamento ora esiste
+     * (GestioneAmministrazioneUtenti.getVisiteStatistiche, RF3.1/UC_28) ma e' esposto solo sulla
+     * dashboard del Gestore Utenti, non su questa - scelta di scope di quel lavoro, non una lacuna
+     * residua dell'Object Model.
      */
     @Transactional(readOnly = true)
     public ManagerDashboardStatsDTO getManagerDashboardStats() {

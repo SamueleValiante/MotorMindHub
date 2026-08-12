@@ -333,6 +333,24 @@ Per ciascun sottosistema, le sezioni seguenti riportano gli invarianti di classe
 >
 > post: result = -- URL pubblico del file appena caricato su Cloud Storage
 
+**Nome metodo uploadImmagineCorpoArticolo(file: MultipartFile)**
+
+**Descrizione** Carica un'immagine su Cloud Storage per l'uso INLINE nel corpo Markdown dell'articolo (Articolo.testo), non come copertina. Stessa validazione di uploadImmagineCopertina (ImageUploadValidator: formato JPEG/PNG/WEBP, dimensione massima 5MB, contenuto verificato come immagine reale via decodifica) e stessi ruoli autorizzati (AUTORE, MANAGER_AUTORI) - l'unica differenza e' la cartella di destinazione su Cloud Storage (separata dalla copertina, cosi' da non mischiare le due categorie nel media library del provider). Come uploadImmagineCopertina, non lega l'upload a un articolo/bozza esistente e non tocca Articolo: il chiamante incolla l'URL restituito nel Markdown di dto.testo e lo persiste passando l'intero testo a createDraft/updateDraft/updatePublishedArticle. (SDD 3.2)
+
+**Pre-condizioni**
+
+> *context GestioneArticoli::uploadImmagineCorpoArticolo(file: MultipartFile)*
+>
+> pre: file.oclIsUndefined() = false and file.size \<= 5242880
+>
+> and Set{'image/jpeg', 'image/png', 'image/webp'}-\>includes(file.contentType)
+
+**Post-condizioni**
+
+> *context GestioneArticoli::uploadImmagineCorpoArticolo(file: MultipartFile)*
+>
+> post: result = -- URL pubblico del file appena caricato su Cloud Storage
+
 **Nome metodo createDraft(authorId: Long, dto: ArticleDraftDTO)**
 
 **Descrizione** Crea un nuovo articolo in stato BOZZA. (cfr. RF2.7, UC_16)
@@ -518,7 +536,7 @@ articolo che *era* pubblicato). (cfr. RF1.7, UC_6)
 |-------------------------------|---------------------------------------------------------------------------------------------|
 | **Metodo (query)**            | **Descrizione**                                                                             |
 | searchArticles(criteria)      | Ricerca full-text (PostgreSQL tsvector/GIN) combinata con filtri di categoria. (cfr. RF1.2) |
-| getArticleById(articleId, callerId) | Recupera il dettaglio di un articolo e incrementa il contatore letture, tranne quando callerId coincide con l'autore dell'articolo (es. l'autore lo riapre dall'Editor per correggerlo) - altrimenti le proprie riletture in fase di editing gonfierebbero "Letture totali" (Dashboard Autore) e l'ordinamento "Più lette" (Esplora). callerId e' null per un Guest non autenticato. (cfr. RF1.1) |
+| getArticleById(articleId, callerRuolo) | Recupera il dettaglio di un articolo e incrementa il contatore letture solo per Guest (callerRuolo null) e Iscritto, mai per un ruolo redazionale (Autore, Manager Autori, Gestore Utenti) a prescindere che l'articolo sia proprio o altrui - altrimenti editing/revisione/moderazione gonfierebbero "Letture totali" (Dashboard Autore) e l'ordinamento "Più lette" (Esplora). (cfr. RF1.1) |
 | getArticlesByAuthor(authorId) | Recupera gli articoli (pubblicati e bozze) di un autore. (cfr. RF2.1)                       |
 | getSavedArticles(userId)      | Recupera la sezione “I miei salvataggi”. (cfr. RF1.8, UC_7)                                 |
 
@@ -807,16 +825,39 @@ Nota di collaborazione tra sottosistemi: acceptInvite crea un nuovo record Utent
 >
 > post: LogAzioneAmministrativa.allInstances()-\>exists(l \| l.utenteTarget.id = userId and l.tipoAzione = TipoAzioneAmministrativa::ESPORTAZIONE)
 
+**Nome metodo registraVisita(sessioneIdEsistente: String, callerRuolo: Ruolo)**
+
+**Descrizione** Registra una visita al sito deduplicata per sessione browser (RF3.1, UC_28): sessioneIdEsistente è il valore del cookie anonimo mmh\_visit\_session in ingresso (null se assente), separato dal refresh token. Un ruolo redazionale (Autore/Manager Autori/Gestore Utenti) non genera mai una visita — stesso filtro già applicato agli incrementi di numeroVisualizzazioni in GestioneArticoli.getArticleById (§2.2). Restituisce l'id di sessione (nuovo) da impostare nel cookie di risposta quando registra una nuova visita; vuoto quando non fa nulla, sia per ruolo escluso sia perché la sessione presentata è già registrata — il chiamante (VisiteController) non deve distinguere i due casi.
+
+**Pre-condizioni**
+
+> *context GestioneAmministrazioneUtenti::registraVisita(sessioneIdEsistente: String, callerRuolo: Ruolo)*
+>
+> pre: true — invocabile da qualunque chiamante, incluso non autenticato (callerRuolo = null)
+
+**Post-condizioni**
+
+> *context GestioneAmministrazioneUtenti::registraVisita(sessioneIdEsistente: String, callerRuolo: Ruolo)*
+>
+> post: (callerRuolo \<\> null and callerRuolo \<\> Ruolo::ISCRITTO) implies result-\>isEmpty()
+>
+> and (sessioneIdEsistente \<\> null and VisitaSessione.allInstances()@pre-\>exists(v \| v.sessioneId = sessioneIdEsistente)) implies result-\>isEmpty()
+>
+> and result-\>notEmpty() implies VisitaSessione.allInstances()-\>exists(v \| v.sessioneId = result-\>any() and v.tipo = (if callerRuolo = null then TipoVisitatore::GUEST else TipoVisitatore::ISCRITTO endif))
+
 **Metodi di sola lettura**
 
 |                                     |                                                                                                       |
 |-------------------------------------|-------------------------------------------------------------------------------------------------------|
 | **Metodo (query)**                  | **Descrizione**                                                                                       |
 | getUserManagementDashboard()        | Recupera numero utenti registrati, segnalazioni aperte e richieste GDPR in coda. (cfr. RF4.1)         |
-| searchUsers(criteria)               | Ricerca, filtra e restituisce la lista degli utenti registrati con stato account. (cfr. RF4.2, UC_22) |
+| searchUsers(criteria)               | Ricerca, filtra e restituisce la lista degli utenti registrati con stato account e ruolo. (cfr. RF4.2, UC_22) |
 | getReportsQueue()                   | Recupera la coda di lavorazione delle segnalazioni ricevute dagli utenti. (cfr. RF4.5, UC_26)         |
 | getDeletionRequestsQueue()          | Recupera la coda delle richieste di cancellazione account. (cfr. RF4.6, UC_25)                        |
 | getAdministrativeActionLog(filters) | Recupera la cronologia consultabile delle azioni amministrative. (cfr. RF4.8)                         |
+| getVisiteStatistiche()              | Recupera i conteggi aggregati delle visite (oggi/settimana/mese/anno/totale, da inizio periodo corrente, fuso Europe/Rome). (cfr. RF3.1, UC_28) |
+
+**Nota** UserSummaryDTO (il tipo restituito da searchUsers) espone anche il campo **ruolo** (Ruolo), popolato da Utente.getRuolo() — utile alla lista "Gestione Account" del mockup 39_gestore_gestione_account.png per mostrare il ruolo di ciascun utente in colonna. UserSearchCriteriaDTO (i parametri di ricerca) non include invece un filtro per ruolo: il mockup 39 mostra solo tab di filtro per stato account (Tutti/Attivi/Sospesi/In Cancellazione), nessun filtro per ruolo — RF4.2 non lo richiede esplicitamente. Un filtro `ruolo` opzionale su UtenteRepository.search resta un'estensione separata, da valutare solo se richiesta esplicitamente lato frontend.
 
 > **2.6 GestioneNotifiche**
 

@@ -60,6 +60,33 @@ class RateLimitFilterTest {
     }
 
     @Test
+    void endpointVisite_rientraNelTierPermissivo_eVieneLimitatoDopo60RichiestePermissive() throws Exception {
+        RateLimitFilter filtro = new RateLimitFilter(PERMISSIVO_DEFAULT, STRETTO_DEFAULT);
+
+        int ultimaRisposta = -1;
+        for (int i = 0; i < 60; i++) {
+            ultimaRisposta = eseguiRichiesta(filtro, "POST", "/api/v1/visite", "10.0.0.20");
+        }
+        assertThat(ultimaRisposta).isEqualTo(200);
+
+        assertThat(eseguiRichiesta(filtro, "POST", "/api/v1/visite", "10.0.0.20")).isEqualTo(429);
+    }
+
+    @Test
+    void endpointVisite_condivideIlBucketPermissivo_conGliAltriEndpointDelloStessoTierEIp() throws Exception {
+        RateLimitFilter filtro = new RateLimitFilter(PERMISSIVO_DEFAULT, STRETTO_DEFAULT);
+
+        // Esaurisce il tier permissivo con un endpoint diverso (GET /api/v1/articoli), stesso IP.
+        for (int i = 0; i < 60; i++) {
+            eseguiRichiesta(filtro, "GET", "/api/v1/articoli", "10.0.0.21");
+        }
+
+        // POST /api/v1/visite e' gia' bloccato: stesso bucket per IP del tier permissivo, non uno
+        // separato per endpoint.
+        assertThat(eseguiRichiesta(filtro, "POST", "/api/v1/visite", "10.0.0.21")).isEqualTo(429);
+    }
+
+    @Test
     void endpointNonElencato_nonVieneMaiLimitato() throws Exception {
         RateLimitFilter filtro = new RateLimitFilter(PERMISSIVO_DEFAULT, STRETTO_DEFAULT);
 

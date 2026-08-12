@@ -5,7 +5,7 @@ Piattaforma editoriale per la divulgazione di conoscenza tecnica nell'ambito aut
 ## Documenti di riferimento (leggere in questo ordine)
 
 1. `docs/PS_MotorMindHub.md` — Problem Statement: dominio, scenari, requisiti ad alto livello.
-2. `docs/RAD_MotorMindHub.md` — Requirement Analysis Document: requisiti funzionali (RF1-RF4) e non funzionali (RNF), use case (UC_1-UC_27), object model.
+2. `docs/RAD_MotorMindHub.md` — Requirement Analysis Document: requisiti funzionali (RF1-RF4) e non funzionali (RNF), use case (UC_1-UC_28), object model.
 3. `docs/SDD_MotorMindHub.md` — System Design Document: architettura a tre livelli (Next.js SSR / Spring Boot REST / PostgreSQL), decomposizione in 6 sottosistemi, access control, global software control.
 4. `docs/ODD_MotorMindHub.md` — Object Design Document: struttura dei pacchetti, invarianti e contratti OCL (pre/post-condizioni) per ogni metodo.
 

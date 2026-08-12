@@ -13,6 +13,7 @@ import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.Suspension
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.UserManagementDashboardDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.UserSearchCriteriaDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.UserSummaryDTO;
+import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.VisiteStatisticheDTO;
 import com.motormindhub.Api.web.MessageResponseDTO;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -113,5 +114,11 @@ public class AmministrazioneUtentiController {
             @RequestParam(required = false) String query) {
         return ResponseEntity.ok(gestioneAmministrazioneUtenti.getAdministrativeActionLog(
                 new AdministrativeActionLogFiltersDTO(tipoAzione, query)));
+    }
+
+    @GetMapping("/statistiche-visite")
+    @PreAuthorize("hasRole('GESTORE_UTENTI')")
+    public ResponseEntity<VisiteStatisticheDTO> getVisiteStatistiche() {
+        return ResponseEntity.ok(gestioneAmministrazioneUtenti.getVisiteStatistiche());
     }
 }

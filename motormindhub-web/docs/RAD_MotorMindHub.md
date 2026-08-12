@@ -1,6 +1,6 @@
 # MotorMindHub — Requirement Analysis Document (v1.4)
 
-> Riferimento tecnico: requisiti funzionali (RF), requisiti non funzionali (RNF), scenari, gerarchia utenti, use case (UC_1-UC_27), object model, ambiente di destinazione. Nota: i diagrammi UML del documento originale (immagini) non sono inclusi in questa versione testuale — fare riferimento al PDF originale se serve consultarli visivamente.
+> Riferimento tecnico: requisiti funzionali (RF), requisiti non funzionali (RNF), scenari, gerarchia utenti, use case (UC_1-UC_28), object model, ambiente di destinazione. Nota: i diagrammi UML del documento originale (immagini) non sono inclusi in questa versione testuale — fare riferimento al PDF originale se serve consultarli visivamente.
 
 1. Introduzione
 1.1 Scopo del sistema
@@ -1483,15 +1483,34 @@ del richiedente, l’operazione viene rifiutata e la
 richiesta chiusa senza esportazione.
 Sequence Diagram – UC_27 Esportazione Assistita dei Dati Personali
 
+UC_28 Visualizzazione Statistiche di Traffico del Sito
+Campo Contenuto
+Attori Gestore Utenti
+Condizione di Entrata Il Gestore Utenti accede alla propria 
+dashboard di amministrazione.
+Flusso degli eventi:
+# Attore Sistema
+1 Il Gestore Utenti apre la dashboard di 
+amministrazione.
+2 Il sistema calcola e visualizza il numero 
+di visite (sessioni browser distinte di 
+Guest e Iscritti, cfr. RF3.1) registrate 
+oggi, nella settimana corrente, nel mese 
+corrente, nell’anno corrente e in totale.
+Campo Contenuto
+Condizione di Uscita Il Gestore Utenti visualizza i 5 conteggi aggregati.
+Eccezioni / Flussi Alternativi Nessuna.
+Sequence Diagram – UC_28 Visualizzazione Statistiche di Traffico del Sito
+
 3.4.4 Object Model
 Il diagramma seguente rappresenta le principali entità del dominio e le relazioni tra esse, includendo le 
 entità di base (Utente, Autore, ManagerAutori, Articolo, Categoria, ArticoloSalvato, InvitoAutore, 
 TokenRecuperoPassword) e quelle introdotte per la gestione della community e degli account 
-(GestoreUtenti, Segnalazione, RichiestaCancellazione, LogAzioneAmministrativa).
+(GestoreUtenti, Segnalazione, RichiestaCancellazione, LogAzioneAmministrativa, VisitaSessione).
 Object Model
 3.4.5 Dynamic Model
 3.4.5.1 Sequence Diagrams
-I sequence diagram di tutti i casi d’uso (UC_1–UC_27) sono riportati in coda a ciascun caso d’uso nella 
+I sequence diagram di tutti i casi d’uso (UC_1–UC_28) sono riportati in coda a ciascun caso d’uso nella 
 sezione 3.4.3, direttamente affiancati alla relativa descrizione testuale.
 
 3.4.5.2 Statechart Diagrams

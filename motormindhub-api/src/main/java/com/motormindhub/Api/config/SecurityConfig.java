@@ -55,6 +55,7 @@ public class SecurityConfig {
             "/api/v1/utenti/*/profilo-pubblico",
             "/api/v1/autori/inviti/*/accetta",
             "/api/v1/autori/inviti/*/rifiuta",
+            "/api/v1/visite",
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html"

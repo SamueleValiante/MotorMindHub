@@ -34,7 +34,8 @@ import java.util.concurrent.TimeUnit;
  * un limite aggiuntivo sarebbe ridondante rispetto a un meccanismo gia' piu' forte.
  *
  * Due tier per IP: permissivo per la lettura pubblica (ricerca/dettaglio articoli, categorie,
- * profilo pubblico) e stretto per le azioni una tantum piu' costose o sensibili (registrazione,
+ * profilo pubblico) e per scritture pubbliche a basso rischio/costo (registrazione di una visita,
+ * RF3.1/UC_28) e stretto per le azioni una tantum piu' costose o sensibili (registrazione,
  * verifica email, sblocco account, recupero/reset password, risposta a un invito). La soglia
  * permissiva e' stata verificata contro il flusso reale di Esplora Articoli (force-dynamic, RSC):
  * un giro completo con piu' cambi di filtro/ordinamento/pagina e alcune aperture di dettaglio resta
@@ -71,7 +72,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
             Endpoint.of(HttpMethod.GET, "/api/v1/articoli/{articleId:[0-9]+}"),
             Endpoint.of(HttpMethod.GET, "/api/v1/categorie"),
             Endpoint.of(HttpMethod.GET, "/api/v1/categorie/**"),
-            Endpoint.of(HttpMethod.GET, "/api/v1/utenti/{userId}/profilo-pubblico"));
+            Endpoint.of(HttpMethod.GET, "/api/v1/utenti/{userId}/profilo-pubblico"),
+            // Scrittura ma a basso rischio/costo (registrazione di una visita, RF3.1/UC_28): non
+            // giustifica il tier stretto riservato ad azioni sensibili o costose one-shot.
+            Endpoint.of(HttpMethod.POST, "/api/v1/visite"));
 
     private static final List<Endpoint> ENDPOINT_STRETTI = List.of(
             Endpoint.of(HttpMethod.POST, "/api/v1/utenti/registrazione"),

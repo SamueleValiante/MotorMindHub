@@ -14,12 +14,16 @@ import com.motormindhub.Api.model.entity.StatoRichiestaCancellazione;
 import com.motormindhub.Api.model.entity.StatoSegnalazione;
 import com.motormindhub.Api.model.entity.StatoUtente;
 import com.motormindhub.Api.model.entity.TipoAzioneAmministrativa;
+import com.motormindhub.Api.model.entity.TipoVisitatore;
 import com.motormindhub.Api.model.entity.Utente;
+import com.motormindhub.Api.model.entity.VisitaSessione;
 import com.motormindhub.Api.model.repository.ArticoloRepository;
+import com.motormindhub.Api.model.repository.ConteggioVisite;
 import com.motormindhub.Api.model.repository.LogAzioneAmministrativaRepository;
 import com.motormindhub.Api.model.repository.RichiestaCancellazioneRepository;
 import com.motormindhub.Api.model.repository.SegnalazioneRepository;
 import com.motormindhub.Api.model.repository.UtenteRepository;
+import com.motormindhub.Api.model.repository.VisitaSessioneRepository;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.AdministrativeActionLogEntryDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.AdministrativeActionLogFiltersDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.DeletionRequestQueueItemDTO;
@@ -30,6 +34,7 @@ import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.Suspension
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.UserManagementDashboardDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.UserSearchCriteriaDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.UserSummaryDTO;
+import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.VisiteStatisticheDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.exception.ContenutiInSospesoException;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.exception.GestoreNonAutorizzatoException;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.exception.RegolaDiDominioViolataException;
@@ -41,7 +46,14 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Facade del sottosistema GestioneAmministrazioneUtenti (SDD 3.1, ODD 2.5): moderazione della
@@ -53,12 +65,14 @@ import java.util.List;
 public class GestioneAmministrazioneUtenti {
 
     private static final int GIORNI_PER_MODIFICA_PROFILO = 7; // RF4.5, UC_26 passo 5: "entro 7 giorni"
+    private static final ZoneId ZONA_VISITE = ZoneId.of("Europe/Rome"); // RF3.1, UC_28: confini di periodo percepiti dall'utente italiano
 
     private final UtenteRepository utenteRepository;
     private final SegnalazioneRepository segnalazioneRepository;
     private final RichiestaCancellazioneRepository richiestaCancellazioneRepository;
     private final ArticoloRepository articoloRepository;
     private final LogAzioneAmministrativaRepository logAzioneAmministrativaRepository;
+    private final VisitaSessioneRepository visitaSessioneRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     public GestioneAmministrazioneUtenti(UtenteRepository utenteRepository,
@@ -66,12 +80,14 @@ public class GestioneAmministrazioneUtenti {
                                           RichiestaCancellazioneRepository richiestaCancellazioneRepository,
                                           ArticoloRepository articoloRepository,
                                           LogAzioneAmministrativaRepository logAzioneAmministrativaRepository,
+                                          VisitaSessioneRepository visitaSessioneRepository,
                                           ApplicationEventPublisher eventPublisher) {
         this.utenteRepository = utenteRepository;
         this.segnalazioneRepository = segnalazioneRepository;
         this.richiestaCancellazioneRepository = richiestaCancellazioneRepository;
         this.articoloRepository = articoloRepository;
         this.logAzioneAmministrativaRepository = logAzioneAmministrativaRepository;
+        this.visitaSessioneRepository = visitaSessioneRepository;
         this.eventPublisher = eventPublisher;
     }
 
@@ -247,6 +263,36 @@ public class GestioneAmministrazioneUtenti {
         eventPublisher.publishEvent(new DataExportReadyEvent(utente.getId(), utente.getEmail(), datiEsportati));
     }
 
+    /**
+     * pre: true (nessuna pre-condizione: invocabile da qualunque chiamante, incluso non autenticato)
+     * post: (callerRuolo &lt;&gt; null and callerRuolo &lt;&gt; Ruolo::ISCRITTO) implies result-&gt;isEmpty()
+     * and (sessioneIdEsistente &lt;&gt; null and VisitaSessione.allInstances()@pre-&gt;exists(v | v.sessioneId = sessioneIdEsistente)) implies result-&gt;isEmpty()
+     * and result-&gt;notEmpty() implies VisitaSessione.allInstances()-&gt;exists(v | v.sessioneId = result-&gt;any() and v.tipo = (if callerRuolo = null then TipoVisitatore::GUEST else TipoVisitatore::ISCRITTO endif))
+     * (ODD 2.5, RF3.1, UC_28)
+     *
+     * Stesso filtro di ruolo gia' applicato agli incrementi di numeroVisualizzazioni in
+     * GestioneArticoli.getArticleById (ODD 2.2): un ruolo redazionale (Autore/Manager Autori/Gestore
+     * Utenti) non genera mai una visita, indipendentemente dal cookie presentato. sessioneIdEsistente
+     * e' il valore del cookie mmh_visit_session in ingresso (null se assente): se gia' associato a una
+     * VisitaSessione, la sessione e' gia' stata contata e non va duplicata. Il risultato presente
+     * segnala al controller (VisiteController) che deve impostare/rinnovare il cookie con il nuovo
+     * id; vuoto significa "nessuna azione", sia per esclusione di ruolo sia per deduplica.
+     */
+    @Transactional
+    public Optional<String> registraVisita(String sessioneIdEsistente, Ruolo callerRuolo) {
+        if (callerRuolo != null && callerRuolo != Ruolo.ISCRITTO) {
+            return Optional.empty();
+        }
+        if (sessioneIdEsistente != null && visitaSessioneRepository.existsBySessioneId(sessioneIdEsistente)) {
+            return Optional.empty();
+        }
+
+        String nuovoSessioneId = UUID.randomUUID().toString();
+        TipoVisitatore tipo = callerRuolo == null ? TipoVisitatore.GUEST : TipoVisitatore.ISCRITTO;
+        visitaSessioneRepository.save(new VisitaSessione(nuovoSessioneId, tipo));
+        return Optional.of(nuovoSessioneId);
+    }
+
     // --- query di sola lettura (nessun contratto OCL formale) ----------------
 
     /** RF4.1, UC_22 - mockup 38_gestore_dashboard.png. */
@@ -293,6 +339,22 @@ public class GestioneAmministrazioneUtenti {
                 .toList();
     }
 
+    /**
+     * RF3.1, UC_28 - andamento visite per la dashboard Gestore Utenti. Le 4 finestre sono da inizio
+     * periodo corrente (calendario, fuso Europe/Rome), stessa logica di "giornaliero dalla
+     * mezzanotte" estesa a settimana/mese/anno - non finestre mobili. Un'unica query con
+     * aggregazione condizionale (VisitaSessioneRepository.aggregaConteggi) calcola tutti e 5 gli
+     * aggregati in una sola scansione indicizzata, invece di 5 COUNT separate.
+     */
+    @Transactional(readOnly = true)
+    public VisiteStatisticheDTO getVisiteStatistiche() {
+        ConfiniPeriodo confini = confiniPeriodo(LocalDate.now(ZONA_VISITE), ZONA_VISITE);
+        ConteggioVisite conteggio = visitaSessioneRepository.aggregaConteggi(
+                confini.inizioGiorno(), confini.inizioSettimana(), confini.inizioMese(), confini.inizioAnno());
+        return new VisiteStatisticheDTO(conteggio.getOggi(), conteggio.getSettimana(), conteggio.getMese(),
+                conteggio.getAnno(), conteggio.getTotale());
+    }
+
     /** RF4.8 - mockup 48_gestore_cronologia.png. */
     @Transactional(readOnly = true)
     public List<AdministrativeActionLogEntryDTO> getAdministrativeActionLog(AdministrativeActionLogFiltersDTO filters) {
@@ -325,5 +387,22 @@ public class GestioneAmministrazioneUtenti {
         return noteAggiuntive == null || noteAggiuntive.isBlank()
                 ? motivazione.getEtichetta()
                 : motivazione.getEtichetta() + " - " + noteAggiuntive.trim();
+    }
+
+    /**
+     * Pure function isolata dal wall-clock (accetta "oggi" invece di chiamare LocalDate.now())
+     * apposta per essere testabile senza dipendere dall'istante di esecuzione del test - package-
+     * private per essere invocabile direttamente da GestioneAmministrazioneUtentiTest. Settimana da
+     * lunedi' (TemporalAdjusters.previousOrSame: resta "oggi" se oggi e' gia' lunedi').
+     */
+    static ConfiniPeriodo confiniPeriodo(LocalDate oggi, ZoneId zona) {
+        Instant inizioGiorno = oggi.atStartOfDay(zona).toInstant();
+        Instant inizioSettimana = oggi.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).atStartOfDay(zona).toInstant();
+        Instant inizioMese = oggi.withDayOfMonth(1).atStartOfDay(zona).toInstant();
+        Instant inizioAnno = oggi.withDayOfYear(1).atStartOfDay(zona).toInstant();
+        return new ConfiniPeriodo(inizioGiorno, inizioSettimana, inizioMese, inizioAnno);
+    }
+
+    record ConfiniPeriodo(Instant inizioGiorno, Instant inizioSettimana, Instant inizioMese, Instant inizioAnno) {
     }
 }

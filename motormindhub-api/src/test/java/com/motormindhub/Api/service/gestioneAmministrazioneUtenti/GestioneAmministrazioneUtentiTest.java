@@ -14,12 +14,16 @@ import com.motormindhub.Api.model.entity.StatoRichiestaCancellazione;
 import com.motormindhub.Api.model.entity.StatoSegnalazione;
 import com.motormindhub.Api.model.entity.StatoUtente;
 import com.motormindhub.Api.model.entity.TipoAzioneAmministrativa;
+import com.motormindhub.Api.model.entity.TipoVisitatore;
 import com.motormindhub.Api.model.entity.Utente;
+import com.motormindhub.Api.model.entity.VisitaSessione;
 import com.motormindhub.Api.model.repository.ArticoloRepository;
+import com.motormindhub.Api.model.repository.ConteggioVisite;
 import com.motormindhub.Api.model.repository.LogAzioneAmministrativaRepository;
 import com.motormindhub.Api.model.repository.RichiestaCancellazioneRepository;
 import com.motormindhub.Api.model.repository.SegnalazioneRepository;
 import com.motormindhub.Api.model.repository.UtenteRepository;
+import com.motormindhub.Api.model.repository.VisitaSessioneRepository;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.AdministrativeActionLogFiltersDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.MotivazioneSospensione;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.ReportResolutionDTO;
@@ -43,6 +47,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.DayOfWeek;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -50,6 +58,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -72,6 +81,8 @@ class GestioneAmministrazioneUtentiTest {
     @Mock
     private LogAzioneAmministrativaRepository logAzioneAmministrativaRepository;
     @Mock
+    private VisitaSessioneRepository visitaSessioneRepository;
+    @Mock
     private ApplicationEventPublisher eventPublisher;
 
     private GestioneAmministrazioneUtenti gestione;
@@ -79,7 +90,8 @@ class GestioneAmministrazioneUtentiTest {
     @BeforeEach
     void setUp() {
         gestione = new GestioneAmministrazioneUtenti(utenteRepository, segnalazioneRepository,
-                richiestaCancellazioneRepository, articoloRepository, logAzioneAmministrativaRepository, eventPublisher);
+                richiestaCancellazioneRepository, articoloRepository, logAzioneAmministrativaRepository,
+                visitaSessioneRepository, eventPublisher);
     }
 
     private static Utente utente(Long id, String email, StatoUtente stato) {
@@ -435,5 +447,139 @@ class GestioneAmministrazioneUtentiTest {
 
         assertThat(risultati).hasSize(1);
         assertThat(risultati.get(0).tipoAzione()).isEqualTo(TipoAzioneAmministrativa.RIATTIVAZIONE);
+    }
+
+    // --- registraVisita --------------------------------------------------------
+
+    @ParameterizedTest
+    @EnumSource(value = Ruolo.class, names = {"AUTORE", "MANAGER_AUTORI", "GESTORE_UTENTI"})
+    void registraVisita_nonRegistraNulla_quandoRuoloRedazionale(Ruolo ruolo) {
+        Optional<String> risultato = gestione.registraVisita(null, ruolo);
+
+        assertThat(risultato).isEmpty();
+        verify(visitaSessioneRepository, never()).save(any());
+    }
+
+    @Test
+    void registraVisita_registraNuovaSessioneComeGuest_quandoRuoloNullo() {
+        Optional<String> risultato = gestione.registraVisita(null, null);
+
+        assertThat(risultato).isPresent();
+        ArgumentCaptor<VisitaSessione> captor = ArgumentCaptor.forClass(VisitaSessione.class);
+        verify(visitaSessioneRepository).save(captor.capture());
+        assertThat(captor.getValue().getSessioneId()).isEqualTo(risultato.get());
+        assertThat(captor.getValue().getTipo()).isEqualTo(TipoVisitatore.GUEST);
+    }
+
+    @Test
+    void registraVisita_registraNuovaSessioneComeIscritto_quandoRuoloIscritto() {
+        Optional<String> risultato = gestione.registraVisita(null, Ruolo.ISCRITTO);
+
+        assertThat(risultato).isPresent();
+        ArgumentCaptor<VisitaSessione> captor = ArgumentCaptor.forClass(VisitaSessione.class);
+        verify(visitaSessioneRepository).save(captor.capture());
+        assertThat(captor.getValue().getTipo()).isEqualTo(TipoVisitatore.ISCRITTO);
+    }
+
+    @Test
+    void registraVisita_nonRegistraNulla_quandoSessioneGiaRegistrata() {
+        when(visitaSessioneRepository.existsBySessioneId("sessione-esistente")).thenReturn(true);
+
+        Optional<String> risultato = gestione.registraVisita("sessione-esistente", Ruolo.ISCRITTO);
+
+        assertThat(risultato).isEmpty();
+        verify(visitaSessioneRepository, never()).save(any());
+    }
+
+    @Test
+    void registraVisita_nonCercaLaSessione_quandoSessioneIdEsistenteAssente() {
+        // Nessun cookie in ingresso: nessuna lookup di deduplica da fare, si registra direttamente.
+        Optional<String> risultato = gestione.registraVisita(null, Ruolo.ISCRITTO);
+
+        assertThat(risultato).isPresent();
+        verify(visitaSessioneRepository, never()).existsBySessioneId(any());
+    }
+
+    // --- getVisiteStatistiche ---------------------------------------------------
+
+    @Test
+    void getVisiteStatistiche_mappaIConteggiAggregatiInDTO() {
+        ConteggioVisite conteggio = mock(ConteggioVisite.class);
+        when(conteggio.getOggi()).thenReturn(10L);
+        when(conteggio.getSettimana()).thenReturn(40L);
+        when(conteggio.getMese()).thenReturn(120L);
+        when(conteggio.getAnno()).thenReturn(900L);
+        when(conteggio.getTotale()).thenReturn(950L);
+        when(visitaSessioneRepository.aggregaConteggi(any(), any(), any(), any())).thenReturn(conteggio);
+
+        var statistiche = gestione.getVisiteStatistiche();
+
+        assertThat(statistiche.oggi()).isEqualTo(10L);
+        assertThat(statistiche.settimana()).isEqualTo(40L);
+        assertThat(statistiche.mese()).isEqualTo(120L);
+        assertThat(statistiche.anno()).isEqualTo(900L);
+        assertThat(statistiche.totale()).isEqualTo(950L);
+    }
+
+    // --- confiniPeriodo (calcolo puro, isolato dal wall-clock) ------------------
+
+    private static final ZoneId ROMA = ZoneId.of("Europe/Rome");
+
+    @Test
+    void confiniPeriodo_calcolaICorrettiInizioPeriodo_casoBaseMetaSettimana() {
+        var confini = GestioneAmministrazioneUtenti.confiniPeriodo(LocalDate.of(2026, 8, 12), ROMA);
+
+        assertThat(confini.inizioGiorno()).isEqualTo(LocalDate.of(2026, 8, 12).atStartOfDay(ROMA).toInstant());
+        assertThat(confini.inizioSettimana()).isEqualTo(LocalDate.of(2026, 8, 10).atStartOfDay(ROMA).toInstant());
+        assertThat(confini.inizioMese()).isEqualTo(LocalDate.of(2026, 8, 1).atStartOfDay(ROMA).toInstant());
+        assertThat(confini.inizioAnno()).isEqualTo(LocalDate.of(2026, 1, 1).atStartOfDay(ROMA).toInstant());
+    }
+
+    @Test
+    void confiniPeriodo_inizioSettimanaCoincideConOggi_quandoOggiELunedi() {
+        LocalDate lunedi = LocalDate.of(2026, 8, 10);
+        assertThat(lunedi.getDayOfWeek()).isEqualTo(DayOfWeek.MONDAY);
+
+        var confini = GestioneAmministrazioneUtenti.confiniPeriodo(lunedi, ROMA);
+
+        assertThat(confini.inizioSettimana()).isEqualTo(confini.inizioGiorno());
+    }
+
+    @Test
+    void confiniPeriodo_inizioMeseCoincideConOggi_quandoOggiEIlPrimoDelMese() {
+        var confini = GestioneAmministrazioneUtenti.confiniPeriodo(LocalDate.of(2026, 8, 1), ROMA);
+
+        assertThat(confini.inizioMese()).isEqualTo(confini.inizioGiorno());
+    }
+
+    @Test
+    void confiniPeriodo_inizioSettimanaRicadeNellAnnoPrecedente_quandoOggiEIl1GennaioDiGiovedi() {
+        LocalDate primoGennaio = LocalDate.of(2026, 1, 1);
+        assertThat(primoGennaio.getDayOfWeek()).isEqualTo(DayOfWeek.THURSDAY);
+
+        var confini = GestioneAmministrazioneUtenti.confiniPeriodo(primoGennaio, ROMA);
+
+        assertThat(confini.inizioAnno()).isEqualTo(confini.inizioGiorno()).isEqualTo(confini.inizioMese());
+        assertThat(confini.inizioSettimana()).isEqualTo(LocalDate.of(2025, 12, 29).atStartOfDay(ROMA).toInstant());
+    }
+
+    @Test
+    void confiniPeriodo_gestisceCorrettamenteIlCambioOraLegale_inizioMarzo() {
+        var prima = GestioneAmministrazioneUtenti.confiniPeriodo(LocalDate.of(2026, 3, 29), ROMA);
+        var dopo = GestioneAmministrazioneUtenti.confiniPeriodo(LocalDate.of(2026, 3, 30), ROMA);
+
+        // 29 marzo 2026, ultima domenica del mese: le lancette avanzano da 02:00 a 03:00, quel
+        // giorno dura solo 23 ore in Europe/Rome.
+        assertThat(Duration.between(prima.inizioGiorno(), dopo.inizioGiorno())).isEqualTo(Duration.ofHours(23));
+    }
+
+    @Test
+    void confiniPeriodo_gestisceCorrettamenteIlCambioOraSolare_fineOttobre() {
+        var prima = GestioneAmministrazioneUtenti.confiniPeriodo(LocalDate.of(2026, 10, 25), ROMA);
+        var dopo = GestioneAmministrazioneUtenti.confiniPeriodo(LocalDate.of(2026, 10, 26), ROMA);
+
+        // 25 ottobre 2026, ultima domenica del mese: le lancette arretrano da 03:00 a 02:00, quel
+        // giorno dura 25 ore in Europe/Rome.
+        assertThat(Duration.between(prima.inizioGiorno(), dopo.inizioGiorno())).isEqualTo(Duration.ofHours(25));
     }
 }
