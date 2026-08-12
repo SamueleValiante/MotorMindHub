@@ -5,6 +5,8 @@ import { useUserManagementDashboard } from "@/lib/amministrazioneUtenti/useUserM
 import { useUsers } from "@/lib/amministrazioneUtenti/useUsers";
 import { useReportsQueue } from "@/lib/amministrazioneUtenti/useReportsQueue";
 import { useDeletionRequestsQueue } from "@/lib/amministrazioneUtenti/useDeletionRequestsQueue";
+import { useVisiteStatistiche } from "@/lib/amministrazioneUtenti/useVisiteStatistiche";
+import { StatCard } from "@/components/shared/StatCard";
 
 function formatData(iso: string): string {
   return new Date(iso).toLocaleDateString("it-IT");
@@ -30,17 +32,20 @@ export default function GestoreDashboardPage() {
   const users = useUsers();
   const reports = useReportsQueue();
   const deletionQueue = useDeletionRequestsQueue();
+  const visite = useVisiteStatistiche();
 
   const loading =
     dashboard.status === "loading" ||
     users.status === "loading" ||
     reports.status === "loading" ||
-    deletionQueue.status === "loading";
+    deletionQueue.status === "loading" ||
+    visite.status === "loading";
   const error =
     dashboard.status === "error" ||
     users.status === "error" ||
     reports.status === "error" ||
-    deletionQueue.status === "error";
+    deletionQueue.status === "error" ||
+    visite.status === "error";
 
   return (
     <div className="flex flex-col gap-6">
@@ -53,32 +58,40 @@ export default function GestoreDashboardPage() {
 
       {loading ? (
         <p className="text-sm text-fog">Caricamento…</p>
-      ) : error || dashboard.status !== "ready" || users.status !== "ready" || reports.status !== "ready" || deletionQueue.status !== "ready" ? (
+      ) : error ||
+        dashboard.status !== "ready" ||
+        users.status !== "ready" ||
+        reports.status !== "ready" ||
+        deletionQueue.status !== "ready" ||
+        visite.status !== "ready" ? (
         <p className="text-sm text-ember">Non è stato possibile caricare le statistiche.</p>
       ) : (
         <>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-lg bg-carbon p-6">
-              <p className="font-heading text-3xl font-bold text-accent">{dashboard.stats.utentiRegistrati}</p>
-              <p className="mt-1 text-sm uppercase tracking-wide text-fog">Utenti registrati</p>
-            </div>
-            <div className="rounded-lg bg-carbon p-6">
-              <p className="font-heading text-3xl font-bold text-ember">{dashboard.stats.segnalazioniAperte}</p>
-              <p className="mt-1 text-sm uppercase tracking-wide text-fog">Segnalazioni aperte</p>
-            </div>
-            <div className="rounded-lg bg-carbon p-6">
-              <p className="font-heading text-3xl font-bold text-paper">
-                {dashboard.stats.richiesteCancellazioneInCoda}
-              </p>
-              <p className="mt-1 text-sm uppercase tracking-wide text-fog">Richieste di cancellazione</p>
-            </div>
-            <div className="rounded-lg bg-carbon p-6">
-              <p className="font-heading text-3xl font-bold text-paper">
-                {users.utenti.filter((u) => u.stato === "SOSPESO").length}
-              </p>
-              <p className="mt-1 text-sm uppercase tracking-wide text-fog">Account sospesi</p>
-            </div>
+            <StatCard value={dashboard.stats.utentiRegistrati} label="Utenti registrati" variant="accent" />
+            <StatCard value={dashboard.stats.segnalazioniAperte} label="Segnalazioni aperte" variant="critical" />
+            <StatCard
+              value={dashboard.stats.richiesteCancellazioneInCoda}
+              label="Richieste di cancellazione"
+            />
+            <StatCard
+              value={users.utenti.filter((u) => u.stato === "SOSPESO").length}
+              label="Account sospesi"
+            />
           </div>
+
+          <section className="flex flex-col gap-6 rounded-lg bg-carbon p-6">
+            <h2 className="font-heading text-lg font-bold uppercase tracking-wide text-paper">
+              Visite al sito
+            </h2>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
+              <StatCard value={visite.stats.oggi} label="Oggi" variant="accent" />
+              <StatCard value={visite.stats.settimana} label="Questa settimana" />
+              <StatCard value={visite.stats.mese} label="Questo mese" />
+              <StatCard value={visite.stats.anno} label="Quest'anno" />
+              <StatCard value={visite.stats.totale} label="Totale" />
+            </div>
+          </section>
 
           <section className="flex flex-col gap-6 rounded-lg bg-carbon p-6">
             <h2 className="font-heading text-lg font-bold uppercase tracking-wide text-paper">

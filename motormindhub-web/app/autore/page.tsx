@@ -5,6 +5,7 @@ import { useMyArticles } from "@/lib/articoli/useMyArticles";
 import { ArticleCard } from "@/components/public/ArticleCard";
 import { StatoBadge } from "@/components/articoli/StatoBadge";
 import { EmptyState } from "@/components/empty-state/EmptyState";
+import { StatCard } from "@/components/shared/StatCard";
 import { DocumentIcon } from "@/components/autore/icons";
 
 const ULTIMI_ARTICOLI_COUNT = 4;
@@ -64,22 +65,10 @@ export default function DashboardAutorePage() {
       ) : (
         <>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <div className="rounded-lg bg-carbon p-6">
-              <p className="font-heading text-3xl font-bold text-accent">{pubblicati}</p>
-              <p className="mt-1 text-sm uppercase tracking-wide text-fog">Articoli pubblicati</p>
-            </div>
-            <div className="rounded-lg bg-carbon p-6">
-              <p className="font-heading text-3xl font-bold text-paper">{inRevisione}</p>
-              <p className="mt-1 text-sm uppercase tracking-wide text-fog">In attesa di approvazione</p>
-            </div>
-            <div className="rounded-lg bg-carbon p-6">
-              <p className="font-heading text-3xl font-bold text-paper">{bozze}</p>
-              <p className="mt-1 text-sm uppercase tracking-wide text-fog">Bozze salvate</p>
-            </div>
-            <div className="rounded-lg bg-carbon p-6">
-              <p className="font-heading text-3xl font-bold text-paper">{lettureTotali}</p>
-              <p className="mt-1 text-sm uppercase tracking-wide text-fog">Letture totali</p>
-            </div>
+            <StatCard value={pubblicati} label="Articoli pubblicati" variant="accent" />
+            <StatCard value={inRevisione} label="In attesa di approvazione" />
+            <StatCard value={bozze} label="Bozze salvate" />
+            <StatCard value={lettureTotali} label="Letture totali" />
           </div>
 
           <section className="flex flex-col gap-6 rounded-lg bg-carbon p-6">

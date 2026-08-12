@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useManagerDashboardStats } from "@/lib/autori/useManagerDashboardStats";
 import { useArticleSearch } from "@/lib/articoli/useArticleSearch";
+import { StatCard } from "@/components/shared/StatCard";
 
 const PIU_LETTI_COUNT = 5;
 
@@ -48,22 +49,10 @@ export default function ManagerDashboardPage() {
       ) : (
         <>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-            <div className="rounded-lg bg-carbon p-6">
-              <p className="font-heading text-3xl font-bold text-accent">{state.stats.articoliPubblicati}</p>
-              <p className="mt-1 text-sm uppercase tracking-wide text-fog">Articoli pubblicati</p>
-            </div>
-            <div className="rounded-lg bg-carbon p-6">
-              <p className="font-heading text-3xl font-bold text-ember">{state.stats.inAttesaApprovazione}</p>
-              <p className="mt-1 text-sm uppercase tracking-wide text-fog">In attesa di approvazione</p>
-            </div>
-            <div className="rounded-lg bg-carbon p-6">
-              <p className="font-heading text-3xl font-bold text-paper">{state.stats.autoriAttivi}</p>
-              <p className="mt-1 text-sm uppercase tracking-wide text-fog">Autori attivi</p>
-            </div>
-            <div className="rounded-lg bg-carbon p-6">
-              <p className="font-heading text-3xl font-bold text-paper">{state.stats.categorieTotali}</p>
-              <p className="mt-1 text-sm uppercase tracking-wide text-fog">Categorie totali</p>
-            </div>
+            <StatCard value={state.stats.articoliPubblicati} label="Articoli pubblicati" variant="accent" />
+            <StatCard value={state.stats.inAttesaApprovazione} label="In attesa di approvazione" variant="critical" />
+            <StatCard value={state.stats.autoriAttivi} label="Autori attivi" />
+            <StatCard value={state.stats.categorieTotali} label="Categorie totali" />
           </div>
 
           <section className="flex flex-col gap-6 rounded-lg bg-carbon p-6">

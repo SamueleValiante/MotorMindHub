@@ -3,6 +3,7 @@ import { Oswald, Inter, JetBrains_Mono } from "next/font/google";
 import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { ToastViewport } from "@/components/toast/ToastViewport";
 import { CookieBanner } from "@/components/cookie-consent/CookieBanner";
+import { PageViewTracker } from "@/components/analytics/PageViewTracker";
 import { ReportUserModal } from "@/components/report/ReportUserModal";
 import "./globals.css";
 
@@ -42,6 +43,7 @@ export default function RootLayout({
         <AuthProvider>{children}</AuthProvider>
         <ToastViewport />
         <CookieBanner />
+        <PageViewTracker />
         <ReportUserModal />
       </body>
     </html>

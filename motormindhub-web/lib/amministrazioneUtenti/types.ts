@@ -96,3 +96,12 @@ export interface UserManagementDashboardStats {
   segnalazioniAperte: number;
   richiesteCancellazioneInCoda: number;
 }
+
+/** VisiteStatisticheDTO (GestioneAmministrazioneUtenti.getVisiteStatistiche, RF3.1, UC_28). */
+export interface VisiteStatistiche {
+  oggi: number;
+  settimana: number;
+  mese: number;
+  anno: number;
+  totale: number;
+}
