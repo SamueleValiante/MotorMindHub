@@ -9,6 +9,8 @@ import com.motormindhub.Api.model.repository.VisitaSessioneRepository;
 import com.motormindhub.Api.web.auth.LoginRequestDTO;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -90,9 +92,22 @@ class VisiteIntegrationTest {
         assertThat(visitaSessioneRepository.count()).isEqualTo(conteggioDopoLaPrima);
     }
 
-    @Test
-    void registraVisita_chiamataAutenticataComeAutore_nonPersisteNullaENonImpostaCookie() throws Exception {
-        String jwt = creaUtenteELogga("visite-autore@provider.it", Ruolo.AUTORE);
+    /**
+     * Bug segnalato dal vivo: le visite di ruoli redazionali risultavano contate nonostante
+     * registraVisita escluda esplicitamente callerRuolo != ISCRITTO. Investigato: ne' il controller
+     * ne' JwtAuthenticationFilter avevano un problema (questo test, gia' presente solo per AUTORE
+     * prima di questa estensione, lo dimostrava gia'); la causa reale era nel front-end
+     * (PageViewTracker, race sul bootstrap dell'access token in memoria - cfr. commit di questo fix)
+     * e non e' quindi riproducibile qui, dove l'header Authorization e' sempre presente per
+     * costruzione (MockMvc lo allega esplicitamente). Parametrizzato sui tre ruoli redazionali per
+     * dimostrare esplicitamente, con una richiesta HTTP reale attraverso l'intera filter chain
+     * (non un unit test sul service con repository mockato), che nessuno dei tre produce mai una
+     * riga quando il token arriva correttamente.
+     */
+    @ParameterizedTest
+    @EnumSource(value = Ruolo.class, names = {"AUTORE", "MANAGER_AUTORI", "GESTORE_UTENTI"})
+    void registraVisita_chiamataAutenticataComeRuoloRedazionale_nonPersisteNullaENonImpostaCookie(Ruolo ruolo) throws Exception {
+        String jwt = creaUtenteELogga("visite-redazionale-" + ruolo.name().toLowerCase() + "@provider.it", ruolo);
         long prima = visitaSessioneRepository.count();
 
         MvcResult result = mockMvc.perform(post("/api/v1/visite").header("Authorization", "Bearer " + jwt))

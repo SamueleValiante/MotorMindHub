@@ -115,4 +115,60 @@ test.describe("Tracciamento visite (RF3.1, UC_28)", () => {
     expect(after.oggi).toBe(before.oggi + NUOVE_VISITE);
     expect(after.totale).toBe(before.totale + NUOVE_VISITE);
   });
+
+  for (const ruolo of ["AUTORE", "MANAGER_AUTORI", "GESTORE_UTENTI"] as const) {
+    /**
+     * Regressione: PageViewTracker sparava POST /api/v1/visite non appena il
+     * consenso analitici risultava true, senza aspettare che il bootstrap
+     * silenzioso dell'access token (AuthProvider -> ensureFreshAccessToken,
+     * asincrono) risolvesse - stesso identico bug (di razza, non di
+     * skipAuth) già trovato e corretto per il conteggio letture articolo
+     * (useArticle/useEditableArticle). Su un caricamento a freddo (reload,
+     * non una navigazione client-side dove il token è già in memoria),
+     * l'access token risultava ancora null anche per un ruolo redazionale
+     * già autenticato: la richiesta partiva senza header Authorization, il
+     * backend la trattava come Guest ed escludeva quindi solo nominalmente
+     * quel ruolo. Verificato qui l'header stesso (non solo l'effetto sul
+     * conteggio, già coperto lato backend da VisiteIntegrationTest): deve
+     * essere presente su un reload a freddo per ciascuno dei tre ruoli
+     * redazionali.
+     */
+    test(`caricamento a freddo autenticato come ${ruolo}: la POST /api/v1/visite include l'header Authorization`, async ({
+      page,
+      testUsers,
+    }) => {
+      const utente = await testUsers.create({ ruolo });
+      await loginViaUi(page, utente.email, utente.password);
+
+      // Consenso non ancora dato in questa pagina: accettarlo qui innesca
+      // subito una prima registrazione (auth già risolta appena dopo il
+      // login, nessuna race in questo caso) - va lasciata completare ed
+      // esclusa dal conteggio sotto, che riguarda solo il reload a freddo
+      // successivo (dove la race può manifestarsi).
+      await Promise.all([
+        page.waitForResponse(
+          (res) => res.url().includes("/api/v1/visite") && res.request().method() === "POST"
+        ),
+        page.getByRole("button", { name: "Accetta tutti" }).click(),
+      ]);
+
+      const authHeaders: (string | undefined)[] = [];
+      page.on("request", (req) => {
+        if (req.method() === "POST" && req.url().includes("/api/v1/visite")) {
+          authHeaders.push(req.headers()["authorization"]);
+        }
+      });
+
+      const [response] = await Promise.all([
+        page.waitForResponse(
+          (res) => res.url().includes("/api/v1/visite") && res.request().method() === "POST"
+        ),
+        page.reload(),
+      ]);
+
+      expect(response.status()).toBe(204);
+      expect(authHeaders).toHaveLength(1);
+      expect(authHeaders[0]).toMatch(/^Bearer /);
+    });
+  }
 });
