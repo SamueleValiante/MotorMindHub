@@ -5,16 +5,20 @@ import com.motormindhub.Api.security.JwtTokenProvider;
 import com.motormindhub.Api.security.LoginRateLimiter;
 import com.motormindhub.Api.security.RefreshTokenService;
 import com.motormindhub.Api.security.UserPrincipal;
+import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.GestioneAmministrazioneUtenti;
 import com.motormindhub.Api.web.MessageResponseDTO;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import static com.motormindhub.Api.service.gestioneAmministrazioneUtenti.GestioneAmministrazioneUtenti.COOKIE_SESSIONE_VISITE;
 
 /**
  * *authenticate non e' implementato nel Service Layer di GestioneUtenti (ODD 2.1): la verifica
@@ -33,17 +37,28 @@ public class AuthController {
     private final JwtTokenProvider jwtTokenProvider;
     private final RefreshTokenService refreshTokenService;
     private final LoginRateLimiter loginRateLimiter;
+    private final GestioneAmministrazioneUtenti gestioneAmministrazioneUtenti;
 
     public AuthController(AuthenticationManager authenticationManager, JwtTokenProvider jwtTokenProvider,
-                           RefreshTokenService refreshTokenService, LoginRateLimiter loginRateLimiter) {
+                           RefreshTokenService refreshTokenService, LoginRateLimiter loginRateLimiter,
+                           GestioneAmministrazioneUtenti gestioneAmministrazioneUtenti) {
         this.authenticationManager = authenticationManager;
         this.jwtTokenProvider = jwtTokenProvider;
         this.refreshTokenService = refreshTokenService;
         this.loginRateLimiter = loginRateLimiter;
+        this.gestioneAmministrazioneUtenti = gestioneAmministrazioneUtenti;
     }
 
+    /**
+     * sessioneIdCookie e' il cookie anonimo di tracciamento visite (mmh_visit_session, RF3.1/UC_28),
+     * non il refresh token: se presente e gia' associato a una VisitaSessione Guest, il login la
+     * riclassifica a Iscritto (GestioneAmministrazioneUtenti.riclassificaComeIscritto) - stessa
+     * sessione browser, nessuna nuova riga, nessun nuovo cookie. Assente/non trovata/gia' Iscritto
+     * sono tutti no-op silenziosi, il login stesso non e' mai condizionato da questo cookie.
+     */
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO dto) {
+    public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO dto,
+                                                    @CookieValue(name = COOKIE_SESSIONE_VISITE, required = false) String sessioneIdCookie) {
         loginRateLimiter.checkAndConsume(dto.email());
 
         Authentication authentication = authenticationManager.authenticate(
@@ -52,6 +67,7 @@ public class AuthController {
         UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
         String accessToken = jwtTokenProvider.generateToken(principal);
         String refreshToken = refreshTokenService.generate(principal.getId());
+        gestioneAmministrazioneUtenti.riclassificaComeIscritto(sessioneIdCookie);
 
         return ResponseEntity.ok(new LoginResponseDTO(accessToken, refreshToken));
     }

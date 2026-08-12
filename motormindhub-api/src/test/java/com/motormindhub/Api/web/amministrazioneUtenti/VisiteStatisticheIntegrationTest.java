@@ -17,6 +17,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -102,15 +103,25 @@ class VisiteStatisticheIntegrationTest {
 
     @Test
     void getVisiteStatistiche_restituisceIlTotaleEIlContatoreOggiCoerentiConLeRigheSeedate() throws Exception {
+        // Delta rispetto a una baseline, non un valore assoluto: il DB Postgres locale e' condiviso
+        // tra esecuzioni di test successive (stesso motivo di VisiteIntegrationTest) e puo' non
+        // partire vuoto.
         String jwt = creaUtenteELogga("statistiche-visite@provider.it", Ruolo.GESTORE_UTENTI);
+        MvcResult baseline = mockMvc.perform(get("/api/v1/amministrazione-utenti/statistiche-visite")
+                        .header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isOk())
+                .andReturn();
+        long totalePrima = objectMapper.readTree(baseline.getResponse().getContentAsString()).get("totale").asLong();
+        long oggiPrima = objectMapper.readTree(baseline.getResponse().getContentAsString()).get("oggi").asLong();
+
         seed(Instant.now());
         seed(Instant.now());
 
         mockMvc.perform(get("/api/v1/amministrazione-utenti/statistiche-visite")
                         .header("Authorization", "Bearer " + jwt))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totale").value(2))
-                .andExpect(jsonPath("$.oggi").value(2));
+                .andExpect(jsonPath("$.totale").value(totalePrima + 2))
+                .andExpect(jsonPath("$.oggi").value(oggiPrima + 2));
     }
 
     @Test

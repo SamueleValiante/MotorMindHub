@@ -2,6 +2,7 @@ package com.motormindhub.Api.model.repository;
 
 import com.motormindhub.Api.model.entity.VisitaSessione;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -10,6 +11,17 @@ import java.time.Instant;
 public interface VisitaSessioneRepository extends JpaRepository<VisitaSessione, Long> {
 
     boolean existsBySessioneId(String sessioneId);
+
+    /**
+     * Riclassificazione Guest -> Iscritto al login riuscito (RF3.1, UC_28): il WHERE su tipo = GUEST
+     * rende l'operazione intrinsecamente idempotente (0 righe toccate se gia' ISCRITTO o se
+     * sessioneId non esiste piu') senza bisogno di un caricamento preventivo dell'entita' - stesso
+     * pattern bulk update di RefreshTokenRepository.revocaTuttiPerUtente.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE VisitaSessione v SET v.tipo = com.motormindhub.Api.model.entity.TipoVisitatore.ISCRITTO "
+            + "WHERE v.sessioneId = :sessioneId AND v.tipo = com.motormindhub.Api.model.entity.TipoVisitatore.GUEST")
+    int riclassificaComeIscritto(@Param("sessioneId") String sessioneId);
 
     /**
      * Tutti e 5 gli aggregati della dashboard Gestore Utenti (RF3.1, UC_28) in una sola scansione

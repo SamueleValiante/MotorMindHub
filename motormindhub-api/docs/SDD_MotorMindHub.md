@@ -287,6 +287,7 @@ Di seguito sono riportati i servizi esposti da ciascun sottosistema a livello di
 | getAdministrativeActionLog(filters)          | Recupera la cronologia consultabile delle azioni amministrative compiute sugli account. (cfr. RF4.8)            |
 | registraVisita(sessioneIdEsistente, callerRuolo) | Registra una visita al sito deduplicata per sessione browser (cookie anonimo separato dal refresh token); no-op per ruoli redazionali o sessione già registrata. Unico endpoint pubblico del sottosistema (POST /api/v1/visite, VisiteController). (cfr. RF3.1, UC_28) |
 | getVisiteStatistiche()                       | Recupera i conteggi aggregati delle visite (oggi/settimana/mese/anno/totale, da inizio periodo corrente, fuso Europe/Rome) per la dashboard del Gestore Utenti. (cfr. RF3.1, UC_28) |
+| riclassificaComeIscritto(sessioneIdCookie)   | Riclassifica Guest→Iscritto la VisitaSessione del cookie mmh_visit_session al login riuscito, se esistente e ancora Guest; idempotente, nessuna nuova riga. Invocato direttamente da AuthController.login, non tramite endpoint proprio. (cfr. RF3.1, UC_28) |
 
 > **4.6 GestioneNotifiche**
 

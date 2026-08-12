@@ -180,6 +180,16 @@ Per ciascun sottosistema, le sezioni seguenti riportano gli invarianti di classe
 
 \*authenticate(email, password) — il metodo non è implementato esplicitamente nel Service Layer: la verifica delle credenziali al login è delegata nativamente alla filter chain di Spring Security (cfr. RF1.4, UC_2).
 
+**Post-condizione aggiuntiva su login riuscito (RF3.1, UC_28)** Oltre all'emissione di access/refresh token, `AuthController::login` invoca direttamente `GestioneAmministrazioneUtenti::riclassificaComeIscritto(sessioneIdCookie)` (§2.5) leggendo il cookie anonimo mmh\_visit\_session dalla richiesta HTTP:
+
+> *context AuthController::login(dto: LoginRequestDTO, sessioneIdCookie: String)*
+>
+> post: (sessioneIdCookie \<\> null and VisitaSessione.allInstances()@pre-\>exists(v \| v.sessioneId = sessioneIdCookie and v.tipo = TipoVisitatore::GUEST)) implies VisitaSessione.allInstances()-\>select(v \| v.sessioneId = sessioneIdCookie)-\>first().tipo = TipoVisitatore::ISCRITTO
+>
+> and VisitaSessione.allInstances()-\>size() = VisitaSessione.allInstances()@pre-\>size() — nessuna nuova riga, solo eventuale riclassificazione di una gia' esistente
+
+Chiamata diretta, non tramite evento di dominio: la lettura del cookie è un artefatto della richiesta HTTP corrente, non un dato che un evento di dominio (che qui trasporta solo id/email utente, cfr. gli eventi in `events/`) potrebbe naturalmente veicolare, e login non passa già dal Service Layer (nota sopra) — un evento pubblicato da un Controller introdurrebbe una seconda eccezione architetturale invece di riusarne una già esistente e circoscritta. Motivazione completa nella javadoc di `GestioneAmministrazioneUtenti::riclassificaComeIscritto`.
+
 **Nome metodo requestPasswordReset(email: String)**
 
 **Descrizione** Genera un TokenRecuperoPassword monouso e pubblica l'evento per l'invio dell'email di recupero. (cfr. RF1.5, UC_3)

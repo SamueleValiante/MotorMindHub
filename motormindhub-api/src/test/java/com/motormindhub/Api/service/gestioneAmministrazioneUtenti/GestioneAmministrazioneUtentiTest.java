@@ -449,6 +449,22 @@ class GestioneAmministrazioneUtentiTest {
         assertThat(risultati.get(0).tipoAzione()).isEqualTo(TipoAzioneAmministrativa.RIATTIVAZIONE);
     }
 
+    // --- riclassificaComeIscritto ------------------------------------------------
+
+    @Test
+    void riclassificaComeIscritto_nonInterrogaIlRepository_quandoCookieAssente() {
+        gestione.riclassificaComeIscritto(null);
+
+        verify(visitaSessioneRepository, never()).riclassificaComeIscritto(any());
+    }
+
+    @Test
+    void riclassificaComeIscritto_invocaLUpdateBulkConLIdDiSessione_quandoCookiePresente() {
+        gestione.riclassificaComeIscritto("sessione-guest-preesistente");
+
+        verify(visitaSessioneRepository).riclassificaComeIscritto("sessione-guest-preesistente");
+    }
+
     // --- registraVisita --------------------------------------------------------
 
     @ParameterizedTest

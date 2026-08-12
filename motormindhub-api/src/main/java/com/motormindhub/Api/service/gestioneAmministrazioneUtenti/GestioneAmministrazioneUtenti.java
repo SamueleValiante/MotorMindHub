@@ -67,6 +67,16 @@ public class GestioneAmministrazioneUtenti {
     private static final int GIORNI_PER_MODIFICA_PROFILO = 7; // RF4.5, UC_26 passo 5: "entro 7 giorni"
     private static final ZoneId ZONA_VISITE = ZoneId.of("Europe/Rome"); // RF3.1, UC_28: confini di periodo percepiti dall'utente italiano
 
+    /**
+     * Nome del cookie di sessione anonima (RF3.1, UC_28), condiviso tra VisiteController (che lo
+     * legge/scrive) e AuthController (che lo legge soltanto, per la riclassificazione Guest->Iscritto
+     * al login): definito qui perche' GestioneAmministrazioneUtenti e' il proprietario del dominio
+     * "visite" a cui il cookie appartiene, non nel singolo controller che ne fa uso - un letterale
+     * duplicato tra i due controller sarebbe un rischio di divergenza silenziosa (typo in uno dei due
+     * spezza la riclassificazione senza errori a compile-time).
+     */
+    public static final String COOKIE_SESSIONE_VISITE = "mmh_visit_session";
+
     private final UtenteRepository utenteRepository;
     private final SegnalazioneRepository segnalazioneRepository;
     private final RichiestaCancellazioneRepository richiestaCancellazioneRepository;
@@ -291,6 +301,42 @@ public class GestioneAmministrazioneUtenti {
         TipoVisitatore tipo = callerRuolo == null ? TipoVisitatore.GUEST : TipoVisitatore.ISCRITTO;
         visitaSessioneRepository.save(new VisitaSessione(nuovoSessioneId, tipo));
         return Optional.of(nuovoSessioneId);
+    }
+
+    /**
+     * pre: true
+     * post: (sessioneIdCookie &lt;&gt; null and VisitaSessione.allInstances()@pre-&gt;exists(v | v.sessioneId = sessioneIdCookie and v.tipo = TipoVisitatore::GUEST))
+     * implies VisitaSessione.allInstances()-&gt;select(v | v.sessioneId = sessioneIdCookie)-&gt;first().tipo = TipoVisitatore::ISCRITTO
+     * and (sessioneIdCookie = null or not VisitaSessione.allInstances()@pre-&gt;exists(v | v.sessioneId = sessioneIdCookie and v.tipo = TipoVisitatore::GUEST)) implies VisitaSessione.allInstances() = VisitaSessione.allInstances()@pre
+     * (ODD 2.5, RF3.1, UC_28)
+     *
+     * Riclassifica la sessione anonima (cookie mmh_visit_session, gia' presente prima del login) da
+     * Guest a Iscritto quando l'utente effettua con successo il login nella stessa sessione browser
+     * che aveva gia' generato una visita da anonimo - stessa VisitaSessione, nessuna nuova riga,
+     * nessun nuovo cookie: e' una correzione del tipo gia' registrato, non una nuova visita.
+     * Idempotente e senza eccezioni per costruzione (WHERE tipo = GUEST in
+     * VisitaSessioneRepository.riclassificaComeIscritto): nessuna azione se il cookie e' assente
+     * (nessun consenso analitici, o prima visita del browser), se la sessione non esiste (piu'), o se
+     * e' gia' ISCRITTO (un secondo login nella stessa sessione browser non deve fare nulla di
+     * osservabile).
+     *
+     * Chiamata direttamente da AuthController.login, non tramite un evento di dominio come le
+     * notifiche di GestioneNotifiche: la lettura del cookie e' un artefatto della richiesta HTTP
+     * corrente (stesso motivo per cui VisiteController legge/scrive il cookie a livello web, non in
+     * un listener - un evento di dominio porterebbe con se' solo dati applicativi come l'id utente,
+     * mai un cookie HTTP) e l'aggiornamento e' un singolo UPDATE indicizzato su sessione_id: non c'e'
+     * un'operazione lenta o inaffidabile da disaccoppiare dal flusso sincrono, a differenza dell'invio
+     * di un'email (motivo per cui quegli eventi esistono). Login inoltre non passa gia' dal Service
+     * Layer (AuthController javadoc: "*authenticate non e' implementato nel Service Layer di
+     * GestioneUtenti"), quindi non esiste un metodo di servizio pre-esistente da cui pubblicare
+     * l'evento senza introdurre una seconda eccezione architetturale oltre a quella gia' presente.
+     */
+    @Transactional
+    public void riclassificaComeIscritto(String sessioneIdCookie) {
+        if (sessioneIdCookie == null) {
+            return;
+        }
+        visitaSessioneRepository.riclassificaComeIscritto(sessioneIdCookie);
     }
 
     // --- query di sola lettura (nessun contratto OCL formale) ----------------

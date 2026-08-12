@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Optional;
 
+import static com.motormindhub.Api.service.gestioneAmministrazioneUtenti.GestioneAmministrazioneUtenti.COOKIE_SESSIONE_VISITE;
+
 /**
  * Endpoint pubblico per la registrazione di una visita (RF3.1, UC_28) - a differenza di
  * AmministrazioneUtentiController (interamente riservato al Gestore Utenti, cfr. la sua javadoc
@@ -25,8 +27,6 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/v1/visite")
 public class VisiteController {
-
-    private static final String COOKIE_SESSIONE = "mmh_visit_session";
 
     private final GestioneAmministrazioneUtenti gestioneAmministrazioneUtenti;
 
@@ -42,7 +42,7 @@ public class VisiteController {
      */
     @PostMapping
     public ResponseEntity<Void> registraVisita(@AuthenticationPrincipal UserPrincipal principal,
-                                                @CookieValue(name = COOKIE_SESSIONE, required = false) String sessioneIdEsistente,
+                                                @CookieValue(name = COOKIE_SESSIONE_VISITE, required = false) String sessioneIdEsistente,
                                                 HttpServletRequest request) {
         Ruolo callerRuolo = principal == null ? null : principal.getRuolo();
         Optional<String> nuovoSessioneId = gestioneAmministrazioneUtenti.registraVisita(sessioneIdEsistente, callerRuolo);
@@ -60,11 +60,15 @@ public class VisiteController {
      * sviluppo locale via HTTP semplice (il browser scarta un cookie Secure su una risposta non
      * HTTPS) - da qui la scelta condizionata su request.isSecure() invece di un valore fisso. Nessun
      * maxAge impostato: cookie di sessione browser, si estingue alla chiusura (vedi VisitaSessione).
+     * Path=/api/v1 (non /api/v1/visite): il cookie deve viaggiare anche verso /api/v1/auth/login, che
+     * lo legge per la riclassificazione Guest->Iscritto (GestioneAmministrazioneUtenti.riclassificaComeIscritto) -
+     * uno scope limitato al solo path di questo controller lo avrebbe reso invisibile a quella
+     * richiesta, vanificando silenziosamente la riclassificazione al login.
      */
     private static ResponseCookie cookieSessione(String valore, boolean richiestaSicura) {
-        ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(COOKIE_SESSIONE, valore)
+        ResponseCookie.ResponseCookieBuilder builder = ResponseCookie.from(COOKIE_SESSIONE_VISITE, valore)
                 .httpOnly(true)
-                .path("/api/v1/visite");
+                .path("/api/v1");
         return richiestaSicura
                 ? builder.secure(true).sameSite("None").build()
                 : builder.secure(false).sameSite("Lax").build();
