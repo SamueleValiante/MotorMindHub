@@ -22,6 +22,12 @@ refresh token opaco (14 giorni, rotation con reuse detection — se una
 richiesta di refresh fallisce con "famiglia revocata", forza logout
 completo e richiedi nuovo login, non ritentare).
 
+Endpoint pubblici con comportamento auth-opzionale (oggi: GET
+/articoli/{id}, POST /api/v1/visite) richiedono che qualunque chiamata
+frontend sia gated su authStatus !== "loading" — il retry-on-401 di
+apiFetch NON protegge questo caso, perché l'endpoint non risponde mai
+401.
+
 ## Come lavorare
 Un sottosistema/area alla volta, stesso ordine di dipendenza del backend:
 GestioneUtenti (auth, account) → GestioneArticoli (pubblico + autore) →
