@@ -16,6 +16,53 @@ let inFlight: Promise<string | null> | null = null;
 // mount abbastanza rapido da vincere questa corsa la espone.
 const RECENT_SESSION_WINDOW_MS = 5000;
 
+// Assorbe un singolo blip transitorio (backend irraggiungibile, 5xx: cfr.
+// commento sotto) senza far percepire all'utente un logout. Non è pensato
+// per un'interruzione prolungata del backend: in quel caso, dopo i
+// tentativi, si rinuncia senza forzare "anonymous" (vedi sotto).
+const TRANSIENT_FAILURE_RETRIES = 1;
+const TRANSIENT_FAILURE_RETRY_DELAY_MS = 400;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function performRefresh(attempt = 0): Promise<string | null> {
+  let res: Response;
+  try {
+    res = await fetch("/api/auth/refresh", { method: "POST" });
+  } catch {
+    if (attempt < TRANSIENT_FAILURE_RETRIES) {
+      await sleep(TRANSIENT_FAILURE_RETRY_DELAY_MS);
+      return performRefresh(attempt + 1);
+    }
+    // Errore di rete, non un rifiuto esplicito del backend: non è la stessa
+    // cosa di "sessione non rinnovabile", quindi NON tocca lo stato — vedi
+    // il commento su ensureFreshAccessToken.
+    return null;
+  }
+
+  if (res.status === 401) {
+    // Unico caso in cui il backend ha accertato che il token non è più
+    // valido (scaduto, revocato, riutilizzo rilevato): qui, e solo qui, lo
+    // stato va riportato ad "anonymous".
+    useAuthStore.getState().clearSession();
+    return null;
+  }
+
+  if (!res.ok) {
+    if (attempt < TRANSIENT_FAILURE_RETRIES) {
+      await sleep(TRANSIENT_FAILURE_RETRY_DELAY_MS);
+      return performRefresh(attempt + 1);
+    }
+    return null;
+  }
+
+  const data: { accessToken: string } = await res.json();
+  useAuthStore.getState().setSession(data.accessToken);
+  return data.accessToken;
+}
+
 /**
  * Rinnova l'access token chiamando il proxy /api/auth/refresh (che legge il
  * refresh token dal cookie httpOnly). Deduplica le chiamate concorrenti in
@@ -24,9 +71,20 @@ const RECENT_SESSION_WINDOW_MS = 5000;
  * stesso refresh token rotante rischierebbero di attivare la reuse detection
  * del backend (rotazione con revoca famiglia, cfr. CLAUDE.md).
  *
- * Risolve con un access token fresco, oppure null se la sessione non è
- * rinnovabile (nessun cookie, refresh scaduto, famiglia revocata): in quel
- * caso lo stato viene già riportato ad "anonymous", senza retry.
+ * Risolve con un access token fresco, oppure null se il refresh non è
+ * riuscito. Due casi molto diversi dietro quel null: se il proxy ha
+ * risposto 401 (token scaduto, revocato, o riutilizzo rilevato), la
+ * sessione NON è rinnovabile e lo stato è già stato riportato ad
+ * "anonymous". Se invece il fallimento è un errore di rete o un 5xx
+ * transitorio (backend momentaneamente irraggiungibile: osservato dal vivo
+ * in produzione), il token nel cookie httpOnly potrebbe essere ancora
+ * perfettamente valido — lo stato NON viene toccato, per non sloggare un
+ * utente che non ha mai perso la sessione lato server (bug osservato: un
+ * reload durante un blip trasformava un "torna alla home" della sidebar in
+ * un "torna alla home pubblica", perché nel frattempo si era finiti su
+ * /login). Il chiamante che aveva bisogno del token vede solo `null` e si
+ * comporta come già faceva per una sessione non rinnovabile (apiFetch
+ * propaga la risposta 401 originale as-is, RoleGuard resta in "loading").
  */
 export function ensureFreshAccessToken(): Promise<string | null> {
   const { status, accessToken, sessionEstablishedAt } = useAuthStore.getState();
@@ -40,23 +98,9 @@ export function ensureFreshAccessToken(): Promise<string | null> {
   }
 
   if (!inFlight) {
-    inFlight = fetch("/api/auth/refresh", { method: "POST" })
-      .then(async (res) => {
-        if (!res.ok) {
-          useAuthStore.getState().clearSession();
-          return null;
-        }
-        const data: { accessToken: string } = await res.json();
-        useAuthStore.getState().setSession(data.accessToken);
-        return data.accessToken;
-      })
-      .catch(() => {
-        useAuthStore.getState().clearSession();
-        return null;
-      })
-      .finally(() => {
-        inFlight = null;
-      });
+    inFlight = performRefresh().finally(() => {
+      inFlight = null;
+    });
   }
   return inFlight;
 }
