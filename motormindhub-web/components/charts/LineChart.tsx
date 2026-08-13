@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type PointerEvent } from "react";
+import { generaTickAsseY } from "./ticks";
 
 export interface LineChartSeries {
   key: string;
@@ -61,14 +62,14 @@ export function LineChart({ series, ariaLabel, height = 240 }: LineChartProps) {
   const plotWidth = VIEWBOX_WIDTH - MARGIN.left - MARGIN.right;
   const plotHeight = height - MARGIN.top - MARGIN.bottom;
 
-  const maxValue = useMemo(() => {
-    const max = Math.max(1, ...series.flatMap((s) => s.points.map((p) => p.valore)));
-    // Arrotonda per eccesso a un multiplo "leggibile" così le griglie non
-    // mostrano valori come "37.3" — margine 10% sopra il picco reale.
-    const conMargine = max * 1.1;
-    const magnitudine = 10 ** Math.floor(Math.log10(Math.max(1, conMargine)));
-    return Math.ceil(conMargine / magnitudine) * magnitudine;
+  // I tick (e quindi anche il massimo dell'asse) vengono da generaTickAsseY,
+  // non da un max calcolato qui: lo step "nice" e il margine sopra il picco
+  // sono la stessa funzione, cfr. components/charts/ticks.ts.
+  const gridValues = useMemo(() => {
+    const datiMax = Math.max(0, ...series.flatMap((s) => s.points.map((p) => p.valore)));
+    return generaTickAsseY(datiMax, GRID_STEPS);
   }, [series]);
+  const maxValue = gridValues[gridValues.length - 1];
 
   const xForIndex = (index: number): number =>
     pointCount <= 1 ? MARGIN.left : MARGIN.left + (index / (pointCount - 1)) * plotWidth;
@@ -93,7 +94,6 @@ export function LineChart({ series, ariaLabel, height = 240 }: LineChartProps) {
     });
   };
 
-  const gridValues = Array.from({ length: GRID_STEPS + 1 }, (_, i) => (maxValue / GRID_STEPS) * i);
   const xLabelIndexes =
     pointCount <= 1 ? [0] : [0, Math.round((pointCount - 1) / 2), pointCount - 1];
 
