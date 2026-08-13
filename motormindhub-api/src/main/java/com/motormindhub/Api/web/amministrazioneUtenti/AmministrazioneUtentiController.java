@@ -7,6 +7,8 @@ import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.GestioneAmmini
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.AdministrativeActionLogEntryDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.AdministrativeActionLogFiltersDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.DeletionRequestQueueItemDTO;
+import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.PuntoAndamentoRegistrazioniDTO;
+import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.PuntoAndamentoVisiteDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.ReportQueueItemDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.ReportResolutionDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.SuspensionDTO;
@@ -120,5 +122,19 @@ public class AmministrazioneUtentiController {
     @PreAuthorize("hasRole('GESTORE_UTENTI')")
     public ResponseEntity<VisiteStatisticheDTO> getVisiteStatistiche() {
         return ResponseEntity.ok(gestioneAmministrazioneUtenti.getVisiteStatistiche());
+    }
+
+    @GetMapping("/statistiche-visite/andamento")
+    @PreAuthorize("hasRole('GESTORE_UTENTI')")
+    public ResponseEntity<List<PuntoAndamentoVisiteDTO>> getAndamentoVisite(
+            @RequestParam(defaultValue = "30") int giorni) {
+        return ResponseEntity.ok(gestioneAmministrazioneUtenti.andamentoVisite(giorni));
+    }
+
+    @GetMapping("/statistiche-registrazioni/andamento")
+    @PreAuthorize("hasRole('GESTORE_UTENTI')")
+    public ResponseEntity<List<PuntoAndamentoRegistrazioniDTO>> getAndamentoRegistrazioni(
+            @RequestParam(defaultValue = "30") int giorni) {
+        return ResponseEntity.ok(gestioneAmministrazioneUtenti.andamentoRegistrazioni(giorni));
     }
 }

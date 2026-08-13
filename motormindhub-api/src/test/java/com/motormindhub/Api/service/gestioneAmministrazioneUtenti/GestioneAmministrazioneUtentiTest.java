@@ -17,6 +17,8 @@ import com.motormindhub.Api.model.entity.TipoAzioneAmministrativa;
 import com.motormindhub.Api.model.entity.TipoVisitatore;
 import com.motormindhub.Api.model.entity.Utente;
 import com.motormindhub.Api.model.entity.VisitaSessione;
+import com.motormindhub.Api.model.repository.AndamentoRegistrazioniRiga;
+import com.motormindhub.Api.model.repository.AndamentoVisiteRiga;
 import com.motormindhub.Api.model.repository.ArticoloRepository;
 import com.motormindhub.Api.model.repository.ConteggioVisite;
 import com.motormindhub.Api.model.repository.LogAzioneAmministrativaRepository;
@@ -49,6 +51,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.DayOfWeek;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
@@ -535,6 +538,89 @@ class GestioneAmministrazioneUtentiTest {
         assertThat(statistiche.mese()).isEqualTo(120L);
         assertThat(statistiche.anno()).isEqualTo(900L);
         assertThat(statistiche.totale()).isEqualTo(950L);
+    }
+
+    // --- andamentoVisite / andamentoRegistrazioni --------------------------------
+
+    private static final ZoneId ZONA_VISITE_TEST = ZoneId.of("Europe/Rome");
+
+    @Test
+    void andamentoVisite_riempieAZeroIGiorniSenzaDatiEMappaIGiorniConDatiDalRepository() {
+        int giorni = 5;
+        LocalDate oggi = LocalDate.now(ZONA_VISITE_TEST);
+        LocalDate primoGiorno = oggi.minusDays(giorni - 1L);
+        LocalDate giornoConDati = primoGiorno.plusDays(1);
+
+        AndamentoVisiteRiga riga = mock(AndamentoVisiteRiga.class);
+        when(riga.getGiorno()).thenReturn(giornoConDati);
+        when(riga.getGuest()).thenReturn(7L);
+        when(riga.getIscritto()).thenReturn(3L);
+        when(visitaSessioneRepository.andamentoGiornaliero(any())).thenReturn(List.of(riga));
+
+        var serie = gestione.andamentoVisite(giorni);
+
+        assertThat(serie).hasSize(giorni);
+        assertThat(serie.get(0).data()).isEqualTo(primoGiorno);
+        assertThat(serie.get(serie.size() - 1).data()).isEqualTo(oggi);
+        var puntoConDati = serie.stream().filter(p -> p.data().equals(giornoConDati)).findFirst().orElseThrow();
+        assertThat(puntoConDati.guest()).isEqualTo(7L);
+        assertThat(puntoConDati.iscritto()).isEqualTo(3L);
+        var puntoSenzaDati = serie.stream().filter(p -> p.data().equals(oggi)).findFirst().orElseThrow();
+        assertThat(puntoSenzaDati.guest()).isZero();
+        assertThat(puntoSenzaDati.iscritto()).isZero();
+    }
+
+    @Test
+    void andamentoVisite_interrogaIlRepositoryDaNovantaGiorniFa_quandoGiorniRichiestiOltreIlMassimo() {
+        when(visitaSessioneRepository.andamentoGiornaliero(any())).thenReturn(List.of());
+
+        gestione.andamentoVisite(365);
+
+        ArgumentCaptor<Instant> daCaptor = ArgumentCaptor.forClass(Instant.class);
+        verify(visitaSessioneRepository).andamentoGiornaliero(daCaptor.capture());
+        LocalDate oggi = LocalDate.now(ZONA_VISITE_TEST);
+        Instant daAtteso = oggi.minusDays(89).atStartOfDay(ZONA_VISITE_TEST).toInstant(); // 90 giorni totali, oggi incluso
+        assertThat(daCaptor.getValue()).isEqualTo(daAtteso);
+    }
+
+    @Test
+    void andamentoVisite_restituisceUnSoloPunto_quandoGiorniRichiestiNonPositivo() {
+        when(visitaSessioneRepository.andamentoGiornaliero(any())).thenReturn(List.of());
+
+        var serie = gestione.andamentoVisite(0);
+
+        assertThat(serie).hasSize(1);
+        assertThat(serie.get(0).data()).isEqualTo(LocalDate.now(ZONA_VISITE_TEST));
+    }
+
+    @Test
+    void andamentoRegistrazioni_riempieAZeroIGiorniSenzaDatiEMappaIGiorniConDatiDalRepository() {
+        int giorni = 5;
+        LocalDate oggi = LocalDate.now(ZONA_VISITE_TEST);
+        LocalDate primoGiorno = oggi.minusDays(giorni - 1L);
+        LocalDate giornoConDati = primoGiorno.plusDays(2);
+
+        AndamentoRegistrazioniRiga riga = mock(AndamentoRegistrazioniRiga.class);
+        when(riga.getGiorno()).thenReturn(giornoConDati);
+        when(riga.getNumero()).thenReturn(4L);
+        when(utenteRepository.andamentoGiornaliero(any())).thenReturn(List.of(riga));
+
+        var serie = gestione.andamentoRegistrazioni(giorni);
+
+        assertThat(serie).hasSize(giorni);
+        var puntoConDati = serie.stream().filter(p -> p.data().equals(giornoConDati)).findFirst().orElseThrow();
+        assertThat(puntoConDati.numeroRegistrazioni()).isEqualTo(4L);
+        var puntoSenzaDati = serie.stream().filter(p -> p.data().equals(primoGiorno)).findFirst().orElseThrow();
+        assertThat(puntoSenzaDati.numeroRegistrazioni()).isZero();
+    }
+
+    @Test
+    void andamentoRegistrazioni_clampaLaSerieA90Punti_quandoGiorniRichiestiOltreIlMassimo() {
+        when(utenteRepository.andamentoGiornaliero(any())).thenReturn(List.of());
+
+        var serie = gestione.andamentoRegistrazioni(500);
+
+        assertThat(serie).hasSize(90);
     }
 
     // --- confiniPeriodo (calcolo puro, isolato dal wall-clock) ------------------

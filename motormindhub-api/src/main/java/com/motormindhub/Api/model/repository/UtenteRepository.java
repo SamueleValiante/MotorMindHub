@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -53,4 +54,24 @@ public interface UtenteRepository extends JpaRepository<Utente, Long> {
             ORDER BY u.dataRegistrazione DESC
             """)
     List<Utente> search(@Param("query") String query, @Param("stato") StatoUtente stato);
+
+    /**
+     * Andamento giornaliero delle nuove registrazioni (RF4.1) per la dashboard Gestore Utenti,
+     * raggruppato in fuso Europe/Rome (coerente con VisitaSessioneRepository.andamentoGiornaliero).
+     * Il filtro ruolo = ISCRITTO e' obbligatorio, non ridondante: GestioneAutori.acceptInvite (ODD
+     * 2.4) inserisce righe Utente anche per gli inviti Autore accettati, con la stessa
+     * dataRegistrazione valorizzata dal costruttore di Utente - senza il filtro, un'ondata di
+     * inviti accettati dal Manager Autori gonfierebbe la crescita "organica" del pubblico che
+     * questo grafico intende mostrare. Solo i giorni con almeno una registrazione compaiono: lo
+     * zero-fill e' responsabilita' del chiamante (GestioneAmministrazioneUtenti.andamentoRegistrazioni).
+     */
+    @Query(value = """
+            SELECT (data_registrazione AT TIME ZONE 'Europe/Rome')::date AS giorno,
+                   COUNT(*) AS numero
+            FROM utenti
+            WHERE data_registrazione >= :da AND ruolo = 'ISCRITTO'
+            GROUP BY 1
+            ORDER BY 1
+            """, nativeQuery = true)
+    List<AndamentoRegistrazioniRiga> andamentoGiornaliero(@Param("da") Instant da);
 }

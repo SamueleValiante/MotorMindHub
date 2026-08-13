@@ -17,6 +17,8 @@ import com.motormindhub.Api.model.entity.TipoAzioneAmministrativa;
 import com.motormindhub.Api.model.entity.TipoVisitatore;
 import com.motormindhub.Api.model.entity.Utente;
 import com.motormindhub.Api.model.entity.VisitaSessione;
+import com.motormindhub.Api.model.repository.AndamentoRegistrazioniRiga;
+import com.motormindhub.Api.model.repository.AndamentoVisiteRiga;
 import com.motormindhub.Api.model.repository.ArticoloRepository;
 import com.motormindhub.Api.model.repository.ConteggioVisite;
 import com.motormindhub.Api.model.repository.LogAzioneAmministrativaRepository;
@@ -28,6 +30,8 @@ import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.Administra
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.AdministrativeActionLogFiltersDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.DeletionRequestQueueItemDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.MotivazioneSospensione;
+import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.PuntoAndamentoRegistrazioniDTO;
+import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.PuntoAndamentoVisiteDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.ReportQueueItemDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.ReportResolutionDTO;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.dto.SuspensionDTO;
@@ -52,8 +56,10 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Facade del sottosistema GestioneAmministrazioneUtenti (SDD 3.1, ODD 2.5): moderazione della
@@ -66,6 +72,14 @@ public class GestioneAmministrazioneUtenti {
 
     private static final int GIORNI_PER_MODIFICA_PROFILO = 7; // RF4.5, UC_26 passo 5: "entro 7 giorni"
     private static final ZoneId ZONA_VISITE = ZoneId.of("Europe/Rome"); // RF3.1, UC_28: confini di periodo percepiti dall'utente italiano
+
+    /**
+     * Limiti del parametro "giorni" dei grafici andamentoVisite/andamentoRegistrazioni (RF3.1/RF4.1):
+     * oltre 90 la vista scalare "anno" di getVisiteStatistiche copre gia' l'orizzonte lungo, e un
+     * grafico giornaliero oltre i ~90 punti perde leggibilita' - non un limite tecnico della query.
+     */
+    private static final int GIORNI_ANDAMENTO_MIN = 1;
+    private static final int GIORNI_ANDAMENTO_MAX = 90;
 
     /**
      * Nome del cookie di sessione anonima (RF3.1, UC_28), condiviso tra VisiteController (che lo
@@ -401,6 +415,52 @@ public class GestioneAmministrazioneUtenti {
                 conteggio.getAnno(), conteggio.getTotale());
     }
 
+    /**
+     * RF3.1, UC_28 - andamento giornaliero Guest/Iscritto per il grafico "Andamento visite" della
+     * dashboard Gestore Utenti, finestra di [giorni] giorni terminante oggi (fuso Europe/Rome,
+     * coerente con getVisiteStatistiche). giorni e' vincolato a [GIORNI_ANDAMENTO_MIN,
+     * GIORNI_ANDAMENTO_MAX]. VisitaSessioneRepository.andamentoGiornaliero restituisce solo i giorni
+     * con almeno una visita: qui i giorni mancanti vengono riempiti a 0/0, altrimenti il grafico a
+     * linee del frontend disegnerebbe un salto invece di un punto a terra.
+     */
+    @Transactional(readOnly = true)
+    public List<PuntoAndamentoVisiteDTO> andamentoVisite(int giorni) {
+        int giorniClampati = clampGiorni(giorni);
+        LocalDate oggi = LocalDate.now(ZONA_VISITE);
+        LocalDate primoGiorno = oggi.minusDays(giorniClampati - 1L);
+        Instant da = primoGiorno.atStartOfDay(ZONA_VISITE).toInstant();
+
+        Map<LocalDate, AndamentoVisiteRiga> perGiorno = visitaSessioneRepository.andamentoGiornaliero(da).stream()
+                .collect(Collectors.toMap(AndamentoVisiteRiga::getGiorno, riga -> riga));
+
+        return primoGiorno.datesUntil(oggi.plusDays(1))
+                .map(giorno -> {
+                    AndamentoVisiteRiga riga = perGiorno.get(giorno);
+                    return new PuntoAndamentoVisiteDTO(giorno, riga == null ? 0 : riga.getGuest(), riga == null ? 0 : riga.getIscritto());
+                })
+                .toList();
+    }
+
+    /**
+     * RF4.1 - andamento giornaliero delle nuove registrazioni (solo ruolo ISCRITTO, cfr.
+     * UtenteRepository.andamentoGiornaliero) per la dashboard Gestore Utenti, stessa finestra/clamp/
+     * zero-fill di andamentoVisite.
+     */
+    @Transactional(readOnly = true)
+    public List<PuntoAndamentoRegistrazioniDTO> andamentoRegistrazioni(int giorni) {
+        int giorniClampati = clampGiorni(giorni);
+        LocalDate oggi = LocalDate.now(ZONA_VISITE);
+        LocalDate primoGiorno = oggi.minusDays(giorniClampati - 1L);
+        Instant da = primoGiorno.atStartOfDay(ZONA_VISITE).toInstant();
+
+        Map<LocalDate, Long> perGiorno = utenteRepository.andamentoGiornaliero(da).stream()
+                .collect(Collectors.toMap(AndamentoRegistrazioniRiga::getGiorno, AndamentoRegistrazioniRiga::getNumero));
+
+        return primoGiorno.datesUntil(oggi.plusDays(1))
+                .map(giorno -> new PuntoAndamentoRegistrazioniDTO(giorno, perGiorno.getOrDefault(giorno, 0L)))
+                .toList();
+    }
+
     /** RF4.8 - mockup 48_gestore_cronologia.png. */
     @Transactional(readOnly = true)
     public List<AdministrativeActionLogEntryDTO> getAdministrativeActionLog(AdministrativeActionLogFiltersDTO filters) {
@@ -433,6 +493,11 @@ public class GestioneAmministrazioneUtenti {
         return noteAggiuntive == null || noteAggiuntive.isBlank()
                 ? motivazione.getEtichetta()
                 : motivazione.getEtichetta() + " - " + noteAggiuntive.trim();
+    }
+
+    /** Vincola "giorni" a [GIORNI_ANDAMENTO_MIN, GIORNI_ANDAMENTO_MAX] (cfr. andamentoVisite/andamentoRegistrazioni). */
+    private static int clampGiorni(int giorni) {
+        return Math.min(Math.max(giorni, GIORNI_ANDAMENTO_MIN), GIORNI_ANDAMENTO_MAX);
     }
 
     /**

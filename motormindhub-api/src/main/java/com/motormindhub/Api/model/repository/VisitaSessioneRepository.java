@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
+import java.util.List;
 
 public interface VisitaSessioneRepository extends JpaRepository<VisitaSessione, Long> {
 
@@ -43,4 +44,25 @@ public interface VisitaSessioneRepository extends JpaRepository<VisitaSessione, 
                                      @Param("inizioSettimana") Instant inizioSettimana,
                                      @Param("inizioMese") Instant inizioMese,
                                      @Param("inizioAnno") Instant inizioAnno);
+
+    /**
+     * Andamento giornaliero Guest/Iscritto per il grafico "Andamento visite" della dashboard
+     * Gestore Utenti (RF3.1, UC_28): stessa scansione indicizzata su data_visita
+     * (idx_visite_sessione_data_visita) di aggregaConteggi, raggruppata per giorno di calendario
+     * invece che filtrata su una finestra fissa. Il giorno e' calcolato in fuso Europe/Rome (AT
+     * TIME ZONE), coerente con ZONA_VISITE/confiniPeriodo - un bucket in UTC sposterebbe le visite
+     * serali italiane sul giorno successivo. Solo i giorni con almeno una visita compaiono nel
+     * risultato: lo zero-fill dei giorni senza dati e' responsabilita' del chiamante
+     * (GestioneAmministrazioneUtenti.andamentoVisite), non della query.
+     */
+    @Query(value = """
+            SELECT (data_visita AT TIME ZONE 'Europe/Rome')::date AS giorno,
+                   COUNT(*) FILTER (WHERE tipo = 'GUEST')    AS guest,
+                   COUNT(*) FILTER (WHERE tipo = 'ISCRITTO') AS iscritto
+            FROM visite_sessione
+            WHERE data_visita >= :da
+            GROUP BY 1
+            ORDER BY 1
+            """, nativeQuery = true)
+    List<AndamentoVisiteRiga> andamentoGiornaliero(@Param("da") Instant da);
 }
