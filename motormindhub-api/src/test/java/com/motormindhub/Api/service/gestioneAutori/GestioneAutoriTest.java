@@ -10,12 +10,18 @@ import com.motormindhub.Api.model.entity.StatoArticolo;
 import com.motormindhub.Api.model.entity.StatoInvito;
 import com.motormindhub.Api.model.entity.StatoUtente;
 import com.motormindhub.Api.model.entity.Utente;
+import com.motormindhub.Api.model.repository.AndamentoApprovazioniRiga;
+import com.motormindhub.Api.model.repository.AndamentoCategorieRiga;
+import com.motormindhub.Api.model.repository.AndamentoPubblicazioniRiga;
 import com.motormindhub.Api.model.repository.ArticoloRepository;
 import com.motormindhub.Api.model.repository.CategoriaRepository;
 import com.motormindhub.Api.model.repository.ConteggioArticoliPerAutore;
+import com.motormindhub.Api.model.repository.ConteggioArticoliPerAutoreEStato;
 import com.motormindhub.Api.model.repository.InvitoAutoreRepository;
+import com.motormindhub.Api.model.repository.SommaVisualizzazioniPerCategoriaRiga;
 import com.motormindhub.Api.model.repository.UtenteRepository;
 import com.motormindhub.Api.service.gestioneAutori.dto.AuthorSummaryDTO;
+import com.motormindhub.Api.service.gestioneAutori.dto.CategoriaPiuLettaDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.InviteAuthorDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.ManagerDashboardStatsDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.PendingArticleDTO;
@@ -40,6 +46,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
@@ -102,6 +110,12 @@ class GestioneAutoriTest {
 
     private static Categoria categoria(Long id) {
         Categoria c = new Categoria("Manutenzione ordinaria", "descrizione", null);
+        ReflectionTestUtils.setField(c, "id", id);
+        return c;
+    }
+
+    private static Categoria categoriaConPadre(Long id, String nome, Categoria padre) {
+        Categoria c = new Categoria(nome, "descrizione", padre);
         ReflectionTestUtils.setField(c, "id", id);
         return c;
     }
@@ -375,6 +389,7 @@ class GestioneAutoriTest {
         when(conteggio.getAutoreId()).thenReturn(1L);
         when(conteggio.getConteggio()).thenReturn(64L);
         when(articoloRepository.countByAutoreIdIn(List.of(1L))).thenReturn(List.of(conteggio));
+        when(articoloRepository.countByAutoreIdInGroupByStato(List.of(1L))).thenReturn(List.of());
 
         List<AuthorSummaryDTO> risultato = gestioneAutori.listAuthors();
 
@@ -388,11 +403,45 @@ class GestioneAutoriTest {
         Utente autore = utente(1L, Ruolo.AUTORE);
         when(utenteRepository.findByRuolo(Ruolo.AUTORE)).thenReturn(List.of(autore));
         when(articoloRepository.countByAutoreIdIn(List.of(1L))).thenReturn(List.of());
+        when(articoloRepository.countByAutoreIdInGroupByStato(List.of(1L))).thenReturn(List.of());
 
         List<AuthorSummaryDTO> risultato = gestioneAutori.listAuthors();
 
         assertThat(risultato).hasSize(1);
         assertThat(risultato.get(0).numeroArticoli()).isEqualTo(0L);
+    }
+
+    @Test
+    void listAuthors_calcolaPercentualeApprovazione_suPubblicatiInAttesaERifiutati() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        when(utenteRepository.findByRuolo(Ruolo.AUTORE)).thenReturn(List.of(autore));
+        when(articoloRepository.countByAutoreIdIn(List.of(1L))).thenReturn(List.of());
+
+        ConteggioArticoliPerAutoreEStato pubblicati = mock(ConteggioArticoliPerAutoreEStato.class);
+        when(pubblicati.getAutoreId()).thenReturn(1L);
+        when(pubblicati.getStato()).thenReturn(StatoArticolo.PUBBLICATO);
+        when(pubblicati.getConteggio()).thenReturn(3L);
+        ConteggioArticoliPerAutoreEStato rifiutati = mock(ConteggioArticoliPerAutoreEStato.class);
+        when(rifiutati.getAutoreId()).thenReturn(1L);
+        when(rifiutati.getStato()).thenReturn(StatoArticolo.RIFIUTATO);
+        when(rifiutati.getConteggio()).thenReturn(1L);
+        when(articoloRepository.countByAutoreIdInGroupByStato(List.of(1L))).thenReturn(List.of(pubblicati, rifiutati));
+
+        List<AuthorSummaryDTO> risultato = gestioneAutori.listAuthors();
+
+        assertThat(risultato.get(0).percentualeApprovazione()).isEqualTo(0.75); // 3 / (3 + 0 + 1)
+    }
+
+    @Test
+    void listAuthors_restituiscePercentualeApprovazioneNulla_quandoLAutoreNonHaMaiSottomessoUnArticolo() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        when(utenteRepository.findByRuolo(Ruolo.AUTORE)).thenReturn(List.of(autore));
+        when(articoloRepository.countByAutoreIdIn(List.of(1L))).thenReturn(List.of());
+        when(articoloRepository.countByAutoreIdInGroupByStato(List.of(1L))).thenReturn(List.of());
+
+        List<AuthorSummaryDTO> risultato = gestioneAutori.listAuthors();
+
+        assertThat(risultato.get(0).percentualeApprovazione()).isNull(); // nessun articolo sottomesso: denominatore 0, distinto da 0%
     }
 
     // --- query: getPendingArticles -----------------------------------------------------
@@ -436,5 +485,154 @@ class GestioneAutoriTest {
         assertThat(stats.autoriAttivi()).isEqualTo(18L);
         assertThat(stats.categorieTotali()).isEqualTo(86L);
         assertThat(stats.articoliInCoda()).hasSize(3); // anteprima limitata (mockup 29: "VEDI TUTTI")
+    }
+
+    // --- query: andamentoPubblicazioni -----------------------------------------------------
+
+    private static final ZoneId ZONA_STATISTICHE_TEST = ZoneId.of("Europe/Rome");
+
+    @Test
+    void andamentoPubblicazioni_riempieAZeroIGiorniSenzaDatiEMappaIGiorniConDatiDalRepository() {
+        int giorni = 5;
+        LocalDate oggi = LocalDate.now(ZONA_STATISTICHE_TEST);
+        LocalDate primoGiorno = oggi.minusDays(giorni - 1L);
+        LocalDate giornoConDati = primoGiorno.plusDays(1);
+
+        AndamentoPubblicazioniRiga riga = mock(AndamentoPubblicazioniRiga.class);
+        when(riga.getGiorno()).thenReturn(giornoConDati);
+        when(riga.getNumero()).thenReturn(6L);
+        when(articoloRepository.andamentoPubblicazioniGiornaliero(any())).thenReturn(List.of(riga));
+
+        var serie = gestioneAutori.andamentoPubblicazioni(giorni);
+
+        assertThat(serie).hasSize(giorni);
+        var puntoConDati = serie.stream().filter(p -> p.data().equals(giornoConDati)).findFirst().orElseThrow();
+        assertThat(puntoConDati.numeroPubblicazioni()).isEqualTo(6L);
+        var puntoSenzaDati = serie.stream().filter(p -> p.data().equals(oggi)).findFirst().orElseThrow();
+        assertThat(puntoSenzaDati.numeroPubblicazioni()).isZero();
+    }
+
+    @Test
+    void andamentoPubblicazioni_clampaLaSerieA90Punti_quandoGiorniRichiestiOltreIlMassimo() {
+        when(articoloRepository.andamentoPubblicazioniGiornaliero(any())).thenReturn(List.of());
+
+        var serie = gestioneAutori.andamentoPubblicazioni(500);
+
+        assertThat(serie).hasSize(90);
+    }
+
+    @Test
+    void andamentoPubblicazioni_restituisceUnSoloPunto_quandoGiorniRichiestiNonPositivo() {
+        when(articoloRepository.andamentoPubblicazioniGiornaliero(any())).thenReturn(List.of());
+
+        var serie = gestioneAutori.andamentoPubblicazioni(0);
+
+        assertThat(serie).hasSize(1);
+        assertThat(serie.get(0).data()).isEqualTo(LocalDate.now(ZONA_STATISTICHE_TEST));
+    }
+
+    // --- query: andamentoCategorie -----------------------------------------------------
+
+    @Test
+    void andamentoCategorie_riempieAZeroIGiorniSenzaDatiEMappaIGiorniConDatiDalRepository() {
+        int giorni = 5;
+        LocalDate oggi = LocalDate.now(ZONA_STATISTICHE_TEST);
+        LocalDate primoGiorno = oggi.minusDays(giorni - 1L);
+        LocalDate giornoConDati = primoGiorno.plusDays(2);
+
+        AndamentoCategorieRiga riga = mock(AndamentoCategorieRiga.class);
+        when(riga.getGiorno()).thenReturn(giornoConDati);
+        when(riga.getNumero()).thenReturn(2L);
+        when(categoriaRepository.andamentoGiornaliero(any())).thenReturn(List.of(riga));
+
+        var serie = gestioneAutori.andamentoCategorie(giorni);
+
+        assertThat(serie).hasSize(giorni);
+        var puntoConDati = serie.stream().filter(p -> p.data().equals(giornoConDati)).findFirst().orElseThrow();
+        assertThat(puntoConDati.numeroCategorie()).isEqualTo(2L);
+        var puntoSenzaDati = serie.stream().filter(p -> p.data().equals(primoGiorno)).findFirst().orElseThrow();
+        assertThat(puntoSenzaDati.numeroCategorie()).isZero();
+    }
+
+    @Test
+    void andamentoCategorie_clampaLaSerieA90Punti_quandoGiorniRichiestiOltreIlMassimo() {
+        when(categoriaRepository.andamentoGiornaliero(any())).thenReturn(List.of());
+
+        var serie = gestioneAutori.andamentoCategorie(365);
+
+        assertThat(serie).hasSize(90);
+    }
+
+    // --- query: andamentoApprovazioni -----------------------------------------------------
+
+    @Test
+    void andamentoApprovazioni_riempieAZeroIGiorniSenzaDatiEMappaEntrambeLeSerieDalRepository() {
+        int giorni = 5;
+        LocalDate oggi = LocalDate.now(ZONA_STATISTICHE_TEST);
+        LocalDate primoGiorno = oggi.minusDays(giorni - 1L);
+        LocalDate giornoConDati = primoGiorno.plusDays(1);
+
+        AndamentoApprovazioniRiga riga = mock(AndamentoApprovazioniRiga.class);
+        when(riga.getGiorno()).thenReturn(giornoConDati);
+        when(riga.getApprovati()).thenReturn(3L);
+        when(riga.getRifiutati()).thenReturn(1L);
+        when(articoloRepository.andamentoApprovazioniGiornaliero(any())).thenReturn(List.of(riga));
+
+        var serie = gestioneAutori.andamentoApprovazioni(giorni);
+
+        assertThat(serie).hasSize(giorni);
+        var puntoConDati = serie.stream().filter(p -> p.data().equals(giornoConDati)).findFirst().orElseThrow();
+        assertThat(puntoConDati.approvati()).isEqualTo(3L);
+        assertThat(puntoConDati.rifiutati()).isEqualTo(1L);
+        var puntoSenzaDati = serie.stream().filter(p -> p.data().equals(oggi)).findFirst().orElseThrow();
+        assertThat(puntoSenzaDati.approvati()).isZero();
+        assertThat(puntoSenzaDati.rifiutati()).isZero();
+    }
+
+    @Test
+    void andamentoApprovazioni_clampaLaSerieA90Punti_quandoGiorniRichiestiOltreIlMassimo() {
+        when(articoloRepository.andamentoApprovazioniGiornaliero(any())).thenReturn(List.of());
+
+        var serie = gestioneAutori.andamentoApprovazioni(500);
+
+        assertThat(serie).hasSize(90);
+    }
+
+    // --- query: getCategoriePiuLette -----------------------------------------------------
+
+    @Test
+    void getCategoriePiuLette_sommaLeVisualizzazioniDelleSottocategorieNelTotaleDelPadre() {
+        Categoria padre = categoriaConPadre(1L, "Motore", null);
+        Categoria figlia = categoriaConPadre(2L, "Candele", padre);
+        when(categoriaRepository.findAll()).thenReturn(List.of(padre, figlia));
+
+        SommaVisualizzazioniPerCategoriaRiga rigaPadre = mock(SommaVisualizzazioniPerCategoriaRiga.class);
+        when(rigaPadre.getCategoriaId()).thenReturn(1L);
+        when(rigaPadre.getTotale()).thenReturn(100L);
+        SommaVisualizzazioniPerCategoriaRiga rigaFiglia = mock(SommaVisualizzazioniPerCategoriaRiga.class);
+        when(rigaFiglia.getCategoriaId()).thenReturn(2L);
+        when(rigaFiglia.getTotale()).thenReturn(50L);
+        when(articoloRepository.sommaVisualizzazioniPerCategoria()).thenReturn(List.of(rigaPadre, rigaFiglia));
+
+        List<CategoriaPiuLettaDTO> risultato = gestioneAutori.getCategoriePiuLette();
+
+        var dtoPadre = risultato.stream().filter(c -> c.categoriaId().equals(1L)).findFirst().orElseThrow();
+        assertThat(dtoPadre.totaleVisualizzazioni()).isEqualTo(150L); // proprio (100) + sottocategoria (50)
+        var dtoFiglia = risultato.stream().filter(c -> c.categoriaId().equals(2L)).findFirst().orElseThrow();
+        assertThat(dtoFiglia.totaleVisualizzazioni()).isEqualTo(50L); // nessuna sottocategoria propria
+    }
+
+    @Test
+    void getCategoriePiuLette_limitaAlleDieciPiuLetteERestituisceZero_quandoNessunaVisualizzazione() {
+        List<Categoria> categorie = java.util.stream.IntStream.rangeClosed(1, 12)
+                .mapToObj(i -> categoriaConPadre((long) i, "Categoria " + i, null))
+                .toList();
+        when(categoriaRepository.findAll()).thenReturn(categorie);
+        when(articoloRepository.sommaVisualizzazioniPerCategoria()).thenReturn(List.of());
+
+        List<CategoriaPiuLettaDTO> risultato = gestioneAutori.getCategoriePiuLette();
+
+        assertThat(risultato).hasSize(10);
+        assertThat(risultato).allMatch(c -> c.totaleVisualizzazioni() == 0L);
     }
 }

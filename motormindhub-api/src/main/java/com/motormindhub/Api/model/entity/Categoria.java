@@ -10,6 +10,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+import java.time.Instant;
+
 /**
  * Nodo dell'albero gerarchico di navigazione dei contenuti (RF2.5, RF2.6, RF3.5, ODD 2.3).
  * Invariante di sottosistema: una categoria non puo' essere padre di se stessa - garantito per
@@ -36,6 +38,9 @@ public class Categoria {
     @JoinColumn(name = "categoria_padre_id")
     private Categoria categoriaPadre;
 
+    @Column(name = "data_creazione", nullable = false, updatable = false)
+    private Instant dataCreazione;
+
     protected Categoria() {
         // richiesto da JPA
     }
@@ -44,6 +49,7 @@ public class Categoria {
         this.nome = nome;
         this.descrizione = descrizione;
         this.categoriaPadre = categoriaPadre;
+        this.dataCreazione = Instant.now();
     }
 
     public Long getId() {
@@ -64,6 +70,10 @@ public class Categoria {
 
     public Categoria getCategoriaPadre() {
         return categoriaPadre;
+    }
+
+    public Instant getDataCreazione() {
+        return dataCreazione;
     }
 
     @Override

@@ -2,9 +2,13 @@ package com.motormindhub.Api.web.autori;
 
 import com.motormindhub.Api.service.gestioneAutori.GestioneAutori;
 import com.motormindhub.Api.service.gestioneAutori.dto.AuthorSummaryDTO;
+import com.motormindhub.Api.service.gestioneAutori.dto.CategoriaPiuLettaDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.InviteAuthorDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.ManagerDashboardStatsDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.PendingArticleDTO;
+import com.motormindhub.Api.service.gestioneAutori.dto.PuntoAndamentoApprovazioniDTO;
+import com.motormindhub.Api.service.gestioneAutori.dto.PuntoAndamentoCategorieDTO;
+import com.motormindhub.Api.service.gestioneAutori.dto.PuntoAndamentoPubblicazioniDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.RejectionReasonDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.RemoveAuthorPolicyDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.SetPasswordDTO;
@@ -19,6 +23,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -99,5 +104,32 @@ public class AutoriController {
     @PreAuthorize("hasRole('MANAGER_AUTORI')")
     public ResponseEntity<ManagerDashboardStatsDTO> getManagerDashboardStats() {
         return ResponseEntity.ok(gestioneAutori.getManagerDashboardStats());
+    }
+
+    @GetMapping("/statistiche-autori/andamento-pubblicazioni")
+    @PreAuthorize("hasRole('MANAGER_AUTORI')")
+    public ResponseEntity<List<PuntoAndamentoPubblicazioniDTO>> getAndamentoPubblicazioni(
+            @RequestParam(defaultValue = "30") int giorni) {
+        return ResponseEntity.ok(gestioneAutori.andamentoPubblicazioni(giorni));
+    }
+
+    @GetMapping("/statistiche-autori/andamento-categorie")
+    @PreAuthorize("hasRole('MANAGER_AUTORI')")
+    public ResponseEntity<List<PuntoAndamentoCategorieDTO>> getAndamentoCategorie(
+            @RequestParam(defaultValue = "30") int giorni) {
+        return ResponseEntity.ok(gestioneAutori.andamentoCategorie(giorni));
+    }
+
+    @GetMapping("/statistiche-autori/andamento-approvazioni")
+    @PreAuthorize("hasRole('MANAGER_AUTORI')")
+    public ResponseEntity<List<PuntoAndamentoApprovazioniDTO>> getAndamentoApprovazioni(
+            @RequestParam(defaultValue = "30") int giorni) {
+        return ResponseEntity.ok(gestioneAutori.andamentoApprovazioni(giorni));
+    }
+
+    @GetMapping("/statistiche-autori/categorie-piu-lette")
+    @PreAuthorize("hasRole('MANAGER_AUTORI')")
+    public ResponseEntity<List<CategoriaPiuLettaDTO>> getCategoriePiuLette() {
+        return ResponseEntity.ok(gestioneAutori.getCategoriePiuLette());
     }
 }

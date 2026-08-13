@@ -10,15 +10,24 @@ import com.motormindhub.Api.model.entity.StatoArticolo;
 import com.motormindhub.Api.model.entity.StatoInvito;
 import com.motormindhub.Api.model.entity.StatoUtente;
 import com.motormindhub.Api.model.entity.Utente;
+import com.motormindhub.Api.model.repository.AndamentoApprovazioniRiga;
+import com.motormindhub.Api.model.repository.AndamentoCategorieRiga;
+import com.motormindhub.Api.model.repository.AndamentoPubblicazioniRiga;
 import com.motormindhub.Api.model.repository.ArticoloRepository;
 import com.motormindhub.Api.model.repository.CategoriaRepository;
 import com.motormindhub.Api.model.repository.ConteggioArticoliPerAutore;
+import com.motormindhub.Api.model.repository.ConteggioArticoliPerAutoreEStato;
 import com.motormindhub.Api.model.repository.InvitoAutoreRepository;
+import com.motormindhub.Api.model.repository.SommaVisualizzazioniPerCategoriaRiga;
 import com.motormindhub.Api.model.repository.UtenteRepository;
 import com.motormindhub.Api.service.gestioneAutori.dto.AuthorSummaryDTO;
+import com.motormindhub.Api.service.gestioneAutori.dto.CategoriaPiuLettaDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.InviteAuthorDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.ManagerDashboardStatsDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.PendingArticleDTO;
+import com.motormindhub.Api.service.gestioneAutori.dto.PuntoAndamentoApprovazioniDTO;
+import com.motormindhub.Api.service.gestioneAutori.dto.PuntoAndamentoCategorieDTO;
+import com.motormindhub.Api.service.gestioneAutori.dto.PuntoAndamentoPubblicazioniDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.RejectionReasonDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.RemoveAuthorPolicyDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.SetPasswordDTO;
@@ -35,8 +44,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -54,6 +67,14 @@ public class GestioneAutori {
     // sicurezza account-critica come il recupero password) una finestra piu' ampia e' piu'
     // realistica per l'invitato, che deve valutare la proposta - non un'azione impulsiva.
     private static final int ARTICOLI_IN_CODA_DASHBOARD = 3; // mockup 29: "VEDI TUTTI" -> solo un'anteprima
+
+    private static final ZoneId ZONA_STATISTICHE = ZoneId.of("Europe/Rome"); // coerente con GestioneAmministrazioneUtenti.ZONA_VISITE
+
+    /** Stessi limiti/motivazione di GestioneAmministrazioneUtenti.GIORNI_ANDAMENTO_MIN/MAX (§2.5): niente costante condivisa tra sottosistemi, valore duplicato deliberatamente. */
+    private static final int GIORNI_ANDAMENTO_MIN = 1;
+    private static final int GIORNI_ANDAMENTO_MAX = 90;
+
+    private static final int CATEGORIE_PIU_LETTE_LIMITE = 10; // classifica, non elenco completo - RF3.1
 
     private final InvitoAutoreRepository invitoAutoreRepository;
     private final UtenteRepository utenteRepository;
@@ -215,10 +236,16 @@ public class GestioneAutori {
                 ? Map.of()
                 : articoloRepository.countByAutoreIdIn(autoreIds).stream()
                         .collect(Collectors.toMap(ConteggioArticoliPerAutore::getAutoreId, ConteggioArticoliPerAutore::getConteggio));
+        Map<Long, Map<StatoArticolo, Long>> conteggiPerAutoreEStato = autoreIds.isEmpty()
+                ? Map.of()
+                : articoloRepository.countByAutoreIdInGroupByStato(autoreIds).stream()
+                        .collect(Collectors.groupingBy(ConteggioArticoliPerAutoreEStato::getAutoreId,
+                                Collectors.toMap(ConteggioArticoliPerAutoreEStato::getStato, ConteggioArticoliPerAutoreEStato::getConteggio)));
 
         return autori.stream()
                 .map(u -> new AuthorSummaryDTO(u.getId(), u.getNome(), u.getCognome(), u.getEmail(),
-                        conteggiPerAutore.getOrDefault(u.getId(), 0L), u.getStato()))
+                        conteggiPerAutore.getOrDefault(u.getId(), 0L), u.getStato(),
+                        calcolaPercentualeApprovazione(conteggiPerAutoreEStato.getOrDefault(u.getId(), Map.of()))))
                 .toList();
     }
 
@@ -253,7 +280,138 @@ public class GestioneAutori {
         return new ManagerDashboardStatsDTO(pubblicati, inAttesa, autoriAttivi, categorieTotali, coda);
     }
 
+    /**
+     * RF3.1 - andamento giornaliero delle pubblicazioni per il grafico "Andamento pubblicazioni"
+     * della dashboard Manager Autori, finestra di [giorni] giorni terminante oggi (fuso Europe/Rome),
+     * stesso clamp/zero-fill di GestioneAmministrazioneUtenti.andamentoVisite (§2.5). Bucket su
+     * Articolo.dataDecisione, la sola data che rappresenta realmente "quando l'articolo e' diventato
+     * PUBBLICATO" - dataCreazione e' la bozza, dataUltimoAggiornamento si sposta a ogni correzione
+     * post-pubblicazione.
+     */
+    @Transactional(readOnly = true)
+    public List<PuntoAndamentoPubblicazioniDTO> andamentoPubblicazioni(int giorni) {
+        int giorniClampati = clampGiorni(giorni);
+        LocalDate oggi = LocalDate.now(ZONA_STATISTICHE);
+        LocalDate primoGiorno = oggi.minusDays(giorniClampati - 1L);
+        Instant da = primoGiorno.atStartOfDay(ZONA_STATISTICHE).toInstant();
+
+        Map<LocalDate, Long> perGiorno = articoloRepository.andamentoPubblicazioniGiornaliero(da).stream()
+                .collect(Collectors.toMap(AndamentoPubblicazioniRiga::getGiorno, AndamentoPubblicazioniRiga::getNumero));
+
+        return primoGiorno.datesUntil(oggi.plusDays(1))
+                .map(giorno -> new PuntoAndamentoPubblicazioniDTO(giorno, perGiorno.getOrDefault(giorno, 0L)))
+                .toList();
+    }
+
+    /**
+     * RF3.1 - andamento giornaliero delle nuove categorie per il grafico "Andamento categorie" della
+     * dashboard Manager Autori, stesso clamp/zero-fill/fuso di andamentoPubblicazioni. Bucket su
+     * Categoria.dataCreazione.
+     */
+    @Transactional(readOnly = true)
+    public List<PuntoAndamentoCategorieDTO> andamentoCategorie(int giorni) {
+        int giorniClampati = clampGiorni(giorni);
+        LocalDate oggi = LocalDate.now(ZONA_STATISTICHE);
+        LocalDate primoGiorno = oggi.minusDays(giorniClampati - 1L);
+        Instant da = primoGiorno.atStartOfDay(ZONA_STATISTICHE).toInstant();
+
+        Map<LocalDate, Long> perGiorno = categoriaRepository.andamentoGiornaliero(da).stream()
+                .collect(Collectors.toMap(AndamentoCategorieRiga::getGiorno, AndamentoCategorieRiga::getNumero));
+
+        return primoGiorno.datesUntil(oggi.plusDays(1))
+                .map(giorno -> new PuntoAndamentoCategorieDTO(giorno, perGiorno.getOrDefault(giorno, 0L)))
+                .toList();
+    }
+
+    /**
+     * RF3.1 - andamento giornaliero approvati/rifiutati per il grafico "Andamento approvazioni"
+     * della dashboard Manager Autori, stesso clamp/zero-fill/fuso/bucket-su-dataDecisione di
+     * andamentoPubblicazioni. A differenza di quest'ultimo (solo PUBBLICATO), include anche RIFIUTATO:
+     * le due serie condividono lo stesso asse temporale perche' entrambe originano dalla stessa
+     * decisione del Manager nello stesso istante.
+     */
+    @Transactional(readOnly = true)
+    public List<PuntoAndamentoApprovazioniDTO> andamentoApprovazioni(int giorni) {
+        int giorniClampati = clampGiorni(giorni);
+        LocalDate oggi = LocalDate.now(ZONA_STATISTICHE);
+        LocalDate primoGiorno = oggi.minusDays(giorniClampati - 1L);
+        Instant da = primoGiorno.atStartOfDay(ZONA_STATISTICHE).toInstant();
+
+        Map<LocalDate, AndamentoApprovazioniRiga> perGiorno = articoloRepository.andamentoApprovazioniGiornaliero(da).stream()
+                .collect(Collectors.toMap(AndamentoApprovazioniRiga::getGiorno, riga -> riga));
+
+        return primoGiorno.datesUntil(oggi.plusDays(1))
+                .map(giorno -> {
+                    AndamentoApprovazioniRiga riga = perGiorno.get(giorno);
+                    return new PuntoAndamentoApprovazioniDTO(giorno,
+                            riga == null ? 0 : riga.getApprovati(), riga == null ? 0 : riga.getRifiutati());
+                })
+                .toList();
+    }
+
+    /**
+     * RF3.1 - classifica delle top {@value CATEGORIE_PIU_LETTE_LIMITE} categorie per visualizzazioni
+     * totali degli articoli PUBBLICATO, con la stessa espansione gerarchica alle sottocategorie di
+     * GestioneArticoli.espandiConSottocategorie/GestioneCategorie.getCategoryTree (albero caricato
+     * interamente in memoria, figli raggruppati per id del padre): qui pero' il rollup e' bottom-up
+     * (somma propria + sottoalbero), non un filtro top-down, quindi ogni categoria "eredita" anche le
+     * visualizzazioni delle sue sottocategorie, non solo le proprie.
+     */
+    @Transactional(readOnly = true)
+    public List<CategoriaPiuLettaDTO> getCategoriePiuLette() {
+        Map<Long, Long> visualizzazioniProprie = articoloRepository.sommaVisualizzazioniPerCategoria().stream()
+                .collect(Collectors.toMap(SommaVisualizzazioniPerCategoriaRiga::getCategoriaId, SommaVisualizzazioniPerCategoriaRiga::getTotale));
+
+        List<Categoria> tutte = categoriaRepository.findAll();
+        Map<Long, List<Categoria>> figliePerPadre = tutte.stream()
+                .filter(c -> c.getCategoriaPadre() != null)
+                .collect(Collectors.groupingBy(c -> c.getCategoriaPadre().getId()));
+
+        Map<Long, Long> totaliConSottocategorie = new HashMap<>();
+        for (Categoria categoria : tutte) {
+            sommaConSottocategorie(categoria, figliePerPadre, visualizzazioniProprie, totaliConSottocategorie);
+        }
+
+        return tutte.stream()
+                .map(c -> new CategoriaPiuLettaDTO(c.getId(), c.getNome(), totaliConSottocategorie.getOrDefault(c.getId(), 0L)))
+                .sorted(Comparator.comparingLong(CategoriaPiuLettaDTO::totaleVisualizzazioni).reversed())
+                .limit(CATEGORIE_PIU_LETTE_LIMITE)
+                .toList();
+    }
+
     // --- helper privati -----------------------------------------------------
+
+    /** Vincola "giorni" a [GIORNI_ANDAMENTO_MIN, GIORNI_ANDAMENTO_MAX] (cfr. andamentoPubblicazioni/andamentoCategorie/andamentoApprovazioni). */
+    private static int clampGiorni(int giorni) {
+        return Math.min(Math.max(giorni, GIORNI_ANDAMENTO_MIN), GIORNI_ANDAMENTO_MAX);
+    }
+
+    /**
+     * PUBBLICATO / (IN_ATTESA_APPROVAZIONE + PUBBLICATO + RIFIUTATO); null (non 0.0) quando
+     * l'autore non ha mai sottomesso un articolo, per distinguere "nessun dato" da "0% di successo".
+     */
+    private static Double calcolaPercentualeApprovazione(Map<StatoArticolo, Long> conteggiPerStato) {
+        long pubblicati = conteggiPerStato.getOrDefault(StatoArticolo.PUBBLICATO, 0L);
+        long inAttesa = conteggiPerStato.getOrDefault(StatoArticolo.IN_ATTESA_APPROVAZIONE, 0L);
+        long rifiutati = conteggiPerStato.getOrDefault(StatoArticolo.RIFIUTATO, 0L);
+        long denominatore = pubblicati + inAttesa + rifiutati;
+        return denominatore == 0 ? null : (double) pubblicati / denominatore;
+    }
+
+    /** Somma ricorsiva memoizzata propria+sottoalbero per getCategoriePiuLette; l'albero e' aciclico per costruzione (Categoria javadoc). */
+    private static long sommaConSottocategorie(Categoria categoria, Map<Long, List<Categoria>> figliePerPadre,
+                                                Map<Long, Long> visualizzazioniProprie, Map<Long, Long> memo) {
+        Long giaCalcolato = memo.get(categoria.getId());
+        if (giaCalcolato != null) {
+            return giaCalcolato;
+        }
+        long totale = visualizzazioniProprie.getOrDefault(categoria.getId(), 0L);
+        for (Categoria figlia : figliePerPadre.getOrDefault(categoria.getId(), List.of())) {
+            totale += sommaConSottocategorie(figlia, figliePerPadre, visualizzazioniProprie, memo);
+        }
+        memo.put(categoria.getId(), totale);
+        return totale;
+    }
 
     private Articolo trovaArticoloInAttesaOLancia(Long articleId) {
         Articolo articolo = articoloRepository.findById(articleId)

@@ -69,6 +69,13 @@ public class Articolo {
     @Column(name = "motivazione_rifiuto", columnDefinition = "text")
     private String motivazioneRifiuto;
 
+    // Nullable: valorizzata solo da approva()/rifiuta() (mai da publishArticle, che porta solo a
+    // IN_ATTESA_APPROVAZIONE). E' la sola fonte affidabile per "quando e' stata presa la decisione
+    // del Manager" - dataUltimoAggiornamento non lo e', perche' updatePublishedArticle la sposta in
+    // avanti a ogni correzione post-pubblicazione (ODD 2.4 andamentoPubblicazioni/andamentoApprovazioni).
+    @Column(name = "data_decisione")
+    private Instant dataDecisione;
+
     protected Articolo() {
         // richiesto da JPA
     }
@@ -106,12 +113,14 @@ public class Articolo {
     /** RF3.6, UC_21 (ODD 2.4 GestioneAutori.approveArticle). */
     public void approva() {
         this.stato = StatoArticolo.PUBBLICATO;
+        this.dataDecisione = Instant.now();
     }
 
     /** RF3.6, UC_21 (ODD 2.4 GestioneAutori.rejectArticle). */
     public void rifiuta(String motivazione) {
         this.stato = StatoArticolo.RIFIUTATO;
         this.motivazioneRifiuto = motivazione;
+        this.dataDecisione = Instant.now();
     }
 
     /** RF2.7, UC_18, UC_21 (ODD 2.2 GestioneArticoli.reopenRejectedArticle). */
@@ -169,6 +178,10 @@ public class Articolo {
 
     public String getMotivazioneRifiuto() {
         return motivazioneRifiuto;
+    }
+
+    public Instant getDataDecisione() {
+        return dataDecisione;
     }
 
     @Override
