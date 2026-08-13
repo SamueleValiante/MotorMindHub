@@ -76,6 +76,46 @@ class VisiteIntegrationTest {
         assertThat(visitaSessioneRepository.count()).isEqualTo(prima + 1);
     }
 
+    /**
+     * Verifica esplicita sulla stringa dell'header Set-Cookie, non solo sullo status/sul valore del
+     * cookie: un bug reale in produzione (SameSite restava Lax invece di None su Railway, perche'
+     * server.forward-headers-strategy non era configurato e HttpServletRequest.isSecure() ignorava
+     * X-Forwarded-Proto) non sarebbe stato catturato dagli altri test di questa classe, che non
+     * ispezionano SameSite/Secure. Nessun header X-Forwarded-Proto qui: simula una richiesta locale
+     * senza proxy, ramo atteso SameSite=Lax.
+     */
+    @Test
+    void registraVisita_richiestaLocaleSenzaProxy_emetteCookieConSameSiteLax() throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/v1/visite"))
+                .andExpect(status().isNoContent())
+                .andReturn();
+
+        String setCookie = result.getResponse().getHeader("Set-Cookie");
+        assertThat(setCookie).isNotNull();
+        assertThat(setCookie).contains("SameSite=Lax");
+        assertThat(setCookie).doesNotContain("SameSite=None");
+        assertThat(setCookie).doesNotContainIgnoringCase("Secure");
+    }
+
+    /**
+     * Simula la richiesta reale su Railway (TLS terminato sull'edge, proxy interno che inoltra HTTP
+     * semplice all'app con X-Forwarded-Proto: https). Con server.forward-headers-strategy=framework
+     * il ForwardedHeaderFilter riscrive lo scheme prima del controller, quindi request.isSecure()
+     * diventa true e il cookie deve uscire con SameSite=None; Secure - il ramo che in produzione non
+     * veniva mai raggiunto prima del fix.
+     */
+    @Test
+    void registraVisita_richiestaDietroProxyConXForwardedProtoHttps_emetteCookieConSameSiteNoneESecure() throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/v1/visite").header("X-Forwarded-Proto", "https"))
+                .andExpect(status().isNoContent())
+                .andReturn();
+
+        String setCookie = result.getResponse().getHeader("Set-Cookie");
+        assertThat(setCookie).isNotNull();
+        assertThat(setCookie).contains("SameSite=None");
+        assertThat(setCookie).containsIgnoringCase("Secure");
+    }
+
     @Test
     void registraVisita_secondaChiamataConLoStessoCookie_nonPersisteUnaNuovaRigaENonRinnovaIlCookie() throws Exception {
         MvcResult prima = mockMvc.perform(post("/api/v1/visite"))
