@@ -7,6 +7,7 @@ import { useReportsQueue } from "@/lib/amministrazioneUtenti/useReportsQueue";
 import { useDeletionRequestsQueue } from "@/lib/amministrazioneUtenti/useDeletionRequestsQueue";
 import { useVisiteStatistiche } from "@/lib/amministrazioneUtenti/useVisiteStatistiche";
 import { StatCard } from "@/components/shared/StatCard";
+import { AndamentoCharts } from "@/components/gestore/AndamentoCharts";
 
 function formatData(iso: string): string {
   return new Date(iso).toLocaleDateString("it-IT");
@@ -91,6 +92,8 @@ export default function GestoreDashboardPage() {
               <StatCard value={visite.stats.anno} label="Quest'anno" />
               <StatCard value={visite.stats.totale} label="Totale" />
             </div>
+
+            <AndamentoCharts />
           </section>
 
           <section className="flex flex-col gap-6 rounded-lg bg-carbon p-6">

@@ -105,3 +105,26 @@ export interface VisiteStatistiche {
   anno: number;
   totale: number;
 }
+
+/**
+ * PuntoAndamentoVisiteDTO (GestioneAmministrazioneUtenti.andamentoVisite, RF3.1, UC_28) — un
+ * giorno della serie Guest/Iscritto per i grafici "Andamento visite"/"Visite per tipo di
+ * visitatore" (Dashboard Gestore Utenti). Da riverificare su Swagger a implementazione backend
+ * completata: risposta confermata come array nudo (List<PuntoAndamentoVisiteDTO>), non un oggetto
+ * wrapper — cfr. CLAUDE.md, "PRIMA di scrivere una chiamata API, controlla lo schema reale".
+ */
+export interface PuntoAndamentoVisite {
+  data: string;
+  guest: number;
+  iscritto: number;
+}
+
+/**
+ * PuntoAndamentoRegistrazioniDTO (GestioneAmministrazioneUtenti.andamentoRegistrazioni, RF4.1) —
+ * un giorno della serie per il grafico "Andamento registrazioni". Stessa cautela sullo schema
+ * reale: array nudo da riverificare su Swagger.
+ */
+export interface PuntoAndamentoRegistrazioni {
+  data: string;
+  numeroRegistrazioni: number;
+}

@@ -39,6 +39,18 @@
   --color-success: #3FB27F;
   /* "Surface raised", palette di docs/DESIGN_SYSTEM.md. */
   --color-surface-raised: #20242B;
+  /* Identità della seconda serie nei grafici a più linee (es. "Iscritto" in
+     "Visite per tipo di visitatore", Dashboard Gestore Utenti) — NON
+     riutilizzare --color-ember o --color-success per questo ruolo: sono
+     entrambi riservati a stati di dominio (critico/attivo, cfr. "Badge di
+     stato" in docs/DESIGN_SYSTEM.md), un colore-dato non può prendere in
+     prestito un colore-stato senza suggerire falsamente che quella serie
+     comunichi un problema/successo. Valore verificato con lo script di
+     validazione della skill dataviz contro --color-accent su bg-carbon:
+     chroma/contrasto/CVD tutti PASS (ΔE 19.5 deutan, 20.9 normal-vision) —
+     l'unico FAIL riportato riguarda la lightness di --color-accent stesso
+     (già in uso ovunque nell'app), non di questo token. */
+  --color-series-secondary: #199E70;
 
   --font-heading: var(--font-oswald), sans-serif;
   --font-body: var(--font-inter), sans-serif;
