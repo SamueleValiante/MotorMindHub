@@ -11,11 +11,12 @@ import com.motormindhub.Api.model.entity.Utente;
 import com.motormindhub.Api.model.repository.ArticoloRepository;
 import com.motormindhub.Api.model.repository.ArticoloSalvatoRepository;
 import com.motormindhub.Api.model.repository.CategoriaRepository;
+import com.motormindhub.Api.model.repository.ConteggioSalvataggiPerArticolo;
 import com.motormindhub.Api.model.repository.UtenteRepository;
 import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleDetailDTO;
 import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleDraftDTO;
-import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleSummaryDTO;
 import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleUpdateDTO;
+import com.motormindhub.Api.service.gestioneArticoli.dto.AuthorArticleSummaryDTO;
 import com.motormindhub.Api.service.gestioneArticoli.dto.SavedArticleDTO;
 import com.motormindhub.Api.service.gestioneArticoli.dto.SearchCriteriaDTO;
 import com.motormindhub.Api.service.gestioneArticoli.exception.ArticoloGiaSalvatoException;
@@ -49,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -662,12 +664,41 @@ class GestioneArticoliTest {
         Articolo pubblicato = articolo(11L, autore, categoria(5L), StatoArticolo.PUBBLICATO, "Pubblicato");
         when(articoloRepository.findByAutoreIdOrderByDataUltimoAggiornamentoDesc(1L))
                 .thenReturn(List.of(pubblicato, bozza));
+        when(articoloSalvatoRepository.countByArticoloIdIn(any())).thenReturn(List.of());
 
-        List<ArticleSummaryDTO> risultato = gestioneArticoli.getArticlesByAuthor(1L);
+        List<AuthorArticleSummaryDTO> risultato = gestioneArticoli.getArticlesByAuthor(1L);
 
         assertThat(risultato).hasSize(2);
-        assertThat(risultato).extracting(ArticleSummaryDTO::stato)
+        assertThat(risultato).extracting(dto -> dto.articolo().stato())
                 .containsExactly(StatoArticolo.PUBBLICATO, StatoArticolo.BOZZA);
+    }
+
+    @Test
+    void getArticlesByAuthor_calcolaNumeroSalvataggiConUnaSolaQueryAggregata() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo pubblicato = articolo(11L, autore, categoria(5L), StatoArticolo.PUBBLICATO, "Pubblicato");
+        when(articoloRepository.findByAutoreIdOrderByDataUltimoAggiornamentoDesc(1L)).thenReturn(List.of(pubblicato));
+        ConteggioSalvataggiPerArticolo conteggio = mock(ConteggioSalvataggiPerArticolo.class);
+        when(conteggio.getArticoloId()).thenReturn(11L);
+        when(conteggio.getConteggio()).thenReturn(3L);
+        when(articoloSalvatoRepository.countByArticoloIdIn(List.of(11L))).thenReturn(List.of(conteggio));
+
+        List<AuthorArticleSummaryDTO> risultato = gestioneArticoli.getArticlesByAuthor(1L);
+
+        assertThat(risultato).hasSize(1);
+        assertThat(risultato.get(0).numeroSalvataggi()).isEqualTo(3L);
+    }
+
+    @Test
+    void getArticlesByAuthor_restituisceZeroSalvataggi_quandoLArticoloNonEMaiStatoSalvato() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo pubblicato = articolo(11L, autore, categoria(5L), StatoArticolo.PUBBLICATO, "Pubblicato");
+        when(articoloRepository.findByAutoreIdOrderByDataUltimoAggiornamentoDesc(1L)).thenReturn(List.of(pubblicato));
+        when(articoloSalvatoRepository.countByArticoloIdIn(List.of(11L))).thenReturn(List.of());
+
+        List<AuthorArticleSummaryDTO> risultato = gestioneArticoli.getArticlesByAuthor(1L);
+
+        assertThat(risultato.get(0).numeroSalvataggi()).isZero();
     }
 
     // --- query: getSavedArticles -----------------------------------------------------

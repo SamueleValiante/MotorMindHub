@@ -10,12 +10,14 @@ import com.motormindhub.Api.model.entity.Utente;
 import com.motormindhub.Api.model.repository.ArticoloRepository;
 import com.motormindhub.Api.model.repository.ArticoloSalvatoRepository;
 import com.motormindhub.Api.model.repository.CategoriaRepository;
+import com.motormindhub.Api.model.repository.ConteggioSalvataggiPerArticolo;
 import com.motormindhub.Api.model.repository.UtenteRepository;
 import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleDetailDTO;
 import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleDraftDTO;
 import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleSearchResultDTO;
 import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleSummaryDTO;
 import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleUpdateDTO;
+import com.motormindhub.Api.service.gestioneArticoli.dto.AuthorArticleSummaryDTO;
 import com.motormindhub.Api.service.gestioneArticoli.dto.OrdinamentoArticoli;
 import com.motormindhub.Api.service.gestioneArticoli.dto.SavedArticleDTO;
 import com.motormindhub.Api.service.gestioneArticoli.dto.SearchCriteriaDTO;
@@ -346,11 +348,24 @@ public class GestioneArticoli {
         return mappaDettaglio(articolo);
     }
 
-    /** Query di sola lettura (RF2.1) - nessun contratto OCL formale. */
+    /**
+     * Query di sola lettura (RF2.1) - nessun contratto OCL formale. numeroSalvataggi e' calcolato
+     * con un'unica query aggregata (ArticoloSalvatoRepository.countByArticoloIdIn, GROUP BY), non
+     * una countByArticoloId per articolo dentro il .map() - stesso pattern anti-N+1 di
+     * GestioneAutori.listAuthors. Bozze/rifiutati non sono mai stati raggiungibili pubblicamente,
+     * quindi non hanno mai potuto essere salvati: 0 senza alcuna gestione speciale.
+     */
     @Transactional(readOnly = true)
-    public List<ArticleSummaryDTO> getArticlesByAuthor(Long authorId) {
-        return articoloRepository.findByAutoreIdOrderByDataUltimoAggiornamentoDesc(authorId).stream()
-                .map(this::mappaSummary)
+    public List<AuthorArticleSummaryDTO> getArticlesByAuthor(Long authorId) {
+        List<Articolo> articoli = articoloRepository.findByAutoreIdOrderByDataUltimoAggiornamentoDesc(authorId);
+        List<Long> articoloIds = articoli.stream().map(Articolo::getId).toList();
+        Map<Long, Long> conteggiSalvataggi = articoloIds.isEmpty()
+                ? Map.of()
+                : articoloSalvatoRepository.countByArticoloIdIn(articoloIds).stream()
+                        .collect(Collectors.toMap(ConteggioSalvataggiPerArticolo::getArticoloId, ConteggioSalvataggiPerArticolo::getConteggio));
+
+        return articoli.stream()
+                .map(a -> new AuthorArticleSummaryDTO(mappaSummary(a), conteggiSalvataggi.getOrDefault(a.getId(), 0L)))
                 .toList();
     }
 

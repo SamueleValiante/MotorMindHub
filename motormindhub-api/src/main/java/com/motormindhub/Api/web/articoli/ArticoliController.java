@@ -7,8 +7,8 @@ import com.motormindhub.Api.service.gestioneArticoli.GestioneArticoli;
 import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleDetailDTO;
 import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleDraftDTO;
 import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleSearchResultDTO;
-import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleSummaryDTO;
 import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleUpdateDTO;
+import com.motormindhub.Api.service.gestioneArticoli.dto.AuthorArticleSummaryDTO;
 import com.motormindhub.Api.service.gestioneArticoli.dto.DraftCreatedResponseDTO;
 import com.motormindhub.Api.service.gestioneArticoli.dto.OrdinamentoArticoli;
 import com.motormindhub.Api.service.gestioneArticoli.dto.SaveArticleDTO;
@@ -69,7 +69,7 @@ public class ArticoliController {
 
     @GetMapping("/me")
     @PreAuthorize("hasAnyRole('AUTORE', 'MANAGER_AUTORI')")
-    public ResponseEntity<List<ArticleSummaryDTO>> getArticlesByAuthor(@AuthenticationPrincipal UserPrincipal principal) {
+    public ResponseEntity<List<AuthorArticleSummaryDTO>> getArticlesByAuthor(@AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(gestioneArticoli.getArticlesByAuthor(principal.getId()));
     }
 
