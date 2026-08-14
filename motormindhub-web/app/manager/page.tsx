@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useManagerDashboardStats } from "@/lib/autori/useManagerDashboardStats";
 import { useArticleSearch } from "@/lib/articoli/useArticleSearch";
+import { useCategoriePiuLette } from "@/lib/autori/useCategoriePiuLette";
 import { StatCard } from "@/components/shared/StatCard";
+import { AndamentoChartsAutori } from "@/components/manager/AndamentoChartsAutori";
 
 const PIU_LETTI_COUNT = 5;
 
@@ -32,6 +34,7 @@ export default function ManagerDashboardPage() {
   // funziona meglio sulla piattaforma", il dettaglio per singolo autore
   // resta comunque raggiungibile da Gestione Autori.
   const piuLettiState = useArticleSearch({ ordinamento: "PIU_LETTI", dimensionePagina: PIU_LETTI_COUNT });
+  const categoriePiuLetteState = useCategoriePiuLette();
 
   return (
     <div className="flex flex-col gap-6">
@@ -84,6 +87,8 @@ export default function ManagerDashboardPage() {
             </Link>
           </section>
 
+          <AndamentoChartsAutori />
+
           {/*
             Lista compatta (titolo + autore + conteggio letture), non
             ArticleCard: stesso principio della sezione "in coda" sopra -
@@ -119,6 +124,42 @@ export default function ManagerDashboardPage() {
                     </span>
                     <span className="shrink-0 text-xs text-fog">{articolo.numeroVisualizzazioni} letture</span>
                   </Link>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/*
+            Classifica semplice (RF3.1, GestioneAutori.getCategoriePiuLette): già ordinata desc e
+            limitata alle top 10 lato server, include il rollup delle sottocategorie — nessun
+            sort/limit da rifare qui. Stessa lista compatta (rango + nome + conteggio) di
+            "Articoli più letti" sopra, senza link: non esiste una pagina di dettaglio per
+            categoria raggiungibile da qui.
+          */}
+          <section className="flex flex-col gap-6 rounded-lg bg-carbon p-6">
+            <h2 className="font-heading text-lg font-bold uppercase tracking-wide text-paper">
+              Categorie più lette
+            </h2>
+
+            {categoriePiuLetteState.status === "loading" ? (
+              <p className="text-sm text-fog">Caricamento…</p>
+            ) : categoriePiuLetteState.status === "error" ? (
+              <p className="text-sm text-ember">Non è stato possibile caricare le categorie più lette.</p>
+            ) : categoriePiuLetteState.categorie.length === 0 ? (
+              <p className="text-sm text-fog">Nessuna categoria con visualizzazioni ancora.</p>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {categoriePiuLetteState.categorie.map((categoria, i) => (
+                  <div
+                    key={categoria.categoriaId}
+                    className="flex items-center justify-between gap-4 border-b border-paper/10 pb-4 last:border-0 last:pb-0"
+                  >
+                    <span className="flex min-w-0 items-center gap-3">
+                      <span className="shrink-0 font-heading text-sm font-bold text-fog">{i + 1}</span>
+                      <span className="min-w-0 truncate text-sm text-paper">{categoria.nome}</span>
+                    </span>
+                    <span className="shrink-0 text-xs text-fog">{categoria.totaleVisualizzazioni} letture</span>
+                  </div>
                 ))}
               </div>
             )}

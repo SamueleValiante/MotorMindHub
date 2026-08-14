@@ -12,6 +12,15 @@ interface AuthorTableProps {
   onRemove: (autore: AuthorSummary) => void;
 }
 
+/**
+ * Formatta percentualeApprovazione (frazione 0..1, null se l'autore non ha mai sottomesso un
+ * articolo — cfr. lib/autori/types.ts) come intero percentuale. "N/D" invece di "0%" per il caso
+ * null: 0% sarebbe fuorviante ("tutti rifiutati") per chi semplicemente non ha ancora sottomesso.
+ */
+function formatPercentualeApprovazione(percentuale: number | null): string {
+  return percentuale === null ? "N/D" : `${Math.round(percentuale * 100)}%`;
+}
+
 /** Badge stato (mockup 30): binario Attivo/Inattivo, non i 4 valori reali di StatoUtente — il Manager non ha comunque azioni su SOSPESO/CANCELLATO/NON_VERIFICATO da questa pagina. */
 function StatoAutoreBadge({ stato }: { stato: AuthorSummary["stato"] }) {
   const attivo = stato === "ATTIVO";
@@ -74,11 +83,12 @@ export function AuthorTable({ autori, onRemove }: AuthorTableProps) {
         />
       ) : (
         <div className="overflow-x-auto rounded-lg border border-paper/10 bg-carbon">
-          <table className="w-full min-w-[560px] text-left text-sm">
+          <table className="w-full min-w-[680px] text-left text-sm">
             <thead>
               <tr className="border-b border-paper/10 text-xs uppercase tracking-wide text-fog">
                 <th className="px-6 py-4 font-heading font-semibold">Autore</th>
                 <th className="px-6 py-4 font-heading font-semibold">Articoli</th>
+                <th className="px-6 py-4 font-heading font-semibold">% Approvazione</th>
                 <th className="px-6 py-4 font-heading font-semibold">Stato</th>
                 <th className="px-6 py-4" />
               </tr>
@@ -98,6 +108,9 @@ export function AuthorTable({ autori, onRemove }: AuthorTableProps) {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-chrome">{autore.numeroArticoli}</td>
+                  <td className="px-6 py-4 font-mono text-chrome">
+                    {formatPercentualeApprovazione(autore.percentualeApprovazione)}
+                  </td>
                   <td className="px-6 py-4">
                     <StatoAutoreBadge stato={autore.stato} />
                   </td>
