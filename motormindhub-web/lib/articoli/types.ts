@@ -17,6 +17,16 @@ export interface ArticleSummary {
   dataUltimoAggiornamento: string;
 }
 
+/**
+ * AuthorArticleSummaryDTO (GestioneArticoli.getArticlesByAuthor, RF2.1, GET /api/v1/articoli/me) —
+ * risposta REALE confermata su Swagger: array nudo di `{articolo: ArticleSummaryDTO,
+ * numeroSalvataggi}`, NON un ArticleSummaryDTO piatto — useMyArticles appiattisce questa forma in
+ * MyArticle per i consumer, non rifare il merge altrove.
+ */
+export interface MyArticle extends ArticleSummary {
+  numeroSalvataggi: number;
+}
+
 export interface ArticleSearchResult {
   articoli: ArticleSummary[];
   totaleRisultati: number;

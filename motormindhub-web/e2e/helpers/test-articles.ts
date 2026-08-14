@@ -137,15 +137,19 @@ async function createDraftArticleInternal(
   );
   const mieiArticoliResponse = await fetch(`${API_BASE}/api/v1/articoli/me`, { headers });
   await assertOk(mieiArticoliResponse, "lettura /articoli/me");
-  const mieiArticoli: Array<{ id: number; titolo: string }> = await mieiArticoliResponse.json();
-  const bozza = mieiArticoli.find((a) => a.titolo === titolo);
+  // Risposta nidificata (AuthorArticleSummaryDTO, confermato su Swagger dopo il backend commit
+  // 658be92 "Aggiunge numeroSalvataggi a I Miei Articoli"): {articolo: {id, titolo, ...},
+  // numeroSalvataggi}, non un ArticleSummaryDTO piatto - stesso schema di lib/articoli/types.ts
+  // (MyArticle) lato app.
+  const mieiArticoli: Array<{ articolo: { id: number; titolo: string } }> = await mieiArticoliResponse.json();
+  const bozza = mieiArticoli.find((a) => a.articolo.titolo === titolo);
   if (!bozza) {
     throw new Error(
       `Bozza "${titolo}" creata (200) ma assente da /articoli/me riletto subito dopo - inconsistenza di lettura, non un errore HTTP.`
     );
   }
 
-  return { id: bozza.id, headers };
+  return { id: bozza.articolo.id, headers };
 }
 
 /** Restituisce l'id dell'articolo, resta in stato BOZZA. `token`: cfr. createDraftArticleInternal. */

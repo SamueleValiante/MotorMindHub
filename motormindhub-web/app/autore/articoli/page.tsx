@@ -9,10 +9,10 @@ import { ArticleCard } from "@/components/public/ArticleCard";
 import { StatoBadge } from "@/components/articoli/StatoBadge";
 import { ConfirmDeleteModal } from "@/components/articoli/ConfirmDeleteModal";
 import { EmptyState } from "@/components/empty-state/EmptyState";
-import { DocumentIcon, PencilIcon } from "@/components/autore/icons";
-import { TrashIcon } from "@/components/account/icons";
+import { DocumentIcon, PencilIcon, EyeIcon } from "@/components/autore/icons";
+import { TrashIcon, BookmarkIcon } from "@/components/account/icons";
 import { SearchIcon } from "@/components/public/icons";
-import type { ArticleSummary } from "@/lib/articoli/types";
+import type { MyArticle } from "@/lib/articoli/types";
 
 type Tab = "TUTTI" | "PUBBLICATO" | "IN_ATTESA_APPROVAZIONE" | "RIFIUTATO";
 
@@ -55,7 +55,7 @@ export default function IMieiArticoliPage() {
   const state = useMyArticles();
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<Tab>("TUTTI");
-  const [pendingDelete, setPendingDelete] = useState<ArticleSummary | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<MyArticle | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [removedIds, setRemovedIds] = useState<Set<number>>(new Set());
 
@@ -168,10 +168,17 @@ export default function IMieiArticoliPage() {
                   badge={
                     <>
                       <StatoBadge stato={articolo.stato} />
-                      <span className="text-xs text-fog">
+                      <span className="flex items-center gap-1 text-xs text-fog">
+                        <EyeIcon className="h-3.5 w-3.5" />
                         {articolo.stato === "PUBBLICATO"
                           ? `${articolo.numeroVisualizzazioni} letture`
                           : "— letture"}
+                      </span>
+                      <span className="flex items-center gap-1 text-xs text-fog">
+                        <BookmarkIcon className="h-3.5 w-3.5" />
+                        {articolo.stato === "PUBBLICATO"
+                          ? `${articolo.numeroSalvataggi} salvataggi`
+                          : "— salvataggi"}
                       </span>
                       <span className="text-xs text-fog">{formatData(articolo.dataUltimoAggiornamento)}</span>
                     </>

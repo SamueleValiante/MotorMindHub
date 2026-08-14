@@ -48,3 +48,12 @@ export function ImageIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+export function EyeIcon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M2 12s4-8 10-8 10 8 10 8-4 8-10 8-10-8-10-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
