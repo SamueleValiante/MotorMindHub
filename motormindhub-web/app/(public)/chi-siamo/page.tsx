@@ -2,7 +2,7 @@ const INFO_SOCIETARIE = [
   { label: "Ragione sociale", value: "MotorMindHub S.r.l." },
   { label: "Sede legale", value: "Via dell'Innovazione 12, Salerno (IT)" },
   { label: "P.IVA", value: "00000000000" },
-  { label: "Contatti", value: "info@motormindhub.it" },
+  { label: "Contatti", value: "info@motormindhub.com" },
 ];
 
 export default function ChiSiamoPage() {

@@ -16,7 +16,7 @@ export default function AccessibilitaPage() {
         },
         {
           heading: "Segnalazioni",
-          body: "Per segnalare barriere di accessibilità scrivi a accessibilita@motormindhub.it — risponderemo entro 5 giorni lavorativi.",
+          body: "Per segnalare barriere di accessibilità scrivi a accessibilita@motormindhub.com — risponderemo entro 5 giorni lavorativi.",
         },
       ]}
     />

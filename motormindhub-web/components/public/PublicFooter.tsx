@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
 import { useCookieConsentStore } from "@/lib/cookie-consent/store";
 
-const SUPPORTO_EMAIL = "supporto@motormindhub.it";
+const SUPPORTO_EMAIL = "supporto@motormindhub.com";
 
 /**
  * Footer pubblico condiviso (mockup 01). Le colonne "Piattaforma" e

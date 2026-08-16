@@ -8,7 +8,7 @@ export default function InformativaPrivacyPage() {
       sections={[
         {
           heading: "1. Titolare del trattamento",
-          body: "MotorMindHub è titolare del trattamento dei dati personali raccolti tramite la piattaforma. Per qualsiasi richiesta relativa al trattamento dei tuoi dati puoi scrivere a supporto@motormindhub.it.",
+          body: "MotorMindHub è titolare del trattamento dei dati personali raccolti tramite la piattaforma. Per qualsiasi richiesta relativa al trattamento dei tuoi dati puoi scrivere a supporto@motormindhub.com.",
         },
         {
           heading: "2. Dati raccolti e finalità del trattamento",
@@ -20,7 +20,7 @@ export default function InformativaPrivacyPage() {
         },
         {
           heading: "4. I tuoi diritti",
-          body: "Hai diritto di accedere in ogni momento ai dati personali che possediamo su di te, di rettificarli, di richiederne la cancellazione definitiva (\"diritto all'oblio\") e di esportarli in un formato leggibile da dispositivo automatico. Puoi esercitare questi diritti in autonomia dalla tua area personale, oppure scrivendo a supporto@motormindhub.it se preferisci un canale assistito.",
+          body: "Hai diritto di accedere in ogni momento ai dati personali che possediamo su di te, di rettificarli, di richiederne la cancellazione definitiva (\"diritto all'oblio\") e di esportarli in un formato leggibile da dispositivo automatico. Puoi esercitare questi diritti in autonomia dalla tua area personale, oppure scrivendo a supporto@motormindhub.com se preferisci un canale assistito.",
         },
         {
           heading: "5. Conservazione dei dati",
