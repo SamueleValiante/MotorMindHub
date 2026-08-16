@@ -12,6 +12,7 @@ import com.motormindhub.Api.model.entity.StatoUtente;
 import com.motormindhub.Api.model.entity.Utente;
 import com.motormindhub.Api.model.repository.AndamentoApprovazioniRiga;
 import com.motormindhub.Api.model.repository.AndamentoCategorieRiga;
+import com.motormindhub.Api.model.repository.AndamentoLettureRiga;
 import com.motormindhub.Api.model.repository.AndamentoPubblicazioniRiga;
 import com.motormindhub.Api.model.repository.ArticoloRepository;
 import com.motormindhub.Api.model.repository.CategoriaRepository;
@@ -20,6 +21,7 @@ import com.motormindhub.Api.model.repository.ConteggioArticoliPerAutoreEStato;
 import com.motormindhub.Api.model.repository.InvitoAutoreRepository;
 import com.motormindhub.Api.model.repository.SommaVisualizzazioniPerCategoriaRiga;
 import com.motormindhub.Api.model.repository.UtenteRepository;
+import com.motormindhub.Api.model.repository.VisualizzazioneArticoloRepository;
 import com.motormindhub.Api.service.gestioneAutori.dto.AuthorSummaryDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.CategoriaPiuLettaDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.InviteAuthorDTO;
@@ -27,6 +29,7 @@ import com.motormindhub.Api.service.gestioneAutori.dto.ManagerDashboardStatsDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.PendingArticleDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.PuntoAndamentoApprovazioniDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.PuntoAndamentoCategorieDTO;
+import com.motormindhub.Api.service.gestioneAutori.dto.PuntoAndamentoLettureDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.PuntoAndamentoPubblicazioniDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.RejectionReasonDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.RemoveAuthorPolicyDTO;
@@ -80,6 +83,7 @@ public class GestioneAutori {
     private final UtenteRepository utenteRepository;
     private final ArticoloRepository articoloRepository;
     private final CategoriaRepository categoriaRepository;
+    private final VisualizzazioneArticoloRepository visualizzazioneArticoloRepository;
     private final PasswordEncoder passwordEncoder;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -87,12 +91,14 @@ public class GestioneAutori {
                            UtenteRepository utenteRepository,
                            ArticoloRepository articoloRepository,
                            CategoriaRepository categoriaRepository,
+                           VisualizzazioneArticoloRepository visualizzazioneArticoloRepository,
                            PasswordEncoder passwordEncoder,
                            ApplicationEventPublisher eventPublisher) {
         this.invitoAutoreRepository = invitoAutoreRepository;
         this.utenteRepository = utenteRepository;
         this.articoloRepository = articoloRepository;
         this.categoriaRepository = categoriaRepository;
+        this.visualizzazioneArticoloRepository = visualizzazioneArticoloRepository;
         this.passwordEncoder = passwordEncoder;
         this.eventPublisher = eventPublisher;
     }
@@ -346,6 +352,28 @@ public class GestioneAutori {
                     return new PuntoAndamentoApprovazioniDTO(giorno,
                             riga == null ? 0 : riga.getApprovati(), riga == null ? 0 : riga.getRifiutati());
                 })
+                .toList();
+    }
+
+    /**
+     * RF3.1 - andamento giornaliero delle letture per il grafico "Andamento letture" della dashboard
+     * Manager Autori, stesso clamp/zero-fill/fuso di andamentoPubblicazioni. Bucket su
+     * VisualizzazioneArticolo.dataLettura (ODD 2.2 getArticleById): sito-wide, non filtrato per
+     * autore - a differenza di categorie-piu-lette (che aggrega per categoria), qui la serie e' un
+     * totale unico su tutti gli articoli.
+     */
+    @Transactional(readOnly = true)
+    public List<PuntoAndamentoLettureDTO> andamentoLetture(int giorni) {
+        int giorniClampati = clampGiorni(giorni);
+        LocalDate oggi = LocalDate.now(ZONA_STATISTICHE);
+        LocalDate primoGiorno = oggi.minusDays(giorniClampati - 1L);
+        Instant da = primoGiorno.atStartOfDay(ZONA_STATISTICHE).toInstant();
+
+        Map<LocalDate, Long> perGiorno = visualizzazioneArticoloRepository.andamentoGiornaliero(da).stream()
+                .collect(Collectors.toMap(AndamentoLettureRiga::getGiorno, AndamentoLettureRiga::getNumero));
+
+        return primoGiorno.datesUntil(oggi.plusDays(1))
+                .map(giorno -> new PuntoAndamentoLettureDTO(giorno, perGiorno.getOrDefault(giorno, 0L)))
                 .toList();
     }
 

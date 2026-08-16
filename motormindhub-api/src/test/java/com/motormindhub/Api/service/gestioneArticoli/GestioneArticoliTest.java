@@ -8,11 +8,13 @@ import com.motormindhub.Api.model.entity.StatoArticolo;
 import com.motormindhub.Api.model.entity.StatoUtente;
 import com.motormindhub.Api.model.entity.TipoLista;
 import com.motormindhub.Api.model.entity.Utente;
+import com.motormindhub.Api.model.entity.VisualizzazioneArticolo;
 import com.motormindhub.Api.model.repository.ArticoloRepository;
 import com.motormindhub.Api.model.repository.ArticoloSalvatoRepository;
 import com.motormindhub.Api.model.repository.CategoriaRepository;
 import com.motormindhub.Api.model.repository.ConteggioSalvataggiPerArticolo;
 import com.motormindhub.Api.model.repository.UtenteRepository;
+import com.motormindhub.Api.model.repository.VisualizzazioneArticoloRepository;
 import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleDetailDTO;
 import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleDraftDTO;
 import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleUpdateDTO;
@@ -73,6 +75,8 @@ class GestioneArticoliTest {
     @Mock
     private UtenteRepository utenteRepository;
     @Mock
+    private VisualizzazioneArticoloRepository visualizzazioneArticoloRepository;
+    @Mock
     private CloudStorageService cloudStorageService;
     @Mock
     private ImageUploadValidator imageUploadValidator;
@@ -82,7 +86,7 @@ class GestioneArticoliTest {
     @BeforeEach
     void setUp() {
         gestioneArticoli = new GestioneArticoli(articoloRepository, articoloSalvatoRepository, categoriaRepository,
-                utenteRepository, cloudStorageService, imageUploadValidator);
+                utenteRepository, visualizzazioneArticoloRepository, cloudStorageService, imageUploadValidator);
     }
 
     private static Utente utente(Long id, Ruolo ruolo) {
@@ -483,6 +487,7 @@ class GestioneArticoliTest {
         gestioneArticoli.deleteArticle(10L, 1L);
 
         verify(articoloSalvatoRepository).deleteByArticoloId(10L);
+        verify(visualizzazioneArticoloRepository).deleteByArticoloId(10L);
         verify(articoloRepository).delete(pubblicato);
     }
 
@@ -495,6 +500,7 @@ class GestioneArticoliTest {
         gestioneArticoli.deleteArticle(10L, 1L);
 
         verify(articoloSalvatoRepository).deleteByArticoloId(10L);
+        verify(visualizzazioneArticoloRepository).deleteByArticoloId(10L);
         verify(articoloRepository).delete(inAttesa);
     }
 
@@ -507,6 +513,7 @@ class GestioneArticoliTest {
         gestioneArticoli.deleteArticle(10L, 1L);
 
         verify(articoloSalvatoRepository).deleteByArticoloId(10L);
+        verify(visualizzazioneArticoloRepository).deleteByArticoloId(10L);
         verify(articoloRepository).delete(rifiutato);
     }
 
@@ -597,6 +604,7 @@ class GestioneArticoliTest {
         assertThat(dettaglio.titolo()).isEqualTo("Dischi freno forati vs baffati");
         assertThat(dettaglio.tag()).containsExactly("freni", "manutenzione");
         assertThat(pubblicato.getNumeroVisualizzazioni()).isEqualTo(1L);
+        verify(visualizzazioneArticoloRepository).save(any(VisualizzazioneArticolo.class));
     }
 
     @Test
@@ -608,6 +616,7 @@ class GestioneArticoliTest {
         gestioneArticoli.getArticleById(10L, Ruolo.ISCRITTO);
 
         assertThat(pubblicato.getNumeroVisualizzazioni()).isEqualTo(1L);
+        verify(visualizzazioneArticoloRepository).save(any(VisualizzazioneArticolo.class));
     }
 
     @Test
@@ -621,6 +630,7 @@ class GestioneArticoliTest {
         gestioneArticoli.getArticleById(10L, Ruolo.AUTORE);
 
         assertThat(pubblicato.getNumeroVisualizzazioni()).isZero();
+        verify(visualizzazioneArticoloRepository, never()).save(any());
     }
 
     @Test
@@ -634,6 +644,7 @@ class GestioneArticoliTest {
         gestioneArticoli.getArticleById(10L, Ruolo.AUTORE);
 
         assertThat(pubblicato.getNumeroVisualizzazioni()).isZero();
+        verify(visualizzazioneArticoloRepository, never()).save(any());
     }
 
     @ParameterizedTest
@@ -646,6 +657,7 @@ class GestioneArticoliTest {
         gestioneArticoli.getArticleById(10L, ruoloRedazionale);
 
         assertThat(pubblicato.getNumeroVisualizzazioni()).isZero();
+        verify(visualizzazioneArticoloRepository, never()).save(any());
     }
 
     @Test

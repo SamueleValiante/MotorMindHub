@@ -32,9 +32,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Test end-to-end (contesto Spring reale, DB Postgres reale) dei quattro grafici/classifiche della
+ * Test end-to-end (contesto Spring reale, DB Postgres reale) dei cinque grafici/classifiche della
  * dashboard Manager Autori (RF3.1, ODD 2.4): GET .../statistiche-autori/andamento-pubblicazioni,
- * andamento-categorie, andamento-approvazioni, categorie-piu-lette. La logica di zero-fill/clamp sui
+ * andamento-categorie, andamento-approvazioni, andamento-letture, categorie-piu-lette. La logica di zero-fill/clamp sui
  * valori esatti e' gia' coperta deterministicamente (repository mockato) da GestioneAutoriTest; qui
  * l'obiettivo e' la query nativa contro Postgres vero, il cablaggio HTTP end-to-end e il controllo di
  * accesso - stessa divisione di responsabilita' di AndamentoStatisticheIntegrationTest (§2.5).
@@ -228,6 +228,52 @@ class AutoriStatisticheIntegrationTest {
         assertThat(serie).hasSize(90);
     }
 
+    // --- GET /statistiche-autori/andamento-letture ----------------------------------------
+
+    @Test
+    void getAndamentoLetture_conteggiaNelPuntoDiOggiLaLetturaAppenaGenerata_comeDeltaSullaBaseline() throws Exception {
+        String jwt = creaUtenteELogga("andamento-letture-manager@provider.it", Ruolo.MANAGER_AUTORI);
+        MvcResult baseline = mockMvc.perform(get("/api/v1/autori/statistiche-autori/andamento-letture")
+                        .param("giorni", "1")
+                        .header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isOk())
+                .andReturn();
+        long prima = objectMapper.readTree(baseline.getResponse().getContentAsString()).get(0).get("numeroLetture").asLong();
+
+        Utente autore = creaAutore("andamento-letture-autore@provider.it");
+        Categoria categoria = creaCategoria("Elettronica", null);
+        Articolo articolo = creaArticoloPubblicato(autore, categoria);
+        // Lettura generata dal path pubblico reale (Guest, nessun JWT): stessa condizione di
+        // GestioneArticoli.getArticleById che scrive la VisualizzazioneArticolo, non un inserimento
+        // diretto sul repository.
+        mockMvc.perform(get("/api/v1/articoli/{articleId}", articolo.getId()))
+                .andExpect(status().isOk());
+
+        MvcResult result = mockMvc.perform(get("/api/v1/autori/statistiche-autori/andamento-letture")
+                        .param("giorni", "1")
+                        .header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isOk())
+                .andReturn();
+        JsonNode punto = objectMapper.readTree(result.getResponse().getContentAsString()).get(0);
+
+        assertThat(punto.get("data").asText()).isEqualTo(LocalDate.now(ZONA_STATISTICHE).toString());
+        assertThat(punto.get("numeroLetture").asLong()).isEqualTo(prima + 1);
+    }
+
+    @Test
+    void getAndamentoLetture_clampaLaFinestraA90Giorni_quandoGiorniRichiestiOltreIlMassimo() throws Exception {
+        String jwt = creaUtenteELogga("andamento-letture-clamp@provider.it", Ruolo.MANAGER_AUTORI);
+
+        MvcResult result = mockMvc.perform(get("/api/v1/autori/statistiche-autori/andamento-letture")
+                        .param("giorni", "365")
+                        .header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode serie = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertThat(serie).hasSize(90);
+    }
+
     // --- GET /statistiche-autori/categorie-piu-lette ----------------------------------------
 
     @Test
@@ -282,6 +328,9 @@ class AutoriStatisticheIntegrationTest {
                         .header("Authorization", "Bearer " + jwt))
                 .andExpect(status().isForbidden());
         mockMvc.perform(get("/api/v1/autori/statistiche-autori/andamento-approvazioni")
+                        .header("Authorization", "Bearer " + jwt))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/autori/statistiche-autori/andamento-letture")
                         .header("Authorization", "Bearer " + jwt))
                 .andExpect(status().isForbidden());
         mockMvc.perform(get("/api/v1/autori/statistiche-autori/categorie-piu-lette")

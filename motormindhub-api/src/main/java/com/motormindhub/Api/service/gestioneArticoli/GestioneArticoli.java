@@ -7,11 +7,13 @@ import com.motormindhub.Api.model.entity.Ruolo;
 import com.motormindhub.Api.model.entity.StatoArticolo;
 import com.motormindhub.Api.model.entity.TipoLista;
 import com.motormindhub.Api.model.entity.Utente;
+import com.motormindhub.Api.model.entity.VisualizzazioneArticolo;
 import com.motormindhub.Api.model.repository.ArticoloRepository;
 import com.motormindhub.Api.model.repository.ArticoloSalvatoRepository;
 import com.motormindhub.Api.model.repository.CategoriaRepository;
 import com.motormindhub.Api.model.repository.ConteggioSalvataggiPerArticolo;
 import com.motormindhub.Api.model.repository.UtenteRepository;
+import com.motormindhub.Api.model.repository.VisualizzazioneArticoloRepository;
 import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleDetailDTO;
 import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleDraftDTO;
 import com.motormindhub.Api.service.gestioneArticoli.dto.ArticleSearchResultDTO;
@@ -76,6 +78,7 @@ public class GestioneArticoli {
     private final ArticoloSalvatoRepository articoloSalvatoRepository;
     private final CategoriaRepository categoriaRepository;
     private final UtenteRepository utenteRepository;
+    private final VisualizzazioneArticoloRepository visualizzazioneArticoloRepository;
     private final CloudStorageService cloudStorageService;
     private final ImageUploadValidator imageUploadValidator;
 
@@ -83,12 +86,14 @@ public class GestioneArticoli {
                              ArticoloSalvatoRepository articoloSalvatoRepository,
                              CategoriaRepository categoriaRepository,
                              UtenteRepository utenteRepository,
+                             VisualizzazioneArticoloRepository visualizzazioneArticoloRepository,
                              CloudStorageService cloudStorageService,
                              ImageUploadValidator imageUploadValidator) {
         this.articoloRepository = articoloRepository;
         this.articoloSalvatoRepository = articoloSalvatoRepository;
         this.categoriaRepository = categoriaRepository;
         this.utenteRepository = utenteRepository;
+        this.visualizzazioneArticoloRepository = visualizzazioneArticoloRepository;
         this.cloudStorageService = cloudStorageService;
         this.imageUploadValidator = imageUploadValidator;
     }
@@ -256,12 +261,14 @@ public class GestioneArticoli {
         if (articolo.getStato() == StatoArticolo.BOZZA) {
             throw new StatoArticoloNonValidoException("Una bozza si elimina con l'operazione dedicata (deleteDraft).");
         }
-        // Rimozione esplicita dei salvataggi (RF1.7/RF1.8) prima della cancellazione dell'articolo:
-        // articoli_salvati.articolo_id non ha ON DELETE CASCADE (vincolo di integrita' referenziale
-        // deliberatamente nudo, coerente con l'approccio del progetto per le cancellazioni con
-        // effetti a cascata - vedi CategoriaEliminataListener - esplicito e tracciabile a livello
-        // applicativo invece che implicito nello schema).
+        // Rimozione esplicita dei salvataggi (RF1.7/RF1.8) e del log letture (ODD 2.4 andamentoLetture)
+        // prima della cancellazione dell'articolo: ne' articoli_salvati.articolo_id ne'
+        // visualizzazioni_articolo.articolo_id hanno ON DELETE CASCADE (vincolo di integrita'
+        // referenziale deliberatamente nudo, coerente con l'approccio del progetto per le
+        // cancellazioni con effetti a cascata - vedi CategoriaEliminataListener - esplicito e
+        // tracciabile a livello applicativo invece che implicito nello schema).
         articoloSalvatoRepository.deleteByArticoloId(articleId);
+        visualizzazioneArticoloRepository.deleteByArticoloId(articleId);
         articoloRepository.delete(articolo);
     }
 
@@ -337,13 +344,18 @@ public class GestioneArticoli {
      * versione precedente di questo metodo) non basta: un Autore che legge l'articolo di un
      * collega, o un Manager/Gestore che lo apre per moderarlo, non e' un lettore e non deve
      * incrementare il contatore. callerRuolo e' null per un chiamante non autenticato (Guest), che
-     * incrementa sempre normalmente.
+     * incrementa sempre normalmente. Nella stessa condizione, stessa transazione, viene anche
+     * loggata una VisualizzazioneArticolo (ODD 2.4 andamentoLetture): scrittura sincrona, non un
+     * evento @Async come GestioneNotifiche - un INSERT locale indicizzato non e' la chiamata di rete
+     * lenta/inaffidabile per cui AsyncConfig esiste, e restare nella stessa transazione garantisce
+     * che contatore e log restino sempre allineati (si committano o si rollbackano insieme).
      */
     @Transactional
     public ArticleDetailDTO getArticleById(Long articleId, Ruolo callerRuolo) {
         Articolo articolo = trovaArticoloOLancia(articleId);
         if (callerRuolo == null || callerRuolo == Ruolo.ISCRITTO) {
             articolo.incrementaVisualizzazioni();
+            visualizzazioneArticoloRepository.save(new VisualizzazioneArticolo(articolo));
         }
         return mappaDettaglio(articolo);
     }

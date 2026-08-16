@@ -12,6 +12,7 @@ import com.motormindhub.Api.model.entity.StatoUtente;
 import com.motormindhub.Api.model.entity.Utente;
 import com.motormindhub.Api.model.repository.AndamentoApprovazioniRiga;
 import com.motormindhub.Api.model.repository.AndamentoCategorieRiga;
+import com.motormindhub.Api.model.repository.AndamentoLettureRiga;
 import com.motormindhub.Api.model.repository.AndamentoPubblicazioniRiga;
 import com.motormindhub.Api.model.repository.ArticoloRepository;
 import com.motormindhub.Api.model.repository.CategoriaRepository;
@@ -20,6 +21,7 @@ import com.motormindhub.Api.model.repository.ConteggioArticoliPerAutoreEStato;
 import com.motormindhub.Api.model.repository.InvitoAutoreRepository;
 import com.motormindhub.Api.model.repository.SommaVisualizzazioniPerCategoriaRiga;
 import com.motormindhub.Api.model.repository.UtenteRepository;
+import com.motormindhub.Api.model.repository.VisualizzazioneArticoloRepository;
 import com.motormindhub.Api.service.gestioneAutori.dto.AuthorSummaryDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.CategoriaPiuLettaDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.InviteAuthorDTO;
@@ -77,6 +79,8 @@ class GestioneAutoriTest {
     @Mock
     private CategoriaRepository categoriaRepository;
     @Mock
+    private VisualizzazioneArticoloRepository visualizzazioneArticoloRepository;
+    @Mock
     private PasswordEncoder passwordEncoder;
     @Mock
     private ApplicationEventPublisher eventPublisher;
@@ -86,7 +90,7 @@ class GestioneAutoriTest {
     @BeforeEach
     void setUp() {
         gestioneAutori = new GestioneAutori(invitoAutoreRepository, utenteRepository, articoloRepository,
-                categoriaRepository, passwordEncoder, eventPublisher);
+                categoriaRepository, visualizzazioneArticoloRepository, passwordEncoder, eventPublisher);
     }
 
     private static Utente utente(Long id, Ruolo ruolo) {
@@ -596,6 +600,48 @@ class GestioneAutoriTest {
         var serie = gestioneAutori.andamentoApprovazioni(500);
 
         assertThat(serie).hasSize(90);
+    }
+
+    // --- query: andamentoLetture -----------------------------------------------------
+
+    @Test
+    void andamentoLetture_riempieAZeroIGiorniSenzaDatiEMappaIGiorniConDatiDalRepository() {
+        int giorni = 5;
+        LocalDate oggi = LocalDate.now(ZONA_STATISTICHE_TEST);
+        LocalDate primoGiorno = oggi.minusDays(giorni - 1L);
+        LocalDate giornoConDati = primoGiorno.plusDays(1);
+
+        AndamentoLettureRiga riga = mock(AndamentoLettureRiga.class);
+        when(riga.getGiorno()).thenReturn(giornoConDati);
+        when(riga.getNumero()).thenReturn(12L);
+        when(visualizzazioneArticoloRepository.andamentoGiornaliero(any())).thenReturn(List.of(riga));
+
+        var serie = gestioneAutori.andamentoLetture(giorni);
+
+        assertThat(serie).hasSize(giorni);
+        var puntoConDati = serie.stream().filter(p -> p.data().equals(giornoConDati)).findFirst().orElseThrow();
+        assertThat(puntoConDati.numeroLetture()).isEqualTo(12L);
+        var puntoSenzaDati = serie.stream().filter(p -> p.data().equals(oggi)).findFirst().orElseThrow();
+        assertThat(puntoSenzaDati.numeroLetture()).isZero();
+    }
+
+    @Test
+    void andamentoLetture_clampaLaSerieA90Punti_quandoGiorniRichiestiOltreIlMassimo() {
+        when(visualizzazioneArticoloRepository.andamentoGiornaliero(any())).thenReturn(List.of());
+
+        var serie = gestioneAutori.andamentoLetture(500);
+
+        assertThat(serie).hasSize(90);
+    }
+
+    @Test
+    void andamentoLetture_restituisceUnSoloPunto_quandoGiorniRichiestiNonPositivo() {
+        when(visualizzazioneArticoloRepository.andamentoGiornaliero(any())).thenReturn(List.of());
+
+        var serie = gestioneAutori.andamentoLetture(0);
+
+        assertThat(serie).hasSize(1);
+        assertThat(serie.get(0).data()).isEqualTo(LocalDate.now(ZONA_STATISTICHE_TEST));
     }
 
     // --- query: getCategoriePiuLette -----------------------------------------------------

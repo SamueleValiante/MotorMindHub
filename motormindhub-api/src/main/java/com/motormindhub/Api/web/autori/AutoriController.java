@@ -8,6 +8,7 @@ import com.motormindhub.Api.service.gestioneAutori.dto.ManagerDashboardStatsDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.PendingArticleDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.PuntoAndamentoApprovazioniDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.PuntoAndamentoCategorieDTO;
+import com.motormindhub.Api.service.gestioneAutori.dto.PuntoAndamentoLettureDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.PuntoAndamentoPubblicazioniDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.RejectionReasonDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.RemoveAuthorPolicyDTO;
@@ -125,6 +126,13 @@ public class AutoriController {
     public ResponseEntity<List<PuntoAndamentoApprovazioniDTO>> getAndamentoApprovazioni(
             @RequestParam(defaultValue = "30") int giorni) {
         return ResponseEntity.ok(gestioneAutori.andamentoApprovazioni(giorni));
+    }
+
+    @GetMapping("/statistiche-autori/andamento-letture")
+    @PreAuthorize("hasRole('MANAGER_AUTORI')")
+    public ResponseEntity<List<PuntoAndamentoLettureDTO>> getAndamentoLetture(
+            @RequestParam(defaultValue = "30") int giorni) {
+        return ResponseEntity.ok(gestioneAutori.andamentoLetture(giorni));
     }
 
     @GetMapping("/statistiche-autori/categorie-piu-lette")
