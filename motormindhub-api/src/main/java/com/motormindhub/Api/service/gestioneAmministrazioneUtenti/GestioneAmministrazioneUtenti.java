@@ -46,15 +46,15 @@ import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.exception.Rich
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.exception.SegnalazioneNonTrovataException;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.exception.StatoAccountNonValidoException;
 import com.motormindhub.Api.service.gestioneAmministrazioneUtenti.exception.UtenteNonTrovatoException;
+import com.motormindhub.Api.utility.ConfiniPeriodo;
+import com.motormindhub.Api.utility.ConfiniPeriodoCalculator;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -408,7 +408,7 @@ public class GestioneAmministrazioneUtenti {
      */
     @Transactional(readOnly = true)
     public VisiteStatisticheDTO getVisiteStatistiche() {
-        ConfiniPeriodo confini = confiniPeriodo(LocalDate.now(ZONA_VISITE), ZONA_VISITE);
+        ConfiniPeriodo confini = ConfiniPeriodoCalculator.calcola(LocalDate.now(ZONA_VISITE), ZONA_VISITE);
         ConteggioVisite conteggio = visitaSessioneRepository.aggregaConteggi(
                 confini.inizioGiorno(), confini.inizioSettimana(), confini.inizioMese(), confini.inizioAnno());
         return new VisiteStatisticheDTO(conteggio.getOggi(), conteggio.getSettimana(), conteggio.getMese(),
@@ -498,22 +498,5 @@ public class GestioneAmministrazioneUtenti {
     /** Vincola "giorni" a [GIORNI_ANDAMENTO_MIN, GIORNI_ANDAMENTO_MAX] (cfr. andamentoVisite/andamentoRegistrazioni). */
     private static int clampGiorni(int giorni) {
         return Math.min(Math.max(giorni, GIORNI_ANDAMENTO_MIN), GIORNI_ANDAMENTO_MAX);
-    }
-
-    /**
-     * Pure function isolata dal wall-clock (accetta "oggi" invece di chiamare LocalDate.now())
-     * apposta per essere testabile senza dipendere dall'istante di esecuzione del test - package-
-     * private per essere invocabile direttamente da GestioneAmministrazioneUtentiTest. Settimana da
-     * lunedi' (TemporalAdjusters.previousOrSame: resta "oggi" se oggi e' gia' lunedi').
-     */
-    static ConfiniPeriodo confiniPeriodo(LocalDate oggi, ZoneId zona) {
-        Instant inizioGiorno = oggi.atStartOfDay(zona).toInstant();
-        Instant inizioSettimana = oggi.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).atStartOfDay(zona).toInstant();
-        Instant inizioMese = oggi.withDayOfMonth(1).atStartOfDay(zona).toInstant();
-        Instant inizioAnno = oggi.withDayOfYear(1).atStartOfDay(zona).toInstant();
-        return new ConfiniPeriodo(inizioGiorno, inizioSettimana, inizioMese, inizioAnno);
-    }
-
-    record ConfiniPeriodo(Instant inizioGiorno, Instant inizioSettimana, Instant inizioMese, Instant inizioAnno) {
     }
 }

@@ -18,6 +18,7 @@ import com.motormindhub.Api.model.repository.ArticoloRepository;
 import com.motormindhub.Api.model.repository.CategoriaRepository;
 import com.motormindhub.Api.model.repository.ConteggioArticoliPerAutore;
 import com.motormindhub.Api.model.repository.ConteggioArticoliPerAutoreEStato;
+import com.motormindhub.Api.model.repository.ConteggioLetture;
 import com.motormindhub.Api.model.repository.InvitoAutoreRepository;
 import com.motormindhub.Api.model.repository.SommaVisualizzazioniPerCategoriaRiga;
 import com.motormindhub.Api.model.repository.UtenteRepository;
@@ -600,6 +601,27 @@ class GestioneAutoriTest {
         var serie = gestioneAutori.andamentoApprovazioni(500);
 
         assertThat(serie).hasSize(90);
+    }
+
+    // --- query: getStatisticheLetture -----------------------------------------------------
+
+    @Test
+    void getStatisticheLetture_mappaIConteggiAggregatiInDTO() {
+        ConteggioLetture conteggio = mock(ConteggioLetture.class);
+        when(conteggio.getOggi()).thenReturn(5L);
+        when(conteggio.getSettimana()).thenReturn(30L);
+        when(conteggio.getMese()).thenReturn(150L);
+        when(conteggio.getAnno()).thenReturn(1800L);
+        when(conteggio.getTotale()).thenReturn(2000L);
+        when(visualizzazioneArticoloRepository.aggregaConteggi(any(), any(), any(), any())).thenReturn(conteggio);
+
+        var statistiche = gestioneAutori.getStatisticheLetture();
+
+        assertThat(statistiche.oggi()).isEqualTo(5L);
+        assertThat(statistiche.settimana()).isEqualTo(30L);
+        assertThat(statistiche.mese()).isEqualTo(150L);
+        assertThat(statistiche.anno()).isEqualTo(1800L);
+        assertThat(statistiche.totale()).isEqualTo(2000L);
     }
 
     // --- query: andamentoLetture -----------------------------------------------------

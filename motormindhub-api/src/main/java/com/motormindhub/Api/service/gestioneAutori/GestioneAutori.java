@@ -18,6 +18,7 @@ import com.motormindhub.Api.model.repository.ArticoloRepository;
 import com.motormindhub.Api.model.repository.CategoriaRepository;
 import com.motormindhub.Api.model.repository.ConteggioArticoliPerAutore;
 import com.motormindhub.Api.model.repository.ConteggioArticoliPerAutoreEStato;
+import com.motormindhub.Api.model.repository.ConteggioLetture;
 import com.motormindhub.Api.model.repository.InvitoAutoreRepository;
 import com.motormindhub.Api.model.repository.SommaVisualizzazioniPerCategoriaRiga;
 import com.motormindhub.Api.model.repository.UtenteRepository;
@@ -34,6 +35,7 @@ import com.motormindhub.Api.service.gestioneAutori.dto.PuntoAndamentoPubblicazio
 import com.motormindhub.Api.service.gestioneAutori.dto.RejectionReasonDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.RemoveAuthorPolicyDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.SetPasswordDTO;
+import com.motormindhub.Api.service.gestioneAutori.dto.StatisticheLettureDTO;
 import com.motormindhub.Api.service.gestioneAutori.exception.ArticoloNonTrovatoException;
 import com.motormindhub.Api.service.gestioneAutori.exception.AutoreNonTrovatoException;
 import com.motormindhub.Api.service.gestioneAutori.exception.EmailGiaRegistrataException;
@@ -41,6 +43,8 @@ import com.motormindhub.Api.service.gestioneAutori.exception.InvitoGiaEsistenteE
 import com.motormindhub.Api.service.gestioneAutori.exception.InvitoNonTrovatoException;
 import com.motormindhub.Api.service.gestioneAutori.exception.RegolaDiDominioViolataException;
 import com.motormindhub.Api.service.gestioneAutori.exception.StatoArticoloNonValidoException;
+import com.motormindhub.Api.utility.ConfiniPeriodo;
+import com.motormindhub.Api.utility.ConfiniPeriodoCalculator;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -353,6 +357,23 @@ public class GestioneAutori {
                             riga == null ? 0 : riga.getApprovati(), riga == null ? 0 : riga.getRifiutati());
                 })
                 .toList();
+    }
+
+    /**
+     * RF3.1 - i 5 aggregati (oggi/settimana/mese/anno/totale) delle letture per la dashboard Manager
+     * Autori, stesso pattern di GestioneAmministrazioneUtenti.getVisiteStatistiche (§2.5): le 4
+     * finestre sono da inizio periodo corrente (calendario, fuso Europe/Rome), non finestre mobili.
+     * ConfiniPeriodoCalculator (com.motormindhub.Api.utility) e' condiviso tra i due metodi - stesso
+     * calcolo di boundary temporali, estratto perche' usato identico da entrambi (a differenza di
+     * GIORNI_ANDAMENTO_MIN/MAX, duplicato deliberatamente per sottosistema, cfr. sopra).
+     */
+    @Transactional(readOnly = true)
+    public StatisticheLettureDTO getStatisticheLetture() {
+        ConfiniPeriodo confini = ConfiniPeriodoCalculator.calcola(LocalDate.now(ZONA_STATISTICHE), ZONA_STATISTICHE);
+        ConteggioLetture conteggio = visualizzazioneArticoloRepository.aggregaConteggi(
+                confini.inizioGiorno(), confini.inizioSettimana(), confini.inizioMese(), confini.inizioAnno());
+        return new StatisticheLettureDTO(conteggio.getOggi(), conteggio.getSettimana(), conteggio.getMese(),
+                conteggio.getAnno(), conteggio.getTotale());
     }
 
     /**

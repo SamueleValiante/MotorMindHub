@@ -13,6 +13,7 @@ import com.motormindhub.Api.service.gestioneAutori.dto.PuntoAndamentoPubblicazio
 import com.motormindhub.Api.service.gestioneAutori.dto.RejectionReasonDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.RemoveAuthorPolicyDTO;
 import com.motormindhub.Api.service.gestioneAutori.dto.SetPasswordDTO;
+import com.motormindhub.Api.service.gestioneAutori.dto.StatisticheLettureDTO;
 import com.motormindhub.Api.web.MessageResponseDTO;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -126,6 +127,12 @@ public class AutoriController {
     public ResponseEntity<List<PuntoAndamentoApprovazioniDTO>> getAndamentoApprovazioni(
             @RequestParam(defaultValue = "30") int giorni) {
         return ResponseEntity.ok(gestioneAutori.andamentoApprovazioni(giorni));
+    }
+
+    @GetMapping("/statistiche-autori/letture")
+    @PreAuthorize("hasRole('MANAGER_AUTORI')")
+    public ResponseEntity<StatisticheLettureDTO> getStatisticheLetture() {
+        return ResponseEntity.ok(gestioneAutori.getStatisticheLetture());
     }
 
     @GetMapping("/statistiche-autori/andamento-letture")

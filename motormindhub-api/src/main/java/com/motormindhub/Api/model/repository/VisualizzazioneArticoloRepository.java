@@ -33,4 +33,23 @@ public interface VisualizzazioneArticoloRepository extends JpaRepository<Visuali
             ORDER BY 1
             """, nativeQuery = true)
     List<AndamentoLettureRiga> andamentoGiornaliero(@Param("da") Instant da);
+
+    /**
+     * Tutti e 5 gli aggregati della dashboard Manager Autori (RF3.1) in una sola scansione
+     * indicizzata su data_lettura (idx_visualizzazioni_articolo_data_lettura), invece di 5 query
+     * COUNT separate - stesso pattern di VisitaSessioneRepository.aggregaConteggi (§2.5).
+     */
+    @Query(value = """
+            SELECT
+              COUNT(*) FILTER (WHERE data_lettura >= :inizioGiorno)     AS oggi,
+              COUNT(*) FILTER (WHERE data_lettura >= :inizioSettimana)  AS settimana,
+              COUNT(*) FILTER (WHERE data_lettura >= :inizioMese)       AS mese,
+              COUNT(*) FILTER (WHERE data_lettura >= :inizioAnno)       AS anno,
+              COUNT(*)                                                   AS totale
+            FROM visualizzazioni_articolo
+            """, nativeQuery = true)
+    ConteggioLetture aggregaConteggi(@Param("inizioGiorno") Instant inizioGiorno,
+                                      @Param("inizioSettimana") Instant inizioSettimana,
+                                      @Param("inizioMese") Instant inizioMese,
+                                      @Param("inizioAnno") Instant inizioAnno);
 }

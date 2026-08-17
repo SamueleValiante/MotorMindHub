@@ -49,8 +49,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.time.DayOfWeek;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -623,65 +621,4 @@ class GestioneAmministrazioneUtentiTest {
         assertThat(serie).hasSize(90);
     }
 
-    // --- confiniPeriodo (calcolo puro, isolato dal wall-clock) ------------------
-
-    private static final ZoneId ROMA = ZoneId.of("Europe/Rome");
-
-    @Test
-    void confiniPeriodo_calcolaICorrettiInizioPeriodo_casoBaseMetaSettimana() {
-        var confini = GestioneAmministrazioneUtenti.confiniPeriodo(LocalDate.of(2026, 8, 12), ROMA);
-
-        assertThat(confini.inizioGiorno()).isEqualTo(LocalDate.of(2026, 8, 12).atStartOfDay(ROMA).toInstant());
-        assertThat(confini.inizioSettimana()).isEqualTo(LocalDate.of(2026, 8, 10).atStartOfDay(ROMA).toInstant());
-        assertThat(confini.inizioMese()).isEqualTo(LocalDate.of(2026, 8, 1).atStartOfDay(ROMA).toInstant());
-        assertThat(confini.inizioAnno()).isEqualTo(LocalDate.of(2026, 1, 1).atStartOfDay(ROMA).toInstant());
-    }
-
-    @Test
-    void confiniPeriodo_inizioSettimanaCoincideConOggi_quandoOggiELunedi() {
-        LocalDate lunedi = LocalDate.of(2026, 8, 10);
-        assertThat(lunedi.getDayOfWeek()).isEqualTo(DayOfWeek.MONDAY);
-
-        var confini = GestioneAmministrazioneUtenti.confiniPeriodo(lunedi, ROMA);
-
-        assertThat(confini.inizioSettimana()).isEqualTo(confini.inizioGiorno());
-    }
-
-    @Test
-    void confiniPeriodo_inizioMeseCoincideConOggi_quandoOggiEIlPrimoDelMese() {
-        var confini = GestioneAmministrazioneUtenti.confiniPeriodo(LocalDate.of(2026, 8, 1), ROMA);
-
-        assertThat(confini.inizioMese()).isEqualTo(confini.inizioGiorno());
-    }
-
-    @Test
-    void confiniPeriodo_inizioSettimanaRicadeNellAnnoPrecedente_quandoOggiEIl1GennaioDiGiovedi() {
-        LocalDate primoGennaio = LocalDate.of(2026, 1, 1);
-        assertThat(primoGennaio.getDayOfWeek()).isEqualTo(DayOfWeek.THURSDAY);
-
-        var confini = GestioneAmministrazioneUtenti.confiniPeriodo(primoGennaio, ROMA);
-
-        assertThat(confini.inizioAnno()).isEqualTo(confini.inizioGiorno()).isEqualTo(confini.inizioMese());
-        assertThat(confini.inizioSettimana()).isEqualTo(LocalDate.of(2025, 12, 29).atStartOfDay(ROMA).toInstant());
-    }
-
-    @Test
-    void confiniPeriodo_gestisceCorrettamenteIlCambioOraLegale_inizioMarzo() {
-        var prima = GestioneAmministrazioneUtenti.confiniPeriodo(LocalDate.of(2026, 3, 29), ROMA);
-        var dopo = GestioneAmministrazioneUtenti.confiniPeriodo(LocalDate.of(2026, 3, 30), ROMA);
-
-        // 29 marzo 2026, ultima domenica del mese: le lancette avanzano da 02:00 a 03:00, quel
-        // giorno dura solo 23 ore in Europe/Rome.
-        assertThat(Duration.between(prima.inizioGiorno(), dopo.inizioGiorno())).isEqualTo(Duration.ofHours(23));
-    }
-
-    @Test
-    void confiniPeriodo_gestisceCorrettamenteIlCambioOraSolare_fineOttobre() {
-        var prima = GestioneAmministrazioneUtenti.confiniPeriodo(LocalDate.of(2026, 10, 25), ROMA);
-        var dopo = GestioneAmministrazioneUtenti.confiniPeriodo(LocalDate.of(2026, 10, 26), ROMA);
-
-        // 25 ottobre 2026, ultima domenica del mese: le lancette arretrano da 03:00 a 02:00, quel
-        // giorno dura 25 ore in Europe/Rome.
-        assertThat(Duration.between(prima.inizioGiorno(), dopo.inizioGiorno())).isEqualTo(Duration.ofHours(25));
-    }
 }
