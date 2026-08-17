@@ -6,9 +6,10 @@ import { DateRangeSelector, type IntervalloGiorni } from "@/components/charts/Da
 import { useAndamentoPubblicazioni } from "@/lib/autori/useAndamentoPubblicazioni";
 import { useAndamentoCategorie } from "@/lib/autori/useAndamentoCategorie";
 import { useAndamentoApprovazioni } from "@/lib/autori/useAndamentoApprovazioni";
+import { useAndamentoLetture } from "@/lib/autori/useAndamentoLetture";
 
 /**
- * Tre grafici andamento sotto le statistiche di riepilogo (Dashboard Manageriale), un solo
+ * Quattro grafici andamento sotto le statistiche di riepilogo (Dashboard Manageriale), un solo
  * selettore di intervallo condiviso (7/30/90 giorni, mai per-grafico — cfr. skill dataviz),
  * stesso pattern di components/gestore/AndamentoCharts.tsx.
  *
@@ -23,6 +24,7 @@ export function AndamentoChartsAutori() {
   const pubblicazioni = useAndamentoPubblicazioni(giorni);
   const categorie = useAndamentoCategorie(giorni);
   const approvazioni = useAndamentoApprovazioni(giorni);
+  const letture = useAndamentoLetture(giorni);
 
   const seriePubblicazioni = useMemo(
     () => [
@@ -66,14 +68,36 @@ export function AndamentoChartsAutori() {
     [approvazioni.punti]
   );
 
-  const refetching = pubblicazioni.isRefetching || categorie.isRefetching || approvazioni.isRefetching;
+  const serieLetture = useMemo(
+    () => [
+      {
+        key: "letture",
+        label: "Letture",
+        color: "var(--color-accent)",
+        points: letture.punti.map((p) => ({ data: p.data, valore: p.numeroLetture })),
+      },
+    ],
+    [letture.punti]
+  );
+
+  const refetching =
+    pubblicazioni.isRefetching || categorie.isRefetching || approvazioni.isRefetching || letture.isRefetching;
   const haDatiPregressi =
-    pubblicazioni.punti.length > 0 || categorie.punti.length > 0 || approvazioni.punti.length > 0;
+    pubblicazioni.punti.length > 0 ||
+    categorie.punti.length > 0 ||
+    approvazioni.punti.length > 0 ||
+    letture.punti.length > 0;
   const primoCaricamento =
-    (pubblicazioni.status === "loading" || categorie.status === "loading" || approvazioni.status === "loading") &&
+    (pubblicazioni.status === "loading" ||
+      categorie.status === "loading" ||
+      approvazioni.status === "loading" ||
+      letture.status === "loading") &&
     !haDatiPregressi;
   const errore =
-    (pubblicazioni.status === "error" || categorie.status === "error" || approvazioni.status === "error") &&
+    (pubblicazioni.status === "error" ||
+      categorie.status === "error" ||
+      approvazioni.status === "error" ||
+      letture.status === "error") &&
     !haDatiPregressi;
 
   return (
@@ -100,6 +124,13 @@ export function AndamentoChartsAutori() {
               Andamento categorie
             </h3>
             <LineChart series={serieCategorie} ariaLabel={`Andamento categorie, ultimi ${giorni} giorni`} />
+          </div>
+
+          <div className="rounded-lg bg-surface-raised p-4">
+            <h3 className="mb-4 font-heading text-sm font-bold uppercase tracking-wide text-paper">
+              Andamento letture totali
+            </h3>
+            <LineChart series={serieLetture} ariaLabel={`Andamento letture totali, ultimi ${giorni} giorni`} />
           </div>
 
           <div className="rounded-lg bg-surface-raised p-4 lg:col-span-2">

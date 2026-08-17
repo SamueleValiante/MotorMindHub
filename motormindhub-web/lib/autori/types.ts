@@ -59,6 +59,12 @@ export interface PuntoAndamentoApprovazioni {
   rifiutati: number;
 }
 
+/** PuntoAndamentoLettureDTO (GestioneAutori.andamentoLetture, RF3.1) — letture totali per giorno, stesso pattern di PuntoAndamentoPubblicazioni. */
+export interface PuntoAndamentoLetture {
+  data: string;
+  numeroLetture: number;
+}
+
 /**
  * CategoriaPiuLettaDTO (GestioneAutori.getCategoriePiuLette, RF3.1) — top 10 già ordinate
  * lato server (desc su totaleVisualizzazioni), rollup che include le sottocategorie: nessun
