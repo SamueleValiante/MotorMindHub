@@ -65,6 +65,15 @@ export interface PuntoAndamentoLetture {
   numeroLetture: number;
 }
 
+/** StatisticheLettureDTO (GestioneAutori.getStatisticheLetture, RF3.1) — stesso pattern di VisiteStatistiche (amministrazioneUtenti). */
+export interface StatisticheLetture {
+  oggi: number;
+  settimana: number;
+  mese: number;
+  anno: number;
+  totale: number;
+}
+
 /**
  * CategoriaPiuLettaDTO (GestioneAutori.getCategoriePiuLette, RF3.1) — top 10 già ordinate
  * lato server (desc su totaleVisualizzazioni), rollup che include le sottocategorie: nessun

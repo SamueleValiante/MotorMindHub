@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useManagerDashboardStats } from "@/lib/autori/useManagerDashboardStats";
 import { useArticleSearch } from "@/lib/articoli/useArticleSearch";
 import { useCategoriePiuLette } from "@/lib/autori/useCategoriePiuLette";
+import { useStatisticheLetture } from "@/lib/autori/useStatisticheLetture";
 import { StatCard } from "@/components/shared/StatCard";
 import { AndamentoChartsAutori } from "@/components/manager/AndamentoChartsAutori";
 
@@ -35,6 +36,7 @@ export default function ManagerDashboardPage() {
   // resta comunque raggiungibile da Gestione Autori.
   const piuLettiState = useArticleSearch({ ordinamento: "PIU_LETTI", dimensionePagina: PIU_LETTI_COUNT });
   const categoriePiuLetteState = useCategoriePiuLette();
+  const letture = useStatisticheLetture();
 
   return (
     <div className="flex flex-col gap-6">
@@ -87,7 +89,27 @@ export default function ManagerDashboardPage() {
             </Link>
           </section>
 
-          <AndamentoChartsAutori />
+          <section className="flex flex-col gap-6 rounded-lg bg-carbon p-6">
+            <h2 className="font-heading text-lg font-bold uppercase tracking-wide text-paper">
+              Letture articoli
+            </h2>
+
+            {letture.status === "loading" ? (
+              <p className="text-sm text-fog">Caricamento…</p>
+            ) : letture.status === "error" ? (
+              <p className="text-sm text-ember">Non è stato possibile caricare le statistiche di lettura.</p>
+            ) : (
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5">
+                <StatCard value={letture.stats.oggi} label="Oggi" variant="accent" />
+                <StatCard value={letture.stats.settimana} label="Questa settimana" />
+                <StatCard value={letture.stats.mese} label="Questo mese" />
+                <StatCard value={letture.stats.anno} label="Quest'anno" />
+                <StatCard value={letture.stats.totale} label="Totale" />
+              </div>
+            )}
+
+            <AndamentoChartsAutori />
+          </section>
 
           {/*
             Lista compatta (titolo + autore + conteggio letture), non
