@@ -152,6 +152,8 @@ L'architettura è basata su un modello client-server a tre livelli, fisicamente 
 
 *Figura 3 — Mapping hardware/software (deployment)*
 
+Il reverse proxy dell'hosting (Railway) termina il TLS al proprio edge e inoltra il traffico al Nodo Application Server in HTTP semplice, segnalando lo schema originale tramite l'header X-Forwarded-Proto. Senza dichiarare esplicitamente server.forward-headers-strategy=framework, Spring Boot ignora questo header e HttpServletRequest.isSecure() restituirebbe sempre false anche per richieste HTTPS reali, con effetti concreti su qualunque logica che dipenda dallo schema della richiesta — in particolare l'attributo Secure dei cookie di sessione (es. il cookie anonimo di VisitaSessione, §4.5), che altrimenti verrebbe emesso con SameSite=Lax invece di SameSite=None; Secure in produzione.
+
 Poiché il RAD lascia aperta la scelta tra AWS S3 e Cloudinary per l'archiviazione degli asset multimediali, il sottosistema che ne fa uso (GestioneUtenti per le foto profilo, GestioneArticoli per le immagini di copertina) espone un'interfaccia CloudStorageService astratta dal provider concreto, secondo il pattern Strategy/Adapter: il provider effettivo viene iniettato come implementazione a runtime, permettendo di sostituirlo senza impatti sul resto del sistema. Questa scelta favorisce la manutenibilità (OM1.0) e riduce il vendor lock-in.
 
 > **3.3 Gestione dei Dati Persistenti**
@@ -183,6 +185,8 @@ Il refresh token non è un JWT ma un segreto opaco ad alta entropia (256 bit, ge
 Lo stato dell'account non viene verificato soltanto al login: a ogni richiesta autenticata il filtro JWT ricarica l'utente dal database e ne controlla lo stato (account abilitato, non bloccato) prima di valorizzare il contesto di sicurezza della richiesta. Una sospensione amministrativa (RF4.3) o un blocco anti-bruteforce (RNF2.6) hanno quindi effetto immediato anche su un access token già emesso e non ancora scaduto, invece di restare validi fino alla sua scadenza naturale.
 
 Un AuthenticationEntryPoint e un AccessDeniedHandler dedicati distinguono esplicitamente, nella risposta HTTP, l'assenza di autenticazione valida (401 Unauthorized — nessun token, oppure token scaduto o malformato) dall'autenticazione valida con permessi insufficienti (403 Forbidden — ruolo non autorizzato dal @PreAuthorize dell'endpoint), invece di ricadere su un comportamento di default che li renderebbe indistinguibili lato client.
+
+Le richieste cross-origin dal Nodo Front-End sono regolate da una policy CORS esplicita, con l'elenco delle origin consentite configurabile tramite la variabile d'ambiente CORS_ALLOWED_ORIGINS (formato comma-separated, per ammettere più origini contemporaneamente) invece di un valore cablato nel codice — scelta che permette di cambiare dominio del Front-End, o di aggiungerne uno nuovo, senza una nuova build del backend. Le credenziali (header Authorization, cookie) sono ammesse nelle richieste cross-origin, necessario perché il Front-End allega l'access token JWT anche a chiamate cross-origin.
 
 |                               |                                  |                                                                                 |                                                                                                                       |                                                                                                                      |                                                                                                                                           |
 |-------------------------------|----------------------------------|---------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
@@ -239,7 +243,7 @@ Di seguito sono riportati i servizi esposti da ciascun sottosistema a livello di
 | deleteDraft(draftId)                                | Elimina definitivamente una bozza. (cfr. RF2.7, UC_18)                                              |
 | deleteArticle(articleId)                            | Elimina definitivamente un articolo pubblicato. (cfr. RF2.4, UC_19)                                 |
 | searchArticles(SearchCriteriaDTO)                   | Ricerca full-text (PostgreSQL tsvector/GIN) combinata con filtri di categoria. (cfr. RF1.2)         |
-| getArticleById(articleId)                           | Recupera il dettaglio di un articolo pubblicato. (cfr. RF1.1)                                       |
+| getArticleById(articleId)                           | Recupera il dettaglio di un articolo pubblicato e incrementa il contatore di letture, solo per Guest e Iscritto (mai per un ruolo redazionale, a prescindere dalla proprietà dell'articolo). (cfr. RF1.1) |
 | getArticlesByAuthor(authorId)                       | Recupera gli articoli (pubblicati e bozze) di un autore per “I miei articoli”. (cfr. RF2.1)         |
 | saveArticleToList(userId, articleId, ListType)      | Aggiunge un articolo a “Preferiti” o “Leggi più tardi”. (cfr. RF1.7, UC_6)                          |
 | removeArticleFromList(userId, articleId, ListType)  | Rimuove un articolo da una lista personale. (cfr. RF1.7, UC_7)                                      |
@@ -263,12 +267,18 @@ Di seguito sono riportati i servizi esposti da ciascun sottosistema a livello di
 | **Servizio / Operazione**                     | **Descrizione e Contesto**                                                                                          |
 | inviteAuthor(InviteAuthorDTO)                 | Crea un InvitoAutore e pubblica l'evento per l'invio dell'email di invito. (cfr. RF3.3, UC_8, UC_9)                 |
 | acceptInvite(token) / declineInvite(token)    | Registra l'accettazione o il rifiuto dell'invito da parte del destinatario. (cfr. UC_10)                            |
-| listAuthors()                                 | Recupera la lista completa degli autori attuali. (cfr. RF3.2, UC_8)                                                 |
+| listAuthors()                                 | Recupera la lista completa degli autori attuali, con la percentuale di approvazione di ciascuno (articoli pubblicati sul totale dei sottomessi). (cfr. RF3.2, RF3.7, UC_8)                                                 |
 | removeAuthor(authorId, RemoveAuthorPolicyDTO) | Revoca i permessi di un autore, con opzione di mantenere o eliminare i suoi articoli pregressi. (cfr. RF3.4, UC_11) |
 | getPendingArticles()                          | Recupera la coda degli articoli in attesa di approvazione. (cfr. RF3.1, UC_21)                                      |
 | approveArticle(articleId)                     | Approva un articolo, rendendolo visibile pubblicamente. (cfr. RF3.6, UC_21)                                         |
 | rejectArticle(articleId, RejectionReasonDTO)  | Rifiuta un articolo, notificando l'autore con la motivazione. (cfr. RF3.6, UC_21)                                   |
 | getManagerDashboardStats()                    | Recupera le statistiche per la Dashboard Manageriale (articoli pubblicati/in coda, autori attivi, categorie). Non include l'andamento visite: il tracciamento ora esiste (§4.5, GestioneAmministrazioneUtenti.getVisiteStatistiche) ma è esposto solo sulla dashboard del Gestore Utenti, non su questa — scelta di scope, non una lacuna residua. (cfr. RF3.1)                           |
+| andamentoPubblicazioni(giorni)                | Recupera la serie giornaliera delle pubblicazioni per il grafico "Andamento pubblicazioni" della dashboard Manager Autori, finestra di `giorni` giorni terminante oggi (fuso Europe/Rome), con zero-fill sui giorni senza dati. (cfr. RF3.7) |
+| andamentoCategorie(giorni)                    | Recupera la serie giornaliera delle nuove categorie per il grafico "Andamento categorie", stessa finestra/zero-fill di andamentoPubblicazioni. (cfr. RF3.7) |
+| andamentoApprovazioni(giorni)                 | Recupera le due serie giornaliere approvati/rifiutati per il grafico "Andamento approvazioni", stessa finestra/zero-fill di andamentoPubblicazioni. (cfr. RF3.7) |
+| andamentoLetture(giorni)                      | Recupera la serie giornaliera delle letture (sito-wide, non filtrata per autore) per il grafico "Andamento letture", stessa finestra/zero-fill di andamentoPubblicazioni. (cfr. RF3.7) |
+| getStatisticheLetture()                       | Recupera i conteggi aggregati delle letture (oggi/settimana/mese/anno/totale, sito-wide, da inizio periodo corrente, fuso Europe/Rome), stesso pattern di GestioneAmministrazioneUtenti.getVisiteStatistiche (§4.5). (cfr. RF3.7) |
+| getCategoriePiuLette()                        | Recupera la classifica delle 10 categorie con più visualizzazioni totali, con le letture delle sottocategorie incluse nel totale della categoria padre. (cfr. RF3.7) |
 
 > **4.5 GestioneAmministrazioneUtenti**
 
@@ -304,3 +314,5 @@ Il sottosistema non espone endpoint REST diretti: è costituito da listener asin
 | onReportResolutionRequested(evt)                    | Notifica l'utente segnalato della richiesta di modifica del profilo. (cfr. UC_26)                                                      |
 | onDataExportReady(evt)                              | Invia il link sicuro e a scadenza per il download dei dati esportati. (cfr. RF1.10, RF4.7)                                             |
 | onBruteForceLockout(evt)                            | Invia l'email di conferma per lo sblocco dell'account dopo un blocco per tentativi falliti. (cfr. RNF2.6)                              |
+
+L'invio effettivo delle email è a sua volta astratto dal provider concreto tramite un'interfaccia EmailSender, secondo lo stesso pattern Strategy già adottato per CloudStorageService (§3.2): due implementazioni concrete, SmtpEmailSender (SMTP diretto, usata in sviluppo/locale) e PostmarkApiEmailSender (API Postmark, usata in produzione per aggirare il blocco del traffico SMTP in uscita imposto dal piano di hosting non enterprise), selezionate a runtime tramite la property app.mail.provider (variabile d'ambiente MAIL_PROVIDER, default smtp) senza impatti sul resto del sottosistema, che dipende solo dall'interfaccia astratta.
