@@ -1,10 +1,3 @@
-const INFO_SOCIETARIE = [
-  { label: "Ragione sociale", value: "MotorMindHub S.r.l." },
-  { label: "Sede legale", value: "Via dell'Innovazione 12, Salerno (IT)" },
-  { label: "P.IVA", value: "00000000000" },
-  { label: "Contatti", value: "info@motormindhub.com" },
-];
-
 export default function ChiSiamoPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
@@ -22,15 +15,12 @@ export default function ChiSiamoPage() {
 
       <hr className="my-8 border-paper/10" />
 
-      <h2 className="font-heading text-lg font-bold text-paper">Informazioni societarie</h2>
-      <dl className="mt-4 divide-y divide-paper/10 rounded-lg border border-paper/10">
-        {INFO_SOCIETARIE.map(({ label, value }) => (
-          <div key={label} className="flex flex-col gap-1 px-5 py-4 sm:flex-row sm:items-center sm:gap-6">
-            <dt className="w-40 shrink-0 text-sm text-fog">{label}</dt>
-            <dd className="text-sm text-paper">{value}</dd>
-          </div>
-        ))}
-      </dl>
+      <p className="max-w-xl text-sm text-fog">
+        MotorMindHub è un progetto indipendente, sviluppato e mantenuto come iniziativa
+        personale.
+        <br />
+        Per contatti: supporto@motormindhub.com
+      </p>
     </div>
   );
 }
