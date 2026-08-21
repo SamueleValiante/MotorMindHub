@@ -175,7 +175,11 @@ dettaglio nella sezione 3.4.2 (Gerarchia Utenti).
 Gli Utenti Guest (visitatori non autenticati) e gli Utenti Iscritti condividono le funzionalità di base per la 
 fruizione dei contenuti. L’iscrizione sblocca funzionalità aggiuntive di interazione e salvataggio.
 RF1.1: Il sistema deve permettere a tutti gli utenti (guest e iscritti) di navigare nel portale e leggere gli 
-articoli tecnici e le guide. (cfr. UC_5)
+articoli tecnici e le guide. Ogni lettura da parte di un guest o di un iscritto incrementa il contatore di 
+letture dell'articolo, usato per l'ordinamento "Più letti" e per le statistiche del Manager degli Autori (cfr. 
+RF3.7); le letture da parte di un Autore, di un Manager degli Autori o di un Gestore Utenti sono escluse dal 
+conteggio, anche quando l'articolo letto è di loro proprietà, per non gonfiare il dato con l'attività di 
+editing, revisione o moderazione. (cfr. UC_5)
 RF1.2: Il sistema deve fornire un motore di ricerca e filtri combinati (es. per “Categoria” e relative 
 sottocategorie come “Componentistica”) per individuare articoli specifici. (cfr. UC_5)
 RF1.3: Il sistema deve permettere ai visitatori di creare un account fornendo nome, cognome, email, 
@@ -204,8 +208,9 @@ editoriali.
 RF2.1: Il sistema deve fornire un’interfaccia dedicata (“Dashboard Autore”) accessibile post-login. (cfr. 
 UC_2)
 RF2.2: Il sistema deve disporre di un editor di testo avanzato che consenta all’autore di inserire titolo, 
-testo, immagine di copertina, tag e assegnare la categoria di competenza. Al salvataggio, l’articolo deve 
-passare in stato di “attesa di approvazione”. (cfr. UC_15)
+testo in formato Markdown, immagine di copertina, tag e assegnare la categoria di competenza; l’editor 
+deve inoltre supportare l’upload e l’inserimento di immagini inline nel corpo dell’articolo, non solo come 
+copertina. Al salvataggio, l’articolo deve passare in stato di “attesa di approvazione”. (cfr. UC_15)
 RF2.3: Il sistema deve permettere all’autore di correggere e aggiornare i propri articoli già pubblicati, 
 rendendo le modifiche immediatamente visibili ai lettori. (cfr. UC_20)
 RF2.4: Il sistema deve permettere all’autore di eliminare definitivamente gli articoli non ancora 
@@ -237,11 +242,22 @@ eventuali articoli “orfani”. (cfr. UC_13)
 RF3.6: Dopo che un autore ha scritto un articolo, questo deve essere accettato dal Manager se ritenuto 
 idoneo alla pubblicazione, oppure rifiutato, con possibilità di indicare una motivazione all’autore. (cfr. 
 UC_21)
+RF3.7: Il sistema deve fornire al Manager degli Autori strumenti di monitoraggio nel tempo dell’attività 
+editoriale, oltre alle statistiche di base di RF3.1: andamento giornaliero delle pubblicazioni, delle nuove 
+categorie e delle decisioni di approvazione/rifiuto; andamento giornaliero delle letture degli articoli, con i 
+relativi conteggi aggregati (oggi/settimana/mese/anno/totale); classifica delle categorie più lette, con le 
+letture delle sottocategorie incluse nel totale della categoria padre; percentuale di approvazione di 
+ciascun autore, calcolata sugli articoli da lui sottomessi. (cfr. RF3.1)
 3.2.4 Funzionalità Gestore Utenti (nuovo)
 Il Gestore Utenti è la nuova figura amministrativa, distinta e indipendente dal Manager degli Autori, 
 responsabile della gestione della base di utenza (Guest e Iscritti), della moderazione degli account e 
 dell’evasione delle richieste relative ai diritti GDPR. La separazione dei permessi tra questo ruolo e quello
 del Manager degli Autori riduce la superficie di rischio e consente una moderazione più mirata.
+Nota (debito tecnico noto, cfr. ODD §2.10): il self-service (GET/PUT profilo, esportazione dati, cancellazione 
+account) non è oggi esteso al Gestore Utenti — RF4.1-RF4.8 coprono solo la gestione degli account *altrui*, 
+non l’esercizio dei diritti GDPR del Gestore sui propri dati. Non è ancora chiaro se questo gap sia accettabile 
+con una procedura manuale documentata o se richieda un percorso applicativo dedicato; da valutare in una 
+revisione legale/di prodotto dedicata prima di un lancio pubblico ampio.
 RF4.1: Al login, il sistema deve reindirizzare il Gestore Utenti a una “Dashboard Gestione Utenti” 
 esclusiva, distinta da quella del Manager Autori, contenente il numero di utenti registrati, le segnalazioni 
 aperte e le richieste GDPR in coda. (cfr. UC_22)
@@ -422,7 +438,8 @@ sul link di conferma. Questo requisito previene la registrazione con indirizzi e
 
 una misura di sicurezza richiesta dalle best practice GDPR (Art. 25 — Privacy by Design).
 RNF9.2: Scadenza e invalidazione dei token JWT. I token JWT emessi dal sistema devono avere una 
-durata limitata (es. access token di 15-60 minuti, refresh token di 7-30 giorni). Il sistema deve prevedere 
+durata limitata (es. access token di 15-60 minuti, refresh token a finestra scorrevole di 3 ore 
+dall'ultimo utilizzo, rinnovate a ogni refresh — cfr. SDD §3.4). Il sistema deve prevedere 
 un meccanismo di invalidazione esplicita dei token alla logout, per prevenire il riutilizzo di sessioni 
 compromesse.
 RNF9.3: Scadenza dei link sensibili. I link inviati via email (recupero password, invito autore, verifica 
@@ -705,16 +722,19 @@ password nel form di login.
 3 Il sistema verifica le credenziali e 
 il ruolo associato all’account.
 4 Il sistema genera un token JWT e 
-reindirizza l’utente alla propria 
-area personale. In caso di ruolo 
-Autore: redirect alla “Dashboard 
+reindirizza l’utente in base al 
+ruolo. In caso di ruolo Autore: 
+redirect alla “Dashboard 
 Autore”. In caso di ruolo 
 Manager: redirect alla 
-“Dashboard Manageriale”.
+“Dashboard Manageriale”. In 
+caso di ruolo Iscritto: redirect 
+alla home pubblica, non a 
+un’area riservata separata.
 
 Campo Contenuto
-Condizione di Uscita L’attore si trova nella propria area dedicata in base 
-al ruolo.
+Condizione di Uscita L’attore si trova nella propria destinazione post-login in base 
+al ruolo (area dedicata per Autore/Manager, home pubblica per l’Iscritto).
 Eccezioni / Flussi Alternativi UC_2.1 – Credenziali errate: al punto 3, il sistema
 mostra “Credenziali non valide”. UC_2.2 – 
 Account bloccato (brute force): al punto 3, se i 
@@ -1505,8 +1525,11 @@ Sequence Diagram – UC_28 Visualizzazione Statistiche di Traffico del Sito
 3.4.4 Object Model
 Il diagramma seguente rappresenta le principali entità del dominio e le relazioni tra esse, includendo le 
 entità di base (Utente, Autore, ManagerAutori, Articolo, Categoria, ArticoloSalvato, InvitoAutore, 
-TokenRecuperoPassword) e quelle introdotte per la gestione della community e degli account 
-(GestoreUtenti, Segnalazione, RichiestaCancellazione, LogAzioneAmministrativa, VisitaSessione).
+TokenRecuperoPassword) e quelle introdotte per la gestione della community, degli account e delle 
+statistiche (GestoreUtenti, Segnalazione, RichiestaCancellazione, LogAzioneAmministrativa, VisitaSessione, 
+VisualizzazioneArticolo — il log delle letture di articolo che alimenta le statistiche di RF3.7). Articolo 
+include inoltre l'attributo dataDecisione, che registra il momento in cui il Manager ha approvato o rifiutato 
+l'articolo (cfr. RF3.6).
 Object Model
 3.4.5 Dynamic Model
 3.4.5.1 Sequence Diagrams
@@ -1603,6 +1626,8 @@ I Miei Dati ed Esportazione
 Area Autore (NP3)
 Dashboard Autore
 
+Impostazioni Profilo (pagina propria dell’Area Autore, stesso form di NP2 ma nella navigazione del ruolo)
+
 I Miei Articoli
 
 Editor — Nuovo Articolo
@@ -1617,6 +1642,8 @@ Form — Crea/Modifica Categoria
 
 Area Manager degli Autori (NP4)
 Dashboard Manageriale
+
+Impostazioni Profilo (pagina propria dell’Area Manager, stesso form di NP2 ma nella navigazione del ruolo)
 
 Gestione Autori
 Form — Nuovo Autore (invito)
