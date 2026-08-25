@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import Link from "next/link";
 import { useArticle } from "@/lib/articoli/useArticle";
 import { useArticleSearch } from "@/lib/articoli/useArticleSearch";
@@ -77,14 +78,18 @@ export function ArticleDetailContent({ articleId }: { articleId: string }) {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-      <nav className="flex items-center gap-2 text-xs uppercase tracking-wide text-fog">
+      <nav className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-wide text-fog">
         <Link href="/esplora" className="hover:text-accent">
           Esplora
         </Link>
-        <span aria-hidden="true">/</span>
-        <Link href={`/esplora?categoriaIds=${articolo.categoriaId}`} className="hover:text-accent">
-          {articolo.categoriaNome}
-        </Link>
+        {articolo.categoriaAntenati.map((categoria) => (
+          <Fragment key={categoria.id}>
+            <span aria-hidden="true">/</span>
+            <Link href={`/esplora?categoriaIds=${categoria.id}`} className="hover:text-accent">
+              {categoria.nome}
+            </Link>
+          </Fragment>
+        ))}
         {articolo.tag[0] && (
           <>
             <span aria-hidden="true">/</span>

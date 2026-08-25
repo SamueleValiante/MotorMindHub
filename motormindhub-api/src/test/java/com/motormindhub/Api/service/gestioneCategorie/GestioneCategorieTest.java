@@ -3,6 +3,7 @@ package com.motormindhub.Api.service.gestioneCategorie;
 import com.motormindhub.Api.events.CategoriaEliminataEvent;
 import com.motormindhub.Api.model.entity.Categoria;
 import com.motormindhub.Api.model.repository.CategoriaRepository;
+import com.motormindhub.Api.service.gestioneCategorie.dto.CategoryAncestorDTO;
 import com.motormindhub.Api.service.gestioneCategorie.dto.CategoryDTO;
 import com.motormindhub.Api.service.gestioneCategorie.dto.CategoryResponseDTO;
 import com.motormindhub.Api.service.gestioneCategorie.dto.CategoryTreeNodeDTO;
@@ -248,5 +249,42 @@ class GestioneCategorieTest {
 
         CategoryTreeNodeDTO altroNodoRadice = albero.stream().filter(n -> n.id().equals(4L)).findFirst().orElseThrow();
         assertThat(altroNodoRadice.figlie()).isEmpty();
+    }
+
+    // --- getCategoryPath (query) ----------------------------------------------
+
+    @Test
+    void getCategoryPath_restituisceCatenaDallaRadiceAllaFoglia_perGerarchiaACinqueLivelli() {
+        Categoria radice = categoria(1L, "Manutenzione ordinaria", null);
+        Categoria livello2 = categoria(2L, "Componentistica", radice);
+        Categoria livello3 = categoria(3L, "Impianto Frenante", livello2);
+        Categoria livello4 = categoria(4L, "Pastiglie e Dischi", livello3);
+        Categoria foglia = categoria(5L, "Dischi Freno Forati", livello4);
+        when(categoriaRepository.findById(5L)).thenReturn(Optional.of(foglia));
+
+        List<CategoryAncestorDTO> catena = gestioneCategorie.getCategoryPath(5L);
+
+        assertThat(catena).extracting(CategoryAncestorDTO::id).containsExactly(1L, 2L, 3L, 4L, 5L);
+        assertThat(catena).extracting(CategoryAncestorDTO::nome).containsExactly(
+                "Manutenzione ordinaria", "Componentistica", "Impianto Frenante",
+                "Pastiglie e Dischi", "Dischi Freno Forati");
+    }
+
+    @Test
+    void getCategoryPath_restituisceCatenaDiUnElemento_quandoCategoriaERadice() {
+        Categoria radice = categoria(1L, "Case automobilistiche", null);
+        when(categoriaRepository.findById(1L)).thenReturn(Optional.of(radice));
+
+        List<CategoryAncestorDTO> catena = gestioneCategorie.getCategoryPath(1L);
+
+        assertThat(catena).extracting(CategoryAncestorDTO::id).containsExactly(1L);
+        assertThat(catena).extracting(CategoryAncestorDTO::nome).containsExactly("Case automobilistiche");
+    }
+
+    @Test
+    void getCategoryPath_lanciaEccezione_quandoCategoriaInesistente() {
+        when(categoriaRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(CategoriaNonTrovataException.class, () -> gestioneCategorie.getCategoryPath(99L));
     }
 }

@@ -3,6 +3,7 @@ package com.motormindhub.Api.service.gestioneCategorie;
 import com.motormindhub.Api.events.CategoriaEliminataEvent;
 import com.motormindhub.Api.model.entity.Categoria;
 import com.motormindhub.Api.model.repository.CategoriaRepository;
+import com.motormindhub.Api.service.gestioneCategorie.dto.CategoryAncestorDTO;
 import com.motormindhub.Api.service.gestioneCategorie.dto.CategoryDTO;
 import com.motormindhub.Api.service.gestioneCategorie.dto.CategoryResponseDTO;
 import com.motormindhub.Api.service.gestioneCategorie.dto.CategoryTreeNodeDTO;
@@ -15,6 +16,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -139,6 +142,27 @@ public class GestioneCategorie {
                 .filter(c -> c.getCategoriaPadre() == null)
                 .map(radice -> costruisciNodo(radice, figliePerPadre))
                 .toList();
+    }
+
+    /**
+     * Query di sola lettura (RF1.2) - nessun contratto OCL formale. Risale la gerarchia da
+     * categoryId fino alla radice seguendo categoriaPadre e restituisce la catena in ordine
+     * radice -> foglia (categoryId incluso, come ultimo elemento) - usata dal breadcrumb del
+     * Dettaglio Articolo (GestioneArticoli.mappaDettaglio) oltre che da eventuali consumer diretti
+     * di GestioneCategorie.
+     */
+    @Transactional(readOnly = true)
+    public List<CategoryAncestorDTO> getCategoryPath(Long categoryId) {
+        Categoria categoria = categoriaRepository.findById(categoryId)
+                .orElseThrow(() -> new CategoriaNonTrovataException("Categoria non trovata."));
+
+        Deque<CategoryAncestorDTO> catena = new ArrayDeque<>();
+        Categoria corrente = categoria;
+        while (corrente != null) {
+            catena.addFirst(new CategoryAncestorDTO(corrente.getId(), corrente.getNome()));
+            corrente = corrente.getCategoriaPadre();
+        }
+        return List.copyOf(catena);
     }
 
     private CategoryTreeNodeDTO costruisciNodo(Categoria categoria, Map<Long, List<Categoria>> figliePerPadre) {

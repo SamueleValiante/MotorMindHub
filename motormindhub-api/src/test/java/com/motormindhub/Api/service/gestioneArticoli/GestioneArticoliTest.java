@@ -28,6 +28,8 @@ import com.motormindhub.Api.service.gestioneArticoli.exception.AutoreNonValidoEx
 import com.motormindhub.Api.service.gestioneArticoli.exception.CategoriaNonTrovataException;
 import com.motormindhub.Api.service.gestioneArticoli.exception.RegolaDiDominioViolataException;
 import com.motormindhub.Api.service.gestioneArticoli.exception.StatoArticoloNonValidoException;
+import com.motormindhub.Api.service.gestioneCategorie.GestioneCategorie;
+import com.motormindhub.Api.service.gestioneCategorie.dto.CategoryAncestorDTO;
 import com.motormindhub.Api.service.storage.CloudStorageService;
 import com.motormindhub.Api.service.storage.ImageUploadValidator;
 import org.junit.jupiter.api.BeforeEach;
@@ -80,13 +82,16 @@ class GestioneArticoliTest {
     private CloudStorageService cloudStorageService;
     @Mock
     private ImageUploadValidator imageUploadValidator;
+    @Mock
+    private GestioneCategorie gestioneCategorie;
 
     private GestioneArticoli gestioneArticoli;
 
     @BeforeEach
     void setUp() {
         gestioneArticoli = new GestioneArticoli(articoloRepository, articoloSalvatoRepository, categoriaRepository,
-                utenteRepository, visualizzazioneArticoloRepository, cloudStorageService, imageUploadValidator);
+                utenteRepository, visualizzazioneArticoloRepository, cloudStorageService, imageUploadValidator,
+                gestioneCategorie);
     }
 
     private static Utente utente(Long id, Ruolo ruolo) {
@@ -605,6 +610,34 @@ class GestioneArticoliTest {
         assertThat(dettaglio.tag()).containsExactly("freni", "manutenzione");
         assertThat(pubblicato.getNumeroVisualizzazioni()).isEqualTo(1L);
         verify(visualizzazioneArticoloRepository).save(any(VisualizzazioneArticolo.class));
+    }
+
+    @Test
+    void getArticleById_popolaCatenaAntenatiCategoria_delegandoAGestioneCategorie() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo pubblicato = articolo(10L, autore, categoria(5L), StatoArticolo.PUBBLICATO, "Titolo");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(pubblicato));
+        List<CategoryAncestorDTO> catena = List.of(
+                new CategoryAncestorDTO(1L, "Manutenzione ordinaria"),
+                new CategoryAncestorDTO(3L, "Impianto Frenante"),
+                new CategoryAncestorDTO(5L, "Dischi Freno Forati"));
+        when(gestioneCategorie.getCategoryPath(5L)).thenReturn(catena);
+
+        ArticleDetailDTO dettaglio = gestioneArticoli.getArticleById(10L, null);
+
+        assertThat(dettaglio.categoriaAntenati()).containsExactlyElementsOf(catena);
+    }
+
+    @Test
+    void getArticleById_catenaAntenatiVuota_quandoArticoloSenzaCategoria() {
+        Utente autore = utente(1L, Ruolo.AUTORE);
+        Articolo pubblicato = articolo(10L, autore, null, StatoArticolo.PUBBLICATO, "Titolo");
+        when(articoloRepository.findById(10L)).thenReturn(Optional.of(pubblicato));
+
+        ArticleDetailDTO dettaglio = gestioneArticoli.getArticleById(10L, null);
+
+        assertThat(dettaglio.categoriaAntenati()).isEmpty();
+        verify(gestioneCategorie, never()).getCategoryPath(any());
     }
 
     @Test

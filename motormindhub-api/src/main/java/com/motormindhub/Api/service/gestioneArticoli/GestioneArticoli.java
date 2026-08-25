@@ -31,6 +31,8 @@ import com.motormindhub.Api.service.gestioneArticoli.exception.CategoriaNonTrova
 import com.motormindhub.Api.service.gestioneArticoli.exception.RegolaDiDominioViolataException;
 import com.motormindhub.Api.service.gestioneArticoli.exception.StatoArticoloNonValidoException;
 import com.motormindhub.Api.service.gestioneArticoli.exception.UtenteNonTrovatoException;
+import com.motormindhub.Api.service.gestioneCategorie.GestioneCategorie;
+import com.motormindhub.Api.service.gestioneCategorie.dto.CategoryAncestorDTO;
 import com.motormindhub.Api.service.storage.CloudStorageService;
 import com.motormindhub.Api.service.storage.ImageUploadValidator;
 import org.springframework.data.domain.Page;
@@ -81,6 +83,7 @@ public class GestioneArticoli {
     private final VisualizzazioneArticoloRepository visualizzazioneArticoloRepository;
     private final CloudStorageService cloudStorageService;
     private final ImageUploadValidator imageUploadValidator;
+    private final GestioneCategorie gestioneCategorie;
 
     public GestioneArticoli(ArticoloRepository articoloRepository,
                              ArticoloSalvatoRepository articoloSalvatoRepository,
@@ -88,7 +91,8 @@ public class GestioneArticoli {
                              UtenteRepository utenteRepository,
                              VisualizzazioneArticoloRepository visualizzazioneArticoloRepository,
                              CloudStorageService cloudStorageService,
-                             ImageUploadValidator imageUploadValidator) {
+                             ImageUploadValidator imageUploadValidator,
+                             GestioneCategorie gestioneCategorie) {
         this.articoloRepository = articoloRepository;
         this.articoloSalvatoRepository = articoloSalvatoRepository;
         this.categoriaRepository = categoriaRepository;
@@ -96,6 +100,7 @@ public class GestioneArticoli {
         this.visualizzazioneArticoloRepository = visualizzazioneArticoloRepository;
         this.cloudStorageService = cloudStorageService;
         this.imageUploadValidator = imageUploadValidator;
+        this.gestioneCategorie = gestioneCategorie;
     }
 
     /**
@@ -518,6 +523,9 @@ public class GestioneArticoli {
     private ArticleDetailDTO mappaDettaglio(Articolo articolo) {
         Categoria categoria = articolo.getCategoria();
         Utente autore = articolo.getAutore();
+        List<CategoryAncestorDTO> categoriaAntenati = categoria != null
+                ? gestioneCategorie.getCategoryPath(categoria.getId())
+                : List.of();
         return new ArticleDetailDTO(
                 articolo.getId(),
                 articolo.getTitolo(),
@@ -526,6 +534,7 @@ public class GestioneArticoli {
                 dividiTag(articolo.getTag()),
                 categoria != null ? categoria.getId() : null,
                 categoria != null ? categoria.getNome() : null,
+                categoriaAntenati,
                 autore.getId(),
                 autore.getNome() + " " + autore.getCognome(),
                 articolo.getStato(),

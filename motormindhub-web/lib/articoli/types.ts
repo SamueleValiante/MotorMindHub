@@ -1,3 +1,5 @@
+import type { CategoryAncestor } from "@/lib/categorie/types";
+
 export type StatoArticolo = "BOZZA" | "IN_ATTESA_APPROVAZIONE" | "PUBBLICATO" | "RIFIUTATO";
 
 export type OrdinamentoArticoli = "PIU_RECENTI" | "PIU_LETTI" | "IN_EVIDENZA";
@@ -50,6 +52,9 @@ export interface ArticleDetail {
   tag: string[];
   categoriaId: number;
   categoriaNome: string;
+  /** Catena radice -> foglia della categoria (GestioneCategorie.getCategoryPath, ODD 2.3), per il
+   *  breadcrumb del Dettaglio Articolo. Vuota se l'articolo non ha categoria. */
+  categoriaAntenati: CategoryAncestor[];
   autoreId: number;
   autoreNome: string;
   stato: StatoArticolo;

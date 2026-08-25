@@ -550,7 +550,7 @@ articolo che *era* pubblicato). (cfr. RF1.7, UC_6)
 |-------------------------------|---------------------------------------------------------------------------------------------|
 | **Metodo (query)**            | **Descrizione**                                                                             |
 | searchArticles(criteria)      | Ricerca full-text (PostgreSQL tsvector/GIN) combinata con filtri di categoria. (cfr. RF1.2) |
-| getArticleById(articleId, callerRuolo) | Recupera il dettaglio di un articolo e incrementa il contatore letture solo per Guest (callerRuolo null) e Iscritto, mai per un ruolo redazionale (Autore, Manager Autori, Gestore Utenti) a prescindere che l'articolo sia proprio o altrui - altrimenti editing/revisione/moderazione gonfierebbero "Letture totali" (Dashboard Autore) e l'ordinamento "Più lette" (Esplora). Nella stessa condizione logga anche una VisualizzazioneArticolo (RF3.1, cfr. andamentoLetture §2.4) - vedi nota sotto. (cfr. RF1.1) |
+| getArticleById(articleId, callerRuolo) | Recupera il dettaglio di un articolo e incrementa il contatore letture solo per Guest (callerRuolo null) e Iscritto, mai per un ruolo redazionale (Autore, Manager Autori, Gestore Utenti) a prescindere che l'articolo sia proprio o altrui - altrimenti editing/revisione/moderazione gonfierebbero "Letture totali" (Dashboard Autore) e l'ordinamento "Più lette" (Esplora). Nella stessa condizione logga anche una VisualizzazioneArticolo (RF3.1, cfr. andamentoLetture §2.4) - vedi nota sotto. `ArticleDetailDTO.categoriaAntenati` porta la catena radice -\> foglia della categoria dell'articolo (delegata a `GestioneCategorie.getCategoryPath`, §2.3), per il breadcrumb del mockup 03_dettaglio_articolo.png; lista vuota se l'articolo non ha categoria. (cfr. RF1.1) |
 | getArticlesByAuthor(authorId) | Recupera gli articoli (pubblicati e bozze) di un autore per "I Miei Articoli", con numeroVisualizzazioni e numeroSalvataggi per ciascuno (`AuthorArticleSummaryDTO`). (cfr. RF2.1) |
 | getSavedArticles(userId)      | Recupera la sezione “I miei salvataggi”. (cfr. RF1.8, UC_7)                                 |
 
@@ -623,6 +623,7 @@ articolo che *era* pubblicato). (cfr. RF1.7, UC_6)
 | **Metodo (query)**          | **Descrizione**                                                                        |
 | getCategoryTree()           | Recupera l'albero gerarchico completo delle categorie per la navigazione. (cfr. RF1.2) |
 | getCategoryById(categoryId) | Recupera i dettagli di una singola categoria.                                          |
+| getCategoryPath(categoryId) | Risale la gerarchia da categoryId fino alla radice seguendo categoriaPadre e restituisce la catena radice -\> foglia (categoryId incluso come ultimo elemento). Usata dal breadcrumb del Dettaglio Articolo (`ArticleDetailDTO.categoriaAntenati`, cfr. GestioneArticoli §2.2). |
 
 > **2.4 GestioneAutori**
 

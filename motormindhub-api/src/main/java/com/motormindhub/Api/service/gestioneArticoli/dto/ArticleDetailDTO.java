@@ -1,6 +1,7 @@
 package com.motormindhub.Api.service.gestioneArticoli.dto;
 
 import com.motormindhub.Api.model.entity.StatoArticolo;
+import com.motormindhub.Api.service.gestioneCategorie.dto.CategoryAncestorDTO;
 
 import java.util.List;
 
@@ -13,6 +14,9 @@ public record ArticleDetailDTO(
         List<String> tag,
         Long categoriaId,
         String categoriaNome,
+        /** Catena radice -> foglia della categoria (GestioneCategorie.getCategoryPath), per il
+         *  breadcrumb del Dettaglio Articolo. Vuota se l'articolo non ha categoria. */
+        List<CategoryAncestorDTO> categoriaAntenati,
         Long autoreId,
         String autoreNome,
         StatoArticolo stato,
