@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useArticleSearch } from "@/lib/articoli/useArticleSearch";
-import { useCategoryTree, flattenCategoryTree } from "@/lib/categorie/useCategoryTree";
+import { useCategoryTree } from "@/lib/categorie/useCategoryTree";
+import { findCategoryPath } from "@/lib/categorie/categoryDrilldown";
+import { CategoryDrilldownNav } from "@/components/public/CategoryDrilldownNav";
 import { ArticleCard } from "@/components/public/ArticleCard";
 import { Pagination } from "@/components/public/Pagination";
 import { EmptyState } from "@/components/empty-state/EmptyState";
@@ -43,14 +45,16 @@ export function EsploraContent() {
   const ordinamento = (searchParams.get("ordinamento") as OrdinamentoArticoli | null) ?? "PIU_RECENTI";
   const pagina = Number(searchParams.get("pagina") ?? 0);
 
-  // Stato "bozza" del form filtri: applicato all'URL (e quindi alla fetch)
-  // solo al submit di "Applica filtri", coerente col mockup (un pulsante
-  // esplicito, non un filtro live a ogni tasto/click).
+  // Stato "bozza" del form filtri: la ricerca testuale si applica all'URL
+  // (e quindi alla fetch) solo al submit di "Applica filtri", coerente col
+  // mockup originale (un pulsante esplicito, non un filtro live a ogni
+  // tasto). La categoria invece naviga subito a ogni click (drill-down):
+  // due controlli con due tempi diversi, non un'incoerenza - submit
+  // esplicito e navigazione immediata sono la stessa scelta consapevole
+  // usata altrove nel progetto (ordinamento, paginazione).
   const [draftQuery, setDraftQuery] = useState(query);
-  const [draftCategoriaId, setDraftCategoriaId] = useState(categoriaId ?? "");
 
   const categorie = useCategoryTree();
-  const flatCategorie = categorie.status === "ready" ? flattenCategoryTree(categorie.tree) : [];
 
   const results = useArticleSearch({
     query: query || undefined,
@@ -76,7 +80,14 @@ export function EsploraContent() {
 
   function handleApplyFilters(event: React.FormEvent) {
     event.preventDefault();
-    updateParams({ query: draftQuery || null, categoriaIds: draftCategoriaId || null, pagina: null });
+    // Non tocca categoriaIds: la categoria naviga gia' da sola a ogni click
+    // del drill-down (handleCategoryNavigate), un submit qui non deve
+    // sovrascriverla con uno stato "draft" che per la categoria non esiste piu'.
+    updateParams({ query: draftQuery || null, pagina: null });
+  }
+
+  function handleCategoryNavigate(id: number | null) {
+    updateParams({ categoriaIds: id !== null ? String(id) : null, pagina: null });
   }
 
   function handleSortChange(value: OrdinamentoArticoli) {
@@ -88,7 +99,10 @@ export function EsploraContent() {
       ? Math.max(1, Math.ceil(results.result.totaleRisultati / DIMENSIONE_PAGINA))
       : 1;
 
-  const categoriaNomeSelezionata = flatCategorie.find((c) => String(c.id) === categoriaId)?.nome;
+  const categoriaNomeSelezionata =
+    categorie.status === "ready"
+      ? findCategoryPath(categorie.tree, categoriaId ? Number(categoriaId) : null).at(-1)?.nome
+      : undefined;
   const totaleRisultati = results.status === "ready" ? results.result.totaleRisultati : null;
 
   return (
@@ -128,29 +142,6 @@ export function EsploraContent() {
           />
         </div>
 
-        <div className="flex flex-col gap-2">
-          <label
-            htmlFor="esplora-categoria"
-            className="font-heading text-xs font-semibold uppercase tracking-wide text-chrome"
-          >
-            Categoria
-          </label>
-          <select
-            id="esplora-categoria"
-            value={draftCategoriaId}
-            onChange={(event) => setDraftCategoriaId(event.target.value)}
-            className="rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent"
-          >
-            <option value="">Tutte le categorie</option>
-            {flatCategorie.map((c) => (
-              <option key={c.id} value={c.id}>
-                {"    ".repeat(c.depth)}
-                {c.nome}
-              </option>
-            ))}
-          </select>
-        </div>
-
         <button
           type="submit"
           className="rounded-md bg-accent px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
@@ -158,6 +149,19 @@ export function EsploraContent() {
           Applica filtri
         </button>
       </form>
+
+      <div className="flex flex-col gap-4 rounded-lg bg-carbon p-6">
+        <h2 className="font-heading text-sm font-bold uppercase tracking-wide text-paper">
+          Categoria
+        </h2>
+        {categorie.status === "ready" && (
+          <CategoryDrilldownNav
+            tree={categorie.tree}
+            currentId={categoriaId ? Number(categoriaId) : null}
+            onNavigate={handleCategoryNavigate}
+          />
+        )}
+      </div>
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs uppercase tracking-wide text-fog">

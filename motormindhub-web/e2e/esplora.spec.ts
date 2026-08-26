@@ -1,6 +1,10 @@
 import { test, expect } from "./fixtures";
+import { AxeBuilder } from "@axe-core/playwright";
 import {
   createPublishedArticle,
+  createPublishedArticleInCategory,
+  createCategory,
+  createSubcategory,
   deleteArticle,
   viewArticle,
   getCategoryId,
@@ -34,12 +38,14 @@ test.describe("Esplora Articoli", () => {
       await page.goto("/esplora");
       await page.getByRole("button", { name: "Rifiuta tutti" }).click();
 
+      // categoriaA e' una categoria radice (createPublishedArticle non
+      // specifica un padre): compare subito tra i bottoni di primo livello
+      // del drill-down, senza dover navigare prima da nessuna parte.
       const [request] = await Promise.all([
         page.waitForRequest(
           (req) => req.url().includes("/api/v1/articoli?") && req.url().includes("categoriaIds")
         ),
-        page.getByLabel("Categoria").selectOption({ label: categoriaA }),
-        page.getByRole("button", { name: "Applica filtri" }).click(),
+        page.getByRole("group", { name: "Sottocategorie" }).getByRole("button", { name: categoriaA }).click(),
       ]);
 
       // Un solo id nella query string, ed e' esattamente quello di "Categoria A"
@@ -225,8 +231,10 @@ test.describe("Esplora Articoli", () => {
       await page.getByRole("button", { name: "2", exact: true }).click();
       await expect(page).toHaveURL(/pagina=1/);
 
-      await page.getByLabel("Categoria").selectOption({ label: categoriaTarget });
-      await page.getByRole("button", { name: "Applica filtri" }).click();
+      // Un solo click sul drill-down basta: handleCategoryNavigate resetta
+      // "pagina" da solo, non serve un secondo "Applica filtri" come quando
+      // la categoria era parte dello stesso form della query testuale.
+      await page.getByRole("group", { name: "Sottocategorie" }).getByRole("button", { name: categoriaTarget }).click();
 
       // Se il reset non scattasse, la fetch richiederebbe la pagina 2 di un
       // risultato filtrato che ne ha solo 1 (2 elementi < dimensionePagina):
@@ -276,8 +284,14 @@ test.describe("Esplora Articoli", () => {
       await page.goto("/esplora");
       await page.getByRole("button", { name: "Rifiuta tutti" }).click();
 
+      // La categoria naviga subito al click (drill-down); la query testuale
+      // resta un campo "bozza" applicato solo al submit. Ordine: prima la
+      // categoria (gia' in URL dopo il click), poi query + submit, che deve
+      // patchare solo "query" lasciando categoriaIds intatto — e' esattamente
+      // il comportamento che questo test verifica (vera intersezione, non
+      // l'ultimo filtro che sovrascrive l'altro).
+      await page.getByRole("group", { name: "Sottocategorie" }).getByRole("button", { name: categoriaComune }).click();
       await page.getByLabel("Ricerca testuale").fill(parolaChiave);
-      await page.getByLabel("Categoria").selectOption({ label: categoriaComune });
       await page.getByRole("button", { name: "Applica filtri" }).click();
 
       await expect(page.getByRole("heading", { name: titoloMatch })).toBeVisible();
@@ -305,7 +319,226 @@ test.describe("Esplora Articoli", () => {
     await page.getByRole("button", { name: "Rifiuta tutti" }).click();
 
     await expect(page.getByRole("heading", { name: "Esplora articoli" })).toBeVisible();
-    await expect(page.getByLabel("Categoria")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Categoria" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Applica filtri" })).toBeVisible();
+  });
+
+  test("drill-down: radice -> foglia mostra articoli aggregati dell'intero ramo, breadcrumb risale i livelli", async ({
+    page,
+    testUsers,
+  }) => {
+    const manager = await testUsers.create({ ruolo: "MANAGER_AUTORI" });
+    const stamp = Date.now();
+
+    // 5 livelli reali (Casa -> Modello -> Generazione -> Sistema ->
+    // Sotto-sistema), la stessa profondita' della tassonomia migrata in
+    // produzione (Fiat > Panda > Panda III > Meccanica > Freni) - un
+    // fixture a 2 livelli non eserciterebbe il caso che ha reso necessario
+    // il drill-down al posto del vecchio <select> piatto.
+    const casaId = await createCategory(manager.email, manager.password, `Casa ${stamp}`);
+    const modelloId = await createSubcategory(manager.email, manager.password, `Modello ${stamp}`, casaId);
+    const generazioneId = await createSubcategory(
+      manager.email,
+      manager.password,
+      `Generazione ${stamp}`,
+      modelloId
+    );
+    const sistemaId = await createSubcategory(manager.email, manager.password, `Sistema ${stamp}`, generazioneId);
+    const sottosistemaId = await createSubcategory(
+      manager.email,
+      manager.password,
+      `Sottosistema ${stamp}`,
+      sistemaId
+    );
+
+    const titoloFoglia = `Articolo foglia ${stamp}`;
+    const idFoglia = await createPublishedArticleInCategory(manager.email, manager.password, {
+      titolo: titoloFoglia,
+      categoriaId: sottosistemaId,
+    });
+
+    try {
+      await page.goto("/esplora");
+      await page.getByRole("button", { name: "Rifiuta tutti" }).click();
+
+      const sottocategorie = page.getByRole("group", { name: "Sottocategorie" });
+
+      // Livello radice: la Casa e' tra i bottoni di primo livello.
+      await expect(sottocategorie.getByRole("button", { name: `Casa ${stamp}` })).toBeVisible();
+      await sottocategorie.getByRole("button", { name: `Casa ${stamp}` }).click();
+
+      // Sceso di un livello: si vede il Modello, non piu' la Casa tra i figli.
+      await expect(sottocategorie.getByRole("button", { name: `Modello ${stamp}` })).toBeVisible();
+      await sottocategorie.getByRole("button", { name: `Modello ${stamp}` }).click();
+      await sottocategorie.getByRole("button", { name: `Generazione ${stamp}` }).click();
+      await sottocategorie.getByRole("button", { name: `Sistema ${stamp}` }).click();
+
+      // Un livello prima della foglia vera: l'articolo e' gia' visibile qui,
+      // aggregato dalla sua sotto-categoria (RF1.2/TC11.2) - non serve
+      // scendere fino in fondo per vederlo.
+      await expect(page.getByRole("heading", { name: titoloFoglia })).toBeVisible();
+
+      await sottocategorie.getByRole("button", { name: `Sottosistema ${stamp}` }).click();
+      // Foglia vera: nessuna sotto-categoria, solo il messaggio dedicato.
+      await expect(page.getByText(`Nessuna sotto-categoria`)).toBeVisible();
+      await expect(page.getByRole("heading", { name: titoloFoglia })).toBeVisible();
+
+      // Breadcrumb: tutti e 5 gli antenati cliccabili, l'ultimo e' quello corrente.
+      const breadcrumb = page.getByRole("navigation", { name: "Percorso categoria" });
+      for (const nome of [
+        `Casa ${stamp}`,
+        `Modello ${stamp}`,
+        `Generazione ${stamp}`,
+        `Sistema ${stamp}`,
+        `Sottosistema ${stamp}`,
+      ]) {
+        // exact: true - "Sistema" e' altrimenti un match parziale valido
+        // dentro il nome accessibile di "Sottosistema" (stesso prefisso),
+        // violazione di strict mode altrimenti (2 bottoni, non 1).
+        await expect(breadcrumb.getByRole("button", { name: nome, exact: true })).toBeVisible();
+      }
+      await expect(breadcrumb.getByRole("button", { name: `Sottosistema ${stamp}` })).toHaveAttribute(
+        "aria-current",
+        "location"
+      );
+
+      // Risalita dal breadcrumb: torna a "Generazione", l'articolo resta
+      // visibile (ancora dentro il suo sottoalbero) e i figli mostrati sono
+      // di nuovo quelli di "Generazione" (Sistema), non quelli di Sottosistema.
+      await breadcrumb.getByRole("button", { name: `Generazione ${stamp}` }).click();
+      await expect(sottocategorie.getByRole("button", { name: `Sistema ${stamp}` })).toBeVisible();
+      await expect(page.getByRole("heading", { name: titoloFoglia })).toBeVisible();
+
+      // "Tutte le categorie" riporta alla radice.
+      await breadcrumb.getByRole("button", { name: "Tutte le categorie" }).click();
+      await expect(sottocategorie.getByRole("button", { name: `Casa ${stamp}` })).toBeVisible();
+      await expect(page).not.toHaveURL(/categoriaIds/);
+    } finally {
+      await deleteArticle(manager.email, manager.password, idFoglia);
+    }
+  });
+
+  test("il tasto Indietro del browser risale di un livello nel drill-down", async ({ page, testUsers }) => {
+    const manager = await testUsers.create({ ruolo: "MANAGER_AUTORI" });
+    const stamp = Date.now();
+    const casaId = await createCategory(manager.email, manager.password, `Casa indietro ${stamp}`);
+    const modelloId = await createSubcategory(
+      manager.email,
+      manager.password,
+      `Modello indietro ${stamp}`,
+      casaId
+    );
+
+    await page.goto("/esplora");
+    await page.getByRole("button", { name: "Rifiuta tutti" }).click();
+
+    const sottocategorie = page.getByRole("group", { name: "Sottocategorie" });
+    await sottocategorie.getByRole("button", { name: `Casa indietro ${stamp}` }).click();
+    await expect(page).toHaveURL(new RegExp(`categoriaIds=${casaId}$`));
+
+    await sottocategorie.getByRole("button", { name: `Modello indietro ${stamp}` }).click();
+    await expect(page).toHaveURL(new RegExp(`categoriaIds=${modelloId}$`));
+
+    // updateParams usa router.push (nuova voce nella cronologia a ogni
+    // navigazione, mai router.replace): il tasto Indietro del browser deve
+    // quindi risalire esattamente di un livello, non saltare la history.
+    await page.goBack();
+    await expect(page).toHaveURL(new RegExp(`categoriaIds=${casaId}$`));
+    await expect(sottocategorie.getByRole("button", { name: `Modello indietro ${stamp}` })).toBeVisible();
+
+    await page.goBack();
+    await expect(page).not.toHaveURL(/categoriaIds/);
+  });
+
+  test("responsive: breadcrumb a piena profondita' resta usabile su viewport stretto", async ({
+    page,
+    testUsers,
+  }) => {
+    const manager = await testUsers.create({ ruolo: "MANAGER_AUTORI" });
+    const stamp = Date.now();
+    const casaId = await createCategory(manager.email, manager.password, `Casa mobile ${stamp}`);
+    const modelloId = await createSubcategory(manager.email, manager.password, `Modello mobile ${stamp}`, casaId);
+    const generazioneId = await createSubcategory(
+      manager.email,
+      manager.password,
+      `Generazione mobile con nome piuttosto lungo ${stamp}`,
+      modelloId
+    );
+    const sistemaId = await createSubcategory(
+      manager.email,
+      manager.password,
+      `Sistema mobile ${stamp}`,
+      generazioneId
+    );
+
+    await page.setViewportSize({ width: 360, height: 780 });
+    await page.goto(`/esplora?categoriaIds=${sistemaId}`);
+    await page.getByRole("button", { name: "Rifiuta tutti" }).click();
+
+    const breadcrumb = page.getByRole("navigation", { name: "Percorso categoria" });
+    await expect(breadcrumb.getByRole("button", { name: `Sistema mobile ${stamp}` })).toBeVisible();
+
+    // Nessuno scroll orizzontale della pagina: il breadcrumb va a capo
+    // (flex-wrap) invece di sfondare la larghezza del viewport - la verifica
+    // che conta e' sul documento intero, non solo sul contenitore del
+    // breadcrumb, perche' e' cosi' che si manifesterebbe un vero problema
+    // di layout (una barra di scroll orizzontale sull'intera pagina).
+    const hasHorizontalOverflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth
+    );
+    expect(hasHorizontalOverflow).toBe(false);
+
+    // Ogni segmento del breadcrumb resta un bersaglio distinto e cliccabile
+    // (non compresso/sovrapposto): risalire funziona anche su questo viewport.
+    await breadcrumb.getByRole("button", { name: `Casa mobile ${stamp}` }).click();
+    await expect(page).toHaveURL(new RegExp(`categoriaIds=${casaId}$`));
+  });
+
+  test("audit accessibilità (axe) e tastiera sul drill-down dopo un livello di navigazione", async ({
+    page,
+    testUsers,
+  }) => {
+    const manager = await testUsers.create({ ruolo: "MANAGER_AUTORI" });
+    const stamp = Date.now();
+    const casaId = await createCategory(manager.email, manager.password, `Casa a11y ${stamp}`);
+    await createSubcategory(manager.email, manager.password, `Figlia A a11y ${stamp}`, casaId);
+    await createSubcategory(manager.email, manager.password, `Figlia B a11y ${stamp}`, casaId);
+
+    await page.goto(`/esplora?categoriaIds=${casaId}`);
+    await page.getByRole("button", { name: "Rifiuta tutti" }).click();
+
+    const sottocategorie = page.getByRole("group", { name: "Sottocategorie" });
+    await expect(sottocategorie.getByRole("button", { name: `Figlia A a11y ${stamp}` })).toBeVisible();
+
+    // Scansione axe con almeno un livello di drill-down attivo (non solo la
+    // vista radice): il breadcrumb con piu' di un segmento e la griglia
+    // figli sono entrambi presenti solo cosi'.
+    const results = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+      .include('[aria-label="Percorso categoria"], [aria-label="Sottocategorie"]')
+      .analyze();
+    expect(results.violations).toEqual([]);
+
+    // Tastiera: Tab dal primo al secondo bottone figlio deve spostare il
+    // focus (non restare bloccato/saltare l'elemento), ed e' un vero <button>
+    // per ciascuno - non un <div> con onClick, che il rilevamento del focus
+    // qui sotto non intercetterebbe.
+    await sottocategorie.getByRole("button", { name: `Figlia A a11y ${stamp}` }).focus();
+    await expect(sottocategorie.getByRole("button", { name: `Figlia A a11y ${stamp}` })).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(sottocategorie.getByRole("button", { name: `Figlia B a11y ${stamp}` })).toBeFocused();
+
+    // Attivazione da tastiera (Invio), non un click del mouse: deve navigare
+    // esattamente come il click.
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/categoriaIds=/);
+
+    // aria-current sul breadcrumb: solo l'ultimo segmento (quello corrente),
+    // mai quelli intermedi/cliccabili per risalire.
+    const breadcrumb = page.getByRole("navigation", { name: "Percorso categoria" });
+    await expect(breadcrumb.getByRole("button", { name: `Casa a11y ${stamp}` })).not.toHaveAttribute(
+      "aria-current",
+      "location"
+    );
   });
 });

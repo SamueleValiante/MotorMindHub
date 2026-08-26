@@ -197,6 +197,56 @@ export async function createPublishedArticle(
   return id;
 }
 
+/**
+ * Come createPublishedArticle, ma attacca l'articolo a un categoriaId gia'
+ * esistente invece di crearne una nuova per nome: serve ai test che
+ * verificano l'aggregazione su un ramo di gerarchia gia' costruito con
+ * createSubcategory (es. drill-down Esplora), dove l'articolo deve finire
+ * su una foglia specifica, non su una nuova categoria radice.
+ */
+export async function createPublishedArticleInCategory(
+  managerEmail: string,
+  managerPassword: string,
+  { titolo, categoriaId, testo }: { titolo: string; categoriaId: number; testo?: string },
+  token?: string
+): Promise<number> {
+  const accessToken = token ?? (await login(managerEmail, managerPassword));
+  const headers = { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` };
+
+  await assertOk(
+    await fetch(`${API_BASE}/api/v1/articoli/bozze`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        titolo,
+        testo: testo ?? "Testo di prova generato per la verifica e2e.",
+        categoriaId,
+        tag: [],
+      }),
+    }),
+    `creazione bozza "${titolo}"`
+  );
+  const mieiArticoliResponse = await fetch(`${API_BASE}/api/v1/articoli/me`, { headers });
+  await assertOk(mieiArticoliResponse, "lettura /articoli/me");
+  const mieiArticoli: Array<{ articolo: { id: number; titolo: string } }> = await mieiArticoliResponse.json();
+  const bozza = mieiArticoli.find((a) => a.articolo.titolo === titolo);
+  if (!bozza) {
+    throw new Error(
+      `Bozza "${titolo}" creata (200) ma assente da /articoli/me riletto subito dopo - inconsistenza di lettura, non un errore HTTP.`
+    );
+  }
+
+  await assertOk(
+    await fetch(`${API_BASE}/api/v1/articoli/bozze/${bozza.articolo.id}/pubblicazione`, { method: "POST", headers }),
+    `pubblicazione bozza ${bozza.articolo.id}`
+  );
+  await assertOk(
+    await fetch(`${API_BASE}/api/v1/autori/articoli/${bozza.articolo.id}/approvazione`, { method: "POST", headers }),
+    `approvazione articolo ${bozza.articolo.id}`
+  );
+  return bozza.articolo.id;
+}
+
 /** approveArticle (POST /autori/articoli/{id}/approvazione): solo MANAGER_AUTORI, indipendente da chi ha scritto l'articolo — usato quando serve un autore diverso dal manager (es. verificare la dashboard di un Autore semplice, non anche Manager). `token`: cfr. createDraftArticleInternal. */
 export async function approveArticle(
   managerEmail: string,
