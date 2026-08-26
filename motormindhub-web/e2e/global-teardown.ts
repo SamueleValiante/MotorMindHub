@@ -39,6 +39,21 @@ export default async function globalTeardown(): Promise<void> {
       "DELETE FROM articoli_salvati WHERE articolo_id IN (SELECT id FROM articoli WHERE autore_id IN (SELECT id FROM utenti WHERE email LIKE $1))",
       [PATTERN]
     );
+    // Stessa cura di articoli_salvati sopra, per la stessa ragione: un
+    // articolo autorato da un utente e2e ma letto/visualizzato da chiunque
+    // (anche Guest, non autenticato) lascia una riga in
+    // visualizzazioni_articolo che violerebbe altrimenti
+    // visualizzazioni_articolo_articolo_id_fkey sulla DELETE su articoli
+    // sotto. GestioneArticoli.deleteArticle (via l'endpoint reale) fa
+    // esplicitamente questa stessa pulizia
+    // (visualizzazioneArticoloRepository.deleteByArticoloId) prima di
+    // cancellare l'articolo: questo script bypassa l'endpoint per velocità
+    // (query dirette, non autenticazione+HTTP per ogni riga), quindi deve
+    // replicare la stessa pulizia esplicita a mano, non solo assumerla.
+    await query(
+      "DELETE FROM visualizzazioni_articolo WHERE articolo_id IN (SELECT id FROM articoli WHERE autore_id IN (SELECT id FROM utenti WHERE email LIKE $1))",
+      [PATTERN]
+    );
     await query("DELETE FROM articoli WHERE autore_id IN (SELECT id FROM utenti WHERE email LIKE $1)", [
       PATTERN,
     ]);
