@@ -329,7 +329,13 @@ public class GestioneArticoli {
         int dimensionePagina = Optional.ofNullable(criteria.dimensionePagina()).filter(d -> d > 0).orElse(DIMENSIONE_PAGINA_DEFAULT);
         OrdinamentoArticoli ordinamento = Optional.ofNullable(criteria.ordinamento()).orElse(OrdinamentoArticoli.PIU_RECENTI);
         String query = (criteria.query() == null || criteria.query().isBlank()) ? null : criteria.query();
-        List<Long> categoriaIds = espandiConSottocategorie(criteria.categoriaIds());
+        // espandiSottocategorie=false (drill-down di Esplora, CategoryDrilldownNav): match esatto
+        // sulla sola categoria indicata, nessun discendente incluso. null/true (default, ogni altro
+        // chiamante - ricerca generale, "articoli correlati" di ArticleDetailContent) mantiene
+        // l'espansione di sempre (RF1.2, TC11.2).
+        List<Long> categoriaIds = Boolean.FALSE.equals(criteria.espandiSottocategorie())
+                ? criteria.categoriaIds()
+                : espandiConSottocategorie(criteria.categoriaIds());
         Long[] categoriaIdsArray = categoriaIds == null ? null : categoriaIds.toArray(new Long[0]);
 
         Pageable pageable = PageRequest.of(pagina, dimensionePagina, risolviOrdinamento(ordinamento));

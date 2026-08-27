@@ -54,13 +54,30 @@ export function EsploraContent() {
   // usata altrove nel progetto (ordinamento, paginazione).
   const [draftQuery, setDraftQuery] = useState(query);
 
+  // Distingue esplicitamente le due chiamate a searchArticles che convivono
+  // su questa pagina (stesso principio del commento sopra su query/categoria:
+  // due percorsi, non un flag ambiguo). false all'atterraggio su questa
+  // pagina in QUALUNQUE modo (link esterno da Home, bookmark, refresh): in
+  // quel momento nessun click sull'albero e' ancora avvenuto, quindi
+  // l'eventuale categoriaIds gia' nell'URL segue il comportamento di
+  // sempre (aggregato, RF1.2/TC11.2) - es. "Fiat" da Home deve continuare a
+  // mostrare tutti gli articoli del marchio, non zero solo perche' il nodo
+  // "Fiat" in se' e' puramente organizzativo. Diventa true (e resta tale
+  // per il resto della sessione su questa pagina) alla prima chiamata a
+  // handleCategoryNavigate: da quel momento in poi, ogni click sull'albero
+  // (compresi quelli sul breadcrumb per risalire) e' per definizione
+  // "innescato dalla navigazione ad albero" e riflette solo il nodo esatto.
+  const [categoryNavAttiva, setCategoryNavAttiva] = useState(false);
+
   const categorie = useCategoryTree();
 
   const results = useArticleSearch({
     query: query || undefined,
-    // Un solo id, così come scelto: nessuna espansione alle sottocategorie
-    // qui, searchArticles la applica già lato server (RF1.2).
+    // Un solo id, così come scelto: nessuna espansione lato client in
+    // nessuno dei due casi, la differenza (aggregato o esatto) la fa solo
+    // espandiSottocategorie, applicato server-side (RF1.2 / nota ODD §2.2).
     categoriaIds: categoriaId ? [Number(categoriaId)] : undefined,
+    espandiSottocategorie: categoryNavAttiva ? false : undefined,
     ordinamento,
     pagina,
     dimensionePagina: DIMENSIONE_PAGINA,
@@ -87,6 +104,7 @@ export function EsploraContent() {
   }
 
   function handleCategoryNavigate(id: number | null) {
+    setCategoryNavAttiva(true);
     updateParams({ categoriaIds: id !== null ? String(id) : null, pagina: null });
   }
 
@@ -99,11 +117,20 @@ export function EsploraContent() {
       ? Math.max(1, Math.ceil(results.result.totaleRisultati / DIMENSIONE_PAGINA))
       : 1;
 
-  const categoriaNomeSelezionata =
+  const categoriaCorrente =
     categorie.status === "ready"
-      ? findCategoryPath(categorie.tree, categoriaId ? Number(categoriaId) : null).at(-1)?.nome
+      ? findCategoryPath(categorie.tree, categoriaId ? Number(categoriaId) : null).at(-1)
       : undefined;
+  const categoriaNomeSelezionata = categoriaCorrente?.nome;
   const totaleRisultati = results.status === "ready" ? results.result.totaleRisultati : null;
+
+  // Zero risultati su un nodo puramente organizzativo (ha sotto-categorie,
+  // quindi "vuoto" per come e' pensata la tassonomia, non un filtro che non
+  // ha trovato nulla) merita un messaggio diverso da quello generico: non
+  // deve leggersi come un errore/ricerca fallita quando in realta' basta
+  // scendere di un altro livello per trovare gli articoli veri.
+  const nodoOrganizzativoVuoto =
+    categoryNavAttiva && !!categoriaCorrente && categoriaCorrente.figlie.length > 0;
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-12 sm:px-6">
@@ -194,8 +221,12 @@ export function EsploraContent() {
       {results.status === "ready" && results.result.articoli.length === 0 ? (
         <EmptyState
           icon={<SearchIcon className="h-6 w-6" />}
-          title="Nessun risultato"
-          description="Nessun articolo corrisponde ai filtri applicati. Prova a modificarli."
+          title={nodoOrganizzativoVuoto ? "Categoria organizzativa" : "Nessun risultato"}
+          description={
+            nodoOrganizzativoVuoto
+              ? `"${categoriaNomeSelezionata}" raggruppa altre categorie ma non ha articoli propri: scegli una delle sotto-categorie qui sopra.`
+              : "Nessun articolo corrisponde ai filtri applicati. Prova a modificarli."
+          }
         />
       ) : results.status === "ready" ? (
         <div className="grid gap-6 rounded-lg border border-paper/10 bg-carbon p-6 md:grid-cols-2">

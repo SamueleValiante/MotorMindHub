@@ -42,6 +42,14 @@ export interface SearchArticlesParams {
   pagina?: number;
   dimensionePagina?: number;
   ordinamento?: OrdinamentoArticoli;
+  /**
+   * undefined/true (default) mantiene l'espansione alle sottocategorie
+   * discendenti gia' fatta server-side (RF1.2/TC11.2). false disattiva
+   * l'espansione: match esatto sulla sola categoria indicata, usato dal
+   * drill-down di Esplora (CategoryDrilldownNav), non dalla ricerca
+   * generale/testuale ne' dagli "articoli correlati" di ArticleDetailContent.
+   */
+  espandiSottocategorie?: boolean;
 }
 
 export interface ArticleDetail {

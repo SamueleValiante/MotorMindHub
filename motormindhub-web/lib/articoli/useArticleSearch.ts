@@ -18,6 +18,11 @@ function buildQueryString(params: SearchArticlesParams): string {
     qs.set("dimensionePagina", String(params.dimensionePagina));
   }
   if (params.ordinamento) qs.set("ordinamento", params.ordinamento);
+  // Solo quando esplicitamente false: omettere il parametro quando
+  // undefined/true lascia il default lato server (espande) invariato per
+  // ogni chiamante che non lo imposta - stesso principio di categoriaIds
+  // sopra, nessuna logica di espansione duplicata qui.
+  if (params.espandiSottocategorie === false) qs.set("espandiSottocategorie", "false");
   return qs.toString();
 }
 

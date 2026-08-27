@@ -55,8 +55,9 @@ public class ArticoliController {
                                                                    @RequestParam(required = false) List<Long> categoriaIds,
                                                                    @RequestParam(required = false) Integer pagina,
                                                                    @RequestParam(required = false) Integer dimensionePagina,
-                                                                   @RequestParam(required = false) OrdinamentoArticoli ordinamento) {
-        SearchCriteriaDTO criteria = new SearchCriteriaDTO(query, categoriaIds, pagina, dimensionePagina, ordinamento);
+                                                                   @RequestParam(required = false) OrdinamentoArticoli ordinamento,
+                                                                   @RequestParam(required = false) Boolean espandiSottocategorie) {
+        SearchCriteriaDTO criteria = new SearchCriteriaDTO(query, categoriaIds, pagina, dimensionePagina, ordinamento, espandiSottocategorie);
         return ResponseEntity.ok(gestioneArticoli.searchArticles(criteria));
     }
 

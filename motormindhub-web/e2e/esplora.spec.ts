@@ -323,7 +323,7 @@ test.describe("Esplora Articoli", () => {
     await expect(page.getByRole("button", { name: "Applica filtri" })).toBeVisible();
   });
 
-  test("drill-down: radice -> foglia mostra articoli aggregati dell'intero ramo, breadcrumb risale i livelli", async ({
+  test("drill-down: mostra solo gli articoli attaccati esattamente al nodo selezionato (nessuna aggregazione), breadcrumb risale i livelli", async ({
     page,
     testUsers,
   }) => {
@@ -367,19 +367,28 @@ test.describe("Esplora Articoli", () => {
       await expect(sottocategorie.getByRole("button", { name: `Casa ${stamp}` })).toBeVisible();
       await sottocategorie.getByRole("button", { name: `Casa ${stamp}` }).click();
 
+      // "Casa" e' organizzativa (ha figlie, zero articoli propri): messaggio
+      // dedicato, non il generico "Nessun risultato" da ricerca fallita.
+      await expect(page.getByRole("heading", { name: "Categoria organizzativa" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: titoloFoglia })).not.toBeVisible();
+
       // Sceso di un livello: si vede il Modello, non piu' la Casa tra i figli.
       await expect(sottocategorie.getByRole("button", { name: `Modello ${stamp}` })).toBeVisible();
       await sottocategorie.getByRole("button", { name: `Modello ${stamp}` }).click();
       await sottocategorie.getByRole("button", { name: `Generazione ${stamp}` }).click();
       await sottocategorie.getByRole("button", { name: `Sistema ${stamp}` }).click();
 
-      // Un livello prima della foglia vera: l'articolo e' gia' visibile qui,
-      // aggregato dalla sua sotto-categoria (RF1.2/TC11.2) - non serve
-      // scendere fino in fondo per vederlo.
-      await expect(page.getByRole("heading", { name: titoloFoglia })).toBeVisible();
+      // Un livello prima della foglia vera: "Sistema" e' ancora puramente
+      // organizzativo (la foglia vera e' "Sottosistema" sotto di lui) -
+      // l'articolo NON deve comparire qui: e' l'esatto comportamento che
+      // distingue il drill-down (match esatto) dalla ricerca generale
+      // aggregata (RF1.2/TC11.2, verificata separatamente sotto).
+      await expect(page.getByRole("heading", { name: titoloFoglia })).not.toBeVisible();
+      await expect(page.getByRole("heading", { name: "Categoria organizzativa" })).toBeVisible();
 
       await sottocategorie.getByRole("button", { name: `Sottosistema ${stamp}` }).click();
-      // Foglia vera: nessuna sotto-categoria, solo il messaggio dedicato.
+      // Foglia vera: nessuna sotto-categoria, solo il messaggio dedicato, e
+      // ORA l'articolo compare (attaccato esattamente a questo nodo).
       await expect(page.getByText(`Nessuna sotto-categoria`)).toBeVisible();
       await expect(page.getByRole("heading", { name: titoloFoglia })).toBeVisible();
 
@@ -402,12 +411,14 @@ test.describe("Esplora Articoli", () => {
         "location"
       );
 
-      // Risalita dal breadcrumb: torna a "Generazione", l'articolo resta
-      // visibile (ancora dentro il suo sottoalbero) e i figli mostrati sono
-      // di nuovo quelli di "Generazione" (Sistema), non quelli di Sottosistema.
+      // Risalita dal breadcrumb: torna a "Generazione". I figli mostrati sono
+      // di nuovo quelli di "Generazione" (Sistema, non Sottosistema) e
+      // l'articolo sparisce di nuovo - "Generazione" e' organizzativo tanto
+      // quanto "Sistema" e "Casa", il breadcrumb non fa eccezione al match
+      // esatto (stesso onNavigate dei click sui figli).
       await breadcrumb.getByRole("button", { name: `Generazione ${stamp}` }).click();
       await expect(sottocategorie.getByRole("button", { name: `Sistema ${stamp}` })).toBeVisible();
-      await expect(page.getByRole("heading", { name: titoloFoglia })).toBeVisible();
+      await expect(page.getByRole("heading", { name: titoloFoglia })).not.toBeVisible();
 
       // "Tutte le categorie" riporta alla radice.
       await breadcrumb.getByRole("button", { name: "Tutte le categorie" }).click();
@@ -415,6 +426,53 @@ test.describe("Esplora Articoli", () => {
       await expect(page).not.toHaveURL(/categoriaIds/);
     } finally {
       await deleteArticle(manager.email, manager.password, idFoglia);
+    }
+  });
+
+  test("arrivo diretto su un categoriaIds (es. link da Home, nessun click sull'albero) mantiene l'aggregazione RF1.2/TC11.2", async ({
+    page,
+    testUsers,
+  }) => {
+    const manager = await testUsers.create({ ruolo: "MANAGER_AUTORI" });
+    const stamp = Date.now();
+
+    // Marchio -> Modello, l'articolo attaccato al Modello (foglia): un link
+    // Home->categoria porta sempre a una categoria radice (es. "Fiat"), che
+    // e' per design puramente organizzativa - deve continuare ad aggregare,
+    // altrimenti ogni link categoria di Home diventerebbe un vicolo cieco a
+    // zero risultati (regressione reale, non solo di TC11.2).
+    const marchioId = await createCategory(manager.email, manager.password, `Marchio esterno ${stamp}`);
+    const modelloId = await createSubcategory(
+      manager.email,
+      manager.password,
+      `Modello esterno ${stamp}`,
+      marchioId
+    );
+    const titolo = `Articolo aggregato esterno ${stamp}`;
+    const idArticolo = await createPublishedArticleInCategory(manager.email, manager.password, {
+      titolo,
+      categoriaId: modelloId,
+    });
+
+    try {
+      // page.goto diretto sull'URL, non un click su CategoryDrilldownNav:
+      // categoryNavAttiva resta false, espandiSottocategorie non viene
+      // inviato, il backend applica il suo default (true).
+      await page.goto(`/esplora?categoriaIds=${marchioId}`);
+      await page.getByRole("button", { name: "Rifiuta tutti" }).click();
+
+      await expect(page.getByRole("heading", { name: titolo })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Categoria organizzativa" })).not.toBeVisible();
+
+      // Il primo click sull'albero DOPO l'atterraggio attiva il match
+      // esatto anche per questa stessa categoria gia' in URL: la stessa
+      // radice, una volta "toccata" dal drill-down, smette di aggregare.
+      const breadcrumb = page.getByRole("navigation", { name: "Percorso categoria" });
+      await breadcrumb.getByRole("button", { name: `Marchio esterno ${stamp}` }).click();
+      await expect(page.getByRole("heading", { name: titolo })).not.toBeVisible();
+      await expect(page.getByRole("heading", { name: "Categoria organizzativa" })).toBeVisible();
+    } finally {
+      await deleteArticle(manager.email, manager.password, idArticolo);
     }
   });
 

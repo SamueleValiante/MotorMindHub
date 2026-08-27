@@ -771,7 +771,7 @@ class GestioneArticoliTest {
         Page<Articolo> pagina = new PageImpl<>(List.of(pubblicato));
         when(articoloRepository.cercaPubblicati(isNull(), isNull(), any())).thenReturn(pagina);
 
-        var risultato = gestioneArticoli.searchArticles(new SearchCriteriaDTO(null, null, null, null, null));
+        var risultato = gestioneArticoli.searchArticles(new SearchCriteriaDTO(null, null, null, null, null, null));
 
         assertThat(risultato.articoli()).hasSize(1);
         assertThat(risultato.totaleRisultati()).isEqualTo(1);
@@ -785,7 +785,7 @@ class GestioneArticoliTest {
         Page<Articolo> paginaVuota = new PageImpl<>(List.of());
         when(articoloRepository.cercaPubblicati(eq("freni"), eq(new Long[]{5L, 6L}), any())).thenReturn(paginaVuota);
 
-        gestioneArticoli.searchArticles(new SearchCriteriaDTO("freni", List.of(5L, 6L), 1, 10, null));
+        gestioneArticoli.searchArticles(new SearchCriteriaDTO("freni", List.of(5L, 6L), 1, 10, null, null));
 
         verify(articoloRepository).cercaPubblicati(eq("freni"), eq(new Long[]{5L, 6L}), any());
     }
@@ -806,8 +806,26 @@ class GestioneArticoliTest {
         ArgumentCaptor<Long[]> categoriaIdsCaptor = ArgumentCaptor.forClass(Long[].class);
         when(articoloRepository.cercaPubblicati(isNull(), categoriaIdsCaptor.capture(), any())).thenReturn(paginaVuota);
 
-        gestioneArticoli.searchArticles(new SearchCriteriaDTO(null, List.of(1L), null, null, null));
+        gestioneArticoli.searchArticles(new SearchCriteriaDTO(null, List.of(1L), null, null, null, null));
 
         assertThat(categoriaIdsCaptor.getValue()).containsExactlyInAnyOrder(1L, 2L, 3L);
+    }
+
+    @Test
+    void searchArticles_nonIncludeLeSottocategorie_quandoEspandiSottocategorieEFalse() {
+        // Stessa gerarchia radice(1)->figlia(2)->nipote(3) del test sopra (TC11.2), ma qui
+        // espandiSottocategorie=false (drill-down di Esplora): il match deve restare esatto sulla
+        // sola radice, ignorando figlia e nipote anche se hanno articoli propri - comportamento
+        // distinto e non una regressione di TC11.2. Nessuno stub su categoriaRepository.findAll():
+        // con l'espansione disattivata non deve nemmeno essere invocato (verificato sotto), uno
+        // stub qui sarebbe morto e Mockito lo segnalerebbe come UnnecessaryStubbingException.
+        Page<Articolo> paginaVuota = new PageImpl<>(List.of());
+        ArgumentCaptor<Long[]> categoriaIdsCaptor = ArgumentCaptor.forClass(Long[].class);
+        when(articoloRepository.cercaPubblicati(isNull(), categoriaIdsCaptor.capture(), any())).thenReturn(paginaVuota);
+
+        gestioneArticoli.searchArticles(new SearchCriteriaDTO(null, List.of(1L), null, null, null, false));
+
+        assertThat(categoriaIdsCaptor.getValue()).containsExactly(1L);
+        verify(categoriaRepository, org.mockito.Mockito.never()).findAll();
     }
 }
