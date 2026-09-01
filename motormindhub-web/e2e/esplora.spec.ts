@@ -178,6 +178,42 @@ test.describe("Esplora Articoli", () => {
     }
   });
 
+  test("ricerca live: un prefisso della parola (query ancora incompleta) trova già l'articolo", async ({
+    page,
+    testUsers,
+  }) => {
+    const manager = await testUsers.create({ ruolo: "MANAGER_AUTORI" });
+    const stamp = Date.now();
+    const parolaUnica = `Servosterzoidraulico${stamp}`;
+    const titoloTarget = `Guida ${parolaUnica}`;
+    // Meta' parola circa: prefix-matching lato backend (ArticoloRepository.cercaPubblicati)
+    // deve trovare l'articolo anche prima che l'utente finisca di digitare - senza,
+    // websearch_to_tsquery stemma solo parole complete e questa query darebbe 0 risultati.
+    const prefisso = parolaUnica.slice(0, Math.floor(parolaUnica.length / 2));
+
+    const idTarget = await createPublishedArticle(manager.email, manager.password, {
+      titolo: titoloTarget,
+      categoriaNome: `Categoria prefisso ricerca ${stamp}`,
+    });
+
+    try {
+      await page.goto("/esplora");
+      await page.getByRole("button", { name: "Rifiuta tutti" }).click();
+
+      const [request] = await Promise.all([
+        page.waitForRequest(
+          (req) => req.url().includes("/api/v1/articoli?") && req.url().includes("query=")
+        ),
+        page.getByLabel("Ricerca testuale").fill(prefisso),
+      ]);
+      expect(new URL(request.url()).searchParams.get("query")).toBe(prefisso);
+
+      await expect(page.getByRole("heading", { name: titoloTarget })).toBeVisible();
+    } finally {
+      await deleteArticle(manager.email, manager.password, idTarget);
+    }
+  });
+
   test("audit accessibilità (axe) della ricerca live, live region inclusa", async ({
     page,
     testUsers,

@@ -16,21 +16,50 @@ import java.util.List;
 public interface ArticoloRepository extends JpaRepository<Articolo, Long> {
 
     /**
-     * Ricerca full-text (SDD 3.3) sugli articoli PUBBLICATI: websearch_to_tsquery interpreta la
-     * sintassi di ricerca "naturale" dell'utente (frasi tra virgolette, esclusioni con "-", ecc.).
+     * Ricerca full-text (SDD 3.3) sugli articoli PUBBLICATI, ambito Titolo+Tag (il corpo
+     * dell'articolo non fa piu' parte di search_vector, cfr. V19). websearch_to_tsquery gestisce i
+     * termini gia' completi (frasi tra virgolette, esclusioni con "-", ecc.), invariato rispetto a
+     * prima; l'ULTIMO termine della query (parola presumibilmente ancora incompleta, digitata dalla
+     * ricerca live di Esplora) usa in aggiunta il prefix-matching (":*"), altrimenti una parola
+     * troncata a meta' digitazione non stemma sulla forma completa e la ricerca live mostrerebbe 0
+     * risultati per gran parte della battitura.
+     * <p>
+     * Costruzione sicura (nessun testo utente raggiunge mai il parser rigido di to_tsquery):
+     * l'ultimo termine e' prima tokenizzato con to_tsvector (mai interpreta caratteri come "&", "|",
+     * "!", "(", ")" come operatori - li scarta come rumore, verificato), poi solo il/i lessema/i gia'
+     * ripuliti che ne escono vengono concatenati con ":*" e ripassati a to_tsquery: a quel punto il
+     * testo digitato dall'utente non compare mai, direttamente, in una stringa data in pasto al
+     * parser di sintassi. Se l'ultimo termine non produce alcun lessema (stopword, sola
+     * punteggiatura), il COALESCE lo riduce a un tsquery vuoto, neutro rispetto a "&&" (verificato),
+     * cosi' la ricerca ricade sui soli termini precedenti invece di azzerare il match.
+     * <p>
      * Il filtro per categoria (RF1.2, "Categoria e relative sottocategorie") riceve gia' dal service
      * l'insieme completo di id (categoria selezionata + eventuali sottocategorie).
      */
     @Query(value = """
             SELECT a.* FROM articoli a
             WHERE a.stato = 'PUBBLICATO'
-              AND (CAST(:query AS text) IS NULL OR a.search_vector @@ websearch_to_tsquery('italian', CAST(:query AS text)))
+              AND (CAST(:query AS text) IS NULL OR a.search_vector @@ (
+                    websearch_to_tsquery('italian', regexp_replace(btrim(regexp_replace(CAST(:query AS text), '\\s+', ' ', 'g')), '\\S+$', ''))
+                    && COALESCE(
+                        (SELECT to_tsquery('italian', string_agg(u.lexeme || ':*', ' & '))
+                         FROM unnest(to_tsvector('italian', regexp_replace(btrim(regexp_replace(CAST(:query AS text), '\\s+', ' ', 'g')), '.*\\s', ''))) AS u(lexeme, positions, weights)),
+                        ''::tsquery
+                    )
+                  ))
               AND (CAST(:categoriaIds AS bigint[]) IS NULL OR a.categoria_id = ANY (CAST(:categoriaIds AS bigint[])))
             """,
             countQuery = """
             SELECT count(*) FROM articoli a
             WHERE a.stato = 'PUBBLICATO'
-              AND (CAST(:query AS text) IS NULL OR a.search_vector @@ websearch_to_tsquery('italian', CAST(:query AS text)))
+              AND (CAST(:query AS text) IS NULL OR a.search_vector @@ (
+                    websearch_to_tsquery('italian', regexp_replace(btrim(regexp_replace(CAST(:query AS text), '\\s+', ' ', 'g')), '\\S+$', ''))
+                    && COALESCE(
+                        (SELECT to_tsquery('italian', string_agg(u.lexeme || ':*', ' & '))
+                         FROM unnest(to_tsvector('italian', regexp_replace(btrim(regexp_replace(CAST(:query AS text), '\\s+', ' ', 'g')), '.*\\s', ''))) AS u(lexeme, positions, weights)),
+                        ''::tsquery
+                    )
+                  ))
               AND (CAST(:categoriaIds AS bigint[]) IS NULL OR a.categoria_id = ANY (CAST(:categoriaIds AS bigint[])))
             """,
             nativeQuery = true)

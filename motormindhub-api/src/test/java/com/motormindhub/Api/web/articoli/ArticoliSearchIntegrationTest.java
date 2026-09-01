@@ -78,4 +78,92 @@ class ArticoliSearchIntegrationTest {
                 .andExpect(jsonPath("$.articoli").isNotEmpty())
                 .andExpect(jsonPath("$.articoli[0].categoriaId").value(categoria.getId()));
     }
+
+    private Utente creaAutore(String email) {
+        Utente autore = new Utente("Test", "Autore", email,
+                passwordEncoder.encode("PasswordValida78!"), null, null, true, null);
+        autore.setRuolo(com.motormindhub.Api.model.entity.Ruolo.AUTORE);
+        autore.setStato(StatoUtente.ATTIVO);
+        return utenteRepository.saveAndFlush(autore);
+    }
+
+    private Articolo creaArticoloPubblicato(String titolo, String testo, String tag) {
+        Articolo articolo = new Articolo(creaAutore("autore-" + System.nanoTime() + "@provider.it"),
+                titolo, testo, categoria, tag, null);
+        articolo.setStato(StatoArticolo.PUBBLICATO);
+        return articoloRepository.saveAndFlush(articolo);
+    }
+
+    /**
+     * V19 (SDD 3.3 aggiornato): il corpo dell'articolo (Testo) e' uscito dall'ambito di
+     * search_vector, che ora copre solo Titolo e Tag - una parola che compare esclusivamente nel
+     * Testo non deve piu' produrre un match.
+     */
+    @Test
+    void parolaSoloNelTesto_nonTrovaPiuArticolo() throws Exception {
+        String parolaUnica = "Xyloflangetesto" + System.nanoTime();
+        creaArticoloPubblicato("Titolo generico senza la parola", "Testo che contiene " + parolaUnica + " qui.", "tag-generico");
+
+        mockMvc.perform(get("/api/v1/articoli").param("query", parolaUnica))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totaleRisultati").value(0));
+    }
+
+    /**
+     * Stesso ambito (V19): una parola nel Tag resta nell'ambito della ricerca, a differenza del
+     * Testo verificato sopra.
+     */
+    @Test
+    void parolaNelTag_continuaATrovareArticolo() throws Exception {
+        String parolaUnica = "Xyloflangetag" + System.nanoTime();
+        creaArticoloPubblicato("Titolo generico senza la parola", "Testo generico qualsiasi.", parolaUnica);
+
+        mockMvc.perform(get("/api/v1/articoli").param("query", parolaUnica))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totaleRisultati").value(1));
+    }
+
+    /**
+     * Prefix-matching sull'ultimo termine (ArticoloRepository.cercaPubblicati): un prefisso di una
+     * parola nel Titolo, cosi' come la ricerca live di Esplora lo invia mentre l'utente sta ancora
+     * digitando, deve trovare l'articolo anche prima che la parola sia completa.
+     */
+    @Test
+    void prefissoDiParolaNelTitolo_trovaArticolo() throws Exception {
+        String parolaUnica = "Xyloflangeprefix" + System.nanoTime();
+        creaArticoloPubblicato("Guida " + parolaUnica, "Testo generico qualsiasi.", "tag-generico");
+        String prefisso = parolaUnica.substring(0, parolaUnica.length() - 3);
+
+        mockMvc.perform(get("/api/v1/articoli").param("query", prefisso))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totaleRisultati").value(1));
+    }
+
+    /**
+     * Costruzione sicura della query (ArticoloRepository.cercaPubblicati): caratteri con significato
+     * speciale per to_tsquery (& | ! ( )) nell'input utente non devono rompere la query (500) - il
+     * termine precedente resta comunque cercabile per intero.
+     */
+    @Test
+    void caratteriSpecialiTsquery_nonRompeLaRicerca() throws Exception {
+        String parolaUnica = "Xyloflangespeciali" + System.nanoTime();
+        creaArticoloPubblicato("Guida " + parolaUnica, "Testo generico qualsiasi.", "tag-generico");
+
+        mockMvc.perform(get("/api/v1/articoli").param("query", parolaUnica + " & (drop table) | fine"))
+                .andExpect(status().isOk());
+    }
+
+    /**
+     * Ultimo termine che stemma a zero lessemi (stopword italiana, es. "di"): il COALESCE a tsquery
+     * vuoto deve comportarsi da neutro rispetto a "&&", non azzerare il match sui termini precedenti.
+     */
+    @Test
+    void ultimoTermineStopword_nonAzzeraIlMatch() throws Exception {
+        String parolaUnica = "Xyloflangestopword" + System.nanoTime();
+        creaArticoloPubblicato("Guida " + parolaUnica, "Testo generico qualsiasi.", "tag-generico");
+
+        mockMvc.perform(get("/api/v1/articoli").param("query", parolaUnica + " di"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totaleRisultati").value(1));
+    }
 }
