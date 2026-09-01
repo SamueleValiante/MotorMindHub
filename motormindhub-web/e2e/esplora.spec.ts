@@ -93,6 +93,124 @@ test.describe("Esplora Articoli", () => {
     }
   });
 
+  test("ricerca live: digitazione veloce non produce un risultato fuori ordine", async ({
+    page,
+    testUsers,
+  }) => {
+    const manager = await testUsers.create({ ruolo: "MANAGER_AUTORI" });
+    const stamp = Date.now();
+    const parolaUnica = `Turbocompressore${stamp}`;
+    const titoloTarget = `Guida ${parolaUnica}`;
+    const titoloAltro = `Articolo generico ${stamp}`;
+    const categoria = `Categoria ricerca live ${stamp}`;
+
+    const idTarget = await createPublishedArticle(manager.email, manager.password, {
+      titolo: titoloTarget,
+      categoriaNome: categoria,
+    });
+    const idAltro = await createPublishedArticle(manager.email, manager.password, {
+      titolo: titoloAltro,
+      categoriaNome: `${categoria} 2`,
+    });
+
+    try {
+      await page.goto("/esplora");
+      await page.getByRole("button", { name: "Rifiuta tutti" }).click();
+
+      // pressSequentially con un piccolo ritardo per carattere: abbastanza
+      // "veloce" da non lasciare mai una pausa di 350ms (il debounce) tra un
+      // tasto e il successivo, ma la digitazione dell'intera parola dura
+      // comunque piu' del debounce stesso, quindi il timer riparte piu'
+      // volte durante la digitazione - esattamente lo scenario a rischio di
+      // risposta fuori ordine (piu' fetch in volo, l'ultima non necessariamente
+      // l'ultima a rispondere) che l'AbortController in useArticleSearch deve
+      // gestire. Nessun click su "Cerca": la ricerca deve arrivare da sola.
+      await page.getByLabel("Ricerca testuale").pressSequentially(parolaUnica, { delay: 40 });
+
+      await expect(page.getByRole("heading", { name: titoloTarget })).toBeVisible();
+      await expect(page.getByRole("heading", { name: titoloAltro })).not.toBeVisible();
+      // Il conteggio deve riflettere esattamente la query finale (1 solo
+      // match), non una risposta intermedia (es. per un prefisso della
+      // parola) arrivata per ultima per puro caso di rete.
+      await expect(page.getByText("1 risultati")).toBeVisible();
+    } finally {
+      await deleteArticle(manager.email, manager.password, idTarget);
+      await deleteArticle(manager.email, manager.password, idAltro);
+    }
+  });
+
+  test("ricerca live: il bottone \"Cerca\" forza subito la query digitata, ignorando il debounce residuo", async ({
+    page,
+    testUsers,
+  }) => {
+    const manager = await testUsers.create({ ruolo: "MANAGER_AUTORI" });
+    const stamp = Date.now();
+    const parolaUnica = `Radiatore${stamp}`;
+    const titoloTarget = `Guida ${parolaUnica}`;
+
+    const idTarget = await createPublishedArticle(manager.email, manager.password, {
+      titolo: titoloTarget,
+      categoriaNome: `Categoria bottone ricerca ${stamp}`,
+    });
+
+    try {
+      await page.goto("/esplora");
+      await page.getByRole("button", { name: "Rifiuta tutti" }).click();
+
+      // Digita e clicca "Cerca" subito dopo, ben prima che il debounce
+      // (350ms) da solo avrebbe applicato la query: la richiesta e il
+      // risultato devono comunque comparire senza attesa percepibile.
+      const [request] = await Promise.all([
+        page.waitForRequest(
+          (req) => req.url().includes("/api/v1/articoli?") && req.url().includes("query=")
+        ),
+        (async () => {
+          await page.getByLabel("Ricerca testuale").fill(parolaUnica);
+          await page.getByRole("button", { name: "Applica filtri" }).click();
+        })(),
+      ]);
+      const url = new URL(request.url());
+      expect(url.searchParams.get("query")).toBe(parolaUnica);
+
+      await expect(page.getByRole("heading", { name: titoloTarget })).toBeVisible();
+    } finally {
+      await deleteArticle(manager.email, manager.password, idTarget);
+    }
+  });
+
+  test("audit accessibilità (axe) della ricerca live, live region inclusa", async ({
+    page,
+    testUsers,
+  }) => {
+    const manager = await testUsers.create({ ruolo: "MANAGER_AUTORI" });
+    const stamp = Date.now();
+    const parolaUnica = `Alternatore${stamp}`;
+    const titolo = `Guida ${parolaUnica}`;
+
+    const idArticolo = await createPublishedArticle(manager.email, manager.password, {
+      titolo,
+      categoriaNome: `Categoria a11y ricerca ${stamp}`,
+    });
+
+    try {
+      await page.goto("/esplora");
+      await page.getByRole("button", { name: "Rifiuta tutti" }).click();
+
+      await page.getByLabel("Ricerca testuale").fill(parolaUnica);
+      // Attende che la ricerca live (debounced, nessun click su "Cerca")
+      // sia effettivamente scattata: la scansione deve trovare la live
+      // region gia' aggiornata al conteggio finale, non a quello iniziale.
+      await expect(page.getByRole("heading", { name: titolo })).toBeVisible();
+
+      const results = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+        .analyze();
+      expect(results.violations).toEqual([]);
+    } finally {
+      await deleteArticle(manager.email, manager.password, idArticolo);
+    }
+  });
+
   test("ordinamento 'Più lette': l'articolo con più visualizzazioni compare per primo", async ({
     page,
     testUsers,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useArticleSearch } from "@/lib/articoli/useArticleSearch";
 import { useCategoryTree } from "@/lib/categorie/useCategoryTree";
@@ -20,6 +20,14 @@ const SORT_OPTIONS: { value: OrdinamentoArticoli; label: string }[] = [
 
 const DIMENSIONE_PAGINA = 6;
 
+// Debounce della ricerca testuale live: abbastanza breve da sentirsi
+// "immediato" a fine digitazione, abbastanza lungo da non generare una
+// richiesta per ogni tasto premuto (l'endpoint è pubblico e soggetto a
+// rate limit — 60/min letture, cfr. CLAUDE.md — ma anche a un ritmo di
+// battitura sostenuto, molto più veloce di una lettera ogni 350ms, il
+// debounce resta ben sotto quella soglia).
+const QUERY_DEBOUNCE_MS = 350;
+
 /**
  * Esplora Articoli (mockup 02). Il pannello "Filtri di ricerca" del
  * mockup mostra anche COMPONENTE (checkbox) e TEMPO DI LETTURA (dropdown):
@@ -35,6 +43,17 @@ const DIMENSIONE_PAGINA = 6;
  * Stato nell'URL (query, categoriaIds, ordinamento, pagina): permette di
  * arrivare qui già filtrati da un link esterno (Home → categoria, Home →
  * ricerca) e rende i risultati bookmarkabili/condivisibili.
+ *
+ * Quattro filtri, quattro tempi diversi — nessuno gated da "Applica
+ * filtri" tranne la ricerca testuale, e ora nemmeno quella:
+ *  - categoria (drill-down) e ordinamento (bottoni): già live, invariati
+ *    da prima di questo commento — un click naviga subito.
+ *  - pagina: live, invariata (click sul numero).
+ *  - ricerca testuale: ERA l'unico campo gated dal submit del form. Ora è
+ *    live anch'essa (debounced, sotto), col bottone "Cerca" che resta
+ *    come azione esplicita ridondante — forza subito la query digitata
+ *    ignorando il debounce residuo, utile a chi preferisce cliccare o
+ *    vuole il risultato senza aspettare la pausa.
  */
 export function EsploraContent() {
   const router = useRouter();
@@ -45,13 +64,10 @@ export function EsploraContent() {
   const ordinamento = (searchParams.get("ordinamento") as OrdinamentoArticoli | null) ?? "PIU_RECENTI";
   const pagina = Number(searchParams.get("pagina") ?? 0);
 
-  // Stato "bozza" del form filtri: la ricerca testuale si applica all'URL
-  // (e quindi alla fetch) solo al submit di "Applica filtri", coerente col
-  // mockup originale (un pulsante esplicito, non un filtro live a ogni
-  // tasto). La categoria invece naviga subito a ogni click (drill-down):
-  // due controlli con due tempi diversi, non un'incoerenza - submit
-  // esplicito e navigazione immediata sono la stessa scelta consapevole
-  // usata altrove nel progetto (ordinamento, paginazione).
+  // Stato "bozza" del campo di ricerca: riflette ogni tasto premuto
+  // all'istante (input controllato, nessun ritardo percepito nello
+  // scrivere), ma raggiunge l'URL — e quindi la fetch — solo dopo il
+  // debounce sotto, o subito se si preme "Cerca".
   const [draftQuery, setDraftQuery] = useState(query);
 
   // Distingue esplicitamente le due chiamate a searchArticles che convivono
@@ -83,24 +99,71 @@ export function EsploraContent() {
     dimensionePagina: DIMENSIONE_PAGINA,
   });
 
-  function updateParams(patch: Record<string, string | null>) {
-    const next = new URLSearchParams(searchParams.toString());
-    for (const [key, value] of Object.entries(patch)) {
-      if (value === null || value === "") {
-        next.delete(key);
-      } else {
-        next.set(key, value);
+  // Legge la base da window.location.search (non dalla `searchParams`
+  // catturata al render): con la ricerca live sotto, il patch di "query"
+  // può scattare con un ritardo (debounce) durante il quale un'altra patch
+  // indipendente (es. click sul drill-down categoria) può già essere stata
+  // applicata. Basarsi su un valore sempre fresco al momento della singola
+  // chiamata evita che l'una sovrascriva l'altra con uno snapshot stantio.
+  // push di default (comportamento invariato per categoria/ordinamento/
+  // paginazione, cfr. test e2e sul tasto Indietro); push:false (replace)
+  // per la ricerca testuale, live per definizione — cfr. sotto.
+  const updateParams = useCallback(
+    (patch: Record<string, string | null>, opts: { push?: boolean } = {}) => {
+      const next = new URLSearchParams(window.location.search);
+      for (const [key, value] of Object.entries(patch)) {
+        if (value === null || value === "") {
+          next.delete(key);
+        } else {
+          next.set(key, value);
+        }
       }
-    }
-    router.push(`/esplora${next.toString() ? `?${next.toString()}` : ""}`);
-  }
+      const url = `/esplora${next.toString() ? `?${next.toString()}` : ""}`;
+      if (opts.push === false) {
+        router.replace(url);
+      } else {
+        router.push(url);
+      }
+    },
+    [router]
+  );
+
+  // Debounce della ricerca live: un timer per pausa di digitazione, non uno
+  // per tasto. Il ref (non solo la chiusura dell'effetto) permette al
+  // bottone "Cerca" di cancellarlo esplicitamente e applicare subito,
+  // senza dipendere dai tempi di un nuovo render per liberarlo.
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (draftQuery === query) return;
+    debounceRef.current = setTimeout(() => {
+      debounceRef.current = null;
+      // replace, non push: ogni pausa nella digitazione non deve creare una
+      // voce di cronologia, altrimenti "Indietro" richiederebbe un click
+      // per ogni pausa fatta scrivendo invece che per ogni ricerca voluta.
+      updateParams({ query: draftQuery || null, pagina: null }, { push: false });
+    }, QUERY_DEBOUNCE_MS);
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+    };
+  }, [draftQuery, query, updateParams]);
 
   function handleApplyFilters(event: React.FormEvent) {
     event.preventDefault();
+    // Ignora il debounce residuo: "Cerca" è un'azione esplicita, il
+    // risultato non deve aspettare la pausa che avrebbe altrimenti innescato
+    // la ricerca live sopra.
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
     // Non tocca categoriaIds: la categoria naviga gia' da sola a ogni click
     // del drill-down (handleCategoryNavigate), un submit qui non deve
     // sovrascriverla con uno stato "draft" che per la categoria non esiste piu'.
-    updateParams({ query: draftQuery || null, pagina: null });
+    updateParams({ query: draftQuery || null, pagina: null }, { push: false });
   }
 
   function handleCategoryNavigate(id: number | null) {
@@ -191,7 +254,12 @@ export function EsploraContent() {
       </div>
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs uppercase tracking-wide text-fog">
+        {/* aria-live: la ricerca ora si aggiorna senza un'azione esplicita che
+            uno screen reader percepirebbe altrimenti (submit, navigazione) —
+            annuncia il conteggio aggiornato quando una fetch (iniziale o
+            live) va a buon fine. Non durante un refetch (isRefetching):
+            annuncia solo il conteggio finale, non uno stato intermedio. */}
+        <p className="text-xs uppercase tracking-wide text-fog" aria-live="polite">
           {totaleRisultati ?? "…"} risultati
           {categoriaNomeSelezionata
             ? ` per "${categoriaNomeSelezionata}"`
@@ -218,25 +286,32 @@ export function EsploraContent() {
         </div>
       </div>
 
-      {results.status === "ready" && results.result.articoli.length === 0 ? (
-        <EmptyState
-          icon={<SearchIcon className="h-6 w-6" />}
-          title={nodoOrganizzativoVuoto ? "Categoria organizzativa" : "Nessun risultato"}
-          description={
-            nodoOrganizzativoVuoto
-              ? `"${categoriaNomeSelezionata}" raggruppa altre categorie ma non ha articoli propri: scegli una delle sotto-categorie qui sopra.`
-              : "Nessun articolo corrisponde ai filtri applicati. Prova a modificarli."
-          }
-        />
-      ) : results.status === "ready" ? (
-        <div className="grid gap-6 rounded-lg border border-paper/10 bg-carbon p-6 md:grid-cols-2">
-          {results.result.articoli.map((articolo) => (
-            <ArticleCard key={articolo.id} articolo={articolo} />
-          ))}
-        </div>
-      ) : (
-        <p className="text-sm text-fog">Caricamento…</p>
-      )}
+      {/* Durante un refetch (query live, categoria o ordinamento cambiati)
+          isRefetching e' true e results.result e' ancora l'ultimo valido:
+          si tiene il render precedente a opacita' ridotta invece di uno
+          skeleton pieno che sostituisce tutto — stesso pattern gia' usato
+          per i grafici andamento (AndamentoCharts/AndamentoChartsAutori). */}
+      <div className={`transition-opacity ${results.isRefetching ? "opacity-60" : "opacity-100"}`}>
+        {results.status === "ready" && results.result.articoli.length === 0 ? (
+          <EmptyState
+            icon={<SearchIcon className="h-6 w-6" />}
+            title={nodoOrganizzativoVuoto ? "Categoria organizzativa" : "Nessun risultato"}
+            description={
+              nodoOrganizzativoVuoto
+                ? `"${categoriaNomeSelezionata}" raggruppa altre categorie ma non ha articoli propri: scegli una delle sotto-categorie qui sopra.`
+                : "Nessun articolo corrisponde ai filtri applicati. Prova a modificarli."
+            }
+          />
+        ) : results.status === "ready" ? (
+          <div className="grid gap-6 rounded-lg border border-paper/10 bg-carbon p-6 md:grid-cols-2">
+            {results.result.articoli.map((articolo) => (
+              <ArticleCard key={articolo.id} articolo={articolo} />
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-fog">Caricamento…</p>
+        )}
+      </div>
 
       <Pagination pagina={pagina} totalPages={totalPages} onChange={(p) => updateParams({ pagina: String(p) })} />
     </div>
