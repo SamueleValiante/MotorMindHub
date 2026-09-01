@@ -20,12 +20,20 @@ const SORT_OPTIONS: { value: OrdinamentoArticoli; label: string }[] = [
 
 const DIMENSIONE_PAGINA = 6;
 
-// Debounce della ricerca testuale live: abbastanza breve da sentirsi
-// "immediato" a fine digitazione, abbastanza lungo da non generare una
-// richiesta per ogni tasto premuto (l'endpoint è pubblico e soggetto a
-// rate limit — 60/min letture, cfr. CLAUDE.md — ma anche a un ritmo di
-// battitura sostenuto, molto più veloce di una lettera ogni 350ms, il
-// debounce resta ben sotto quella soglia).
+// Debounce della ricerca testuale live: il conteggio di fetch che genera
+// dipende dal numero di pause >= 350ms tra un tasto e l'altro, non dal
+// numero di caratteri (una sequenza di tasti piu' ravvicinata del
+// debounce non puo' mai produrre piu' di una fetch finale). Simulato con
+// gli stessi timestamp di digitazione su una query realistica di 17
+// caratteri/2 parole: ~1 fetch/query per una digitazione fluente
+// (60-80wpm), ~2-3 per una media (~40wpm) o esitante con pause - contro
+// le 60/min dell'endpoint pubblico (RateLimitFilter, bucket che parte
+// pieno e si riempie di continuo), e condivise con la sola altra fetch
+// permissiva di questa pagina (l'albero categorie, una tantum). Anche il
+// caso patologico (una pausa >= 350ms dopo OGNI carattere, ~1 fetch a
+// lettera) impiega 8-14s per una query cosi' - il tetto teorico restando
+// su quel ritmo per un minuto intero è ~60-70 fetch dalla sola ricerca,
+// non un rischio realistico di digitazione a raffiche con pause naturali.
 const QUERY_DEBOUNCE_MS = 350;
 
 /**
