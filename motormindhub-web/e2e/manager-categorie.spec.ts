@@ -64,8 +64,8 @@ test.describe("Gestione Categorie (Manager)", () => {
    * La regola di dominio (409 se la categoria ha sottocategorie) è già
    * coperta lato backend da
    * GestioneCategorieTest.deleteCategory_lanciaEccezione_quandoLaCategoriaHaSottocategorie
-   * — qui si verifica solo la prevenzione lato UI (CategoryTable, prop
-   * hasFigli): il cestino è disabilitato con un tooltip esplicativo per
+   * — qui si verifica solo la prevenzione lato UI (CategoryTree, da
+   * node.figlie.length): il cestino è disabilitato con un tooltip esplicativo per
    * chi ha figli, resta invece cliccabile normalmente per una foglia. Il
    * backend rimane comunque l'autorità finale se qualcosa sfuggisse a
    * questa prevenzione (vedi commento in ReassignCategoryModal).
@@ -95,7 +95,7 @@ test.describe("Gestione Categorie (Manager)", () => {
     await expect(eliminaFiglia).not.toHaveAttribute("title");
   });
 
-  test("responsive: tabella e azioni (inclusa eliminazione) restano usabili su viewport mobile", async ({
+  test("responsive: albero e azioni (inclusa eliminazione) restano usabili su viewport mobile", async ({
     page,
     testUsers,
   }) => {
@@ -110,7 +110,7 @@ test.describe("Gestione Categorie (Manager)", () => {
 
     await expect(page.getByRole("heading", { name: "Gestione Categorie" })).toBeVisible();
     await page.getByLabel("Cerca categoria").fill(nome);
-    await expect(page.locator("table tbody tr")).toHaveCount(1);
+    await expect(page.getByRole("treeitem")).toHaveCount(1);
     await expect(page.getByRole("button", { name: `Modifica ${nome}` })).toBeVisible();
 
     const eliminaButton = page.getByRole("button", { name: `Elimina ${nome}` });

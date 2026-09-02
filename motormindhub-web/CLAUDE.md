@@ -71,7 +71,17 @@ modificato. Non fidarti che "il build locale passa" come prova
 sufficiente: la working directory locale ha sempre tutti i file anche
 quando git non li traccia, quindi build/tsc/test locali passano lo
 stesso — il problema emerge solo su un checkout pulito (CI, un altro
-collaboratore, un deploy). Già capitato due volte, lato backend
-(ConteggioArticoliPerAutore.java) e lato frontend (lib/shared/useFocusTrap.ts,
-importato da 5 componenti già committati ma mai aggiunto esso stesso —
-main è rimasto rotto su origin finché non è stato scoperto a posteriori).
+collaboratore, un deploy). Già capitato più volte, lato backend (ConteggioArticoliPerAutore.java) e
+lato frontend (lib/shared/useFocusTrap.ts, importato da 5 componenti già
+committati ma mai aggiunto esso stesso; poi di nuovo CategoryPickerField.tsx
+e useCategoryDrilldown.ts, rimasti untracked per due commit successivi) —
+main è rimasto rotto su origin finché non è stato scoperto a posteriori.
+
+Caso particolare quando NON è Claude a fare il commit (es. "niente commit,
+lo faccio io"): mostrare `git status --porcelain` a fine turno non basta,
+perché non intercetta come l'utente committerà davvero — `git commit -a`
+o un "commit all" da IDE stage solo i file già tracciati e modificati, MAI
+i file nuovi non tracciati, quindi li esclude in silenzio. In questo
+scenario segnalare esplicitamente, non solo mostrare lo status: elencare
+per nome i file nuovi e ricordare che vanno aggiunti con `git add`
+esplicito prima del commit, non dati per scontati dentro un `commit -a`.

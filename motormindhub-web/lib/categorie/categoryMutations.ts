@@ -1,6 +1,5 @@
 import { toast } from "@/lib/toast/toast";
 import { apiFetch } from "@/lib/http/client";
-import type { CategoryTreeNode } from "./types";
 
 export interface CategoryFormInput {
   nome: string;
@@ -110,19 +109,4 @@ export async function deleteCategory(categoryId: number, categoriaDestinazioneId
 
   toast.success("Categoria eliminata e articoli riassegnati.");
   return true;
-}
-
-export interface FlatCategoryRow {
-  id: number;
-  nome: string;
-  categoriaPadreNome: string | null;
-  hasFigli: boolean;
-}
-
-/** Appiattisce l'albero in righe per la tabella (mockup 27/34): nome + nome del padre (o null = radice). */
-export function flattenCategoryRows(tree: CategoryTreeNode[], padreNome: string | null = null): FlatCategoryRow[] {
-  return tree.flatMap((node) => [
-    { id: node.id, nome: node.nome, categoriaPadreNome: padreNome, hasFigli: node.figlie.length > 0 },
-    ...flattenCategoryRows(node.figlie, node.nome),
-  ]);
 }

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useCategoryTree } from "@/lib/categorie/useCategoryTree";
 import { getCategoryById, type CategoryDetail } from "@/lib/categorie/categoryMutations";
-import { CategoryTable } from "@/components/categorie/CategoryTable";
+import { CategoryTree } from "@/components/categorie/CategoryTree";
 import { CategoryFormModal } from "@/components/categorie/CategoryFormModal";
 
 type ModalState = { mode: "create" } | { mode: "edit"; category: CategoryDetail } | null;
@@ -11,7 +11,7 @@ type ModalState = { mode: "create" } | { mode: "edit"; category: CategoryDetail 
 /**
  * Categorie (mockup 27, lato Autore): creazione e modifica (RF2.5/RF2.6),
  * nessuna eliminazione — RF3.5 è riservata al Manager Autori (vedi
- * /manager/categorie, mockup 34/35, stesso CategoryTable con canDelete).
+ * /manager/categorie, mockup 34/35, stesso CategoryTree con canDelete).
  */
 export default function AutoreCategoriePage() {
   const categorie = useCategoryTree();
@@ -50,7 +50,7 @@ export default function AutoreCategoriePage() {
       ) : categorie.status === "error" ? (
         <p className="text-sm text-ember">Non è stato possibile caricare le categorie.</p>
       ) : (
-        <CategoryTable tree={categorie.tree} canDelete={false} onEdit={(id) => void handleEdit(id)} />
+        <CategoryTree tree={categorie.tree} canDelete={false} onEdit={(id) => void handleEdit(id)} />
       )}
 
       {modal && (

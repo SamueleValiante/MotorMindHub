@@ -15,7 +15,7 @@ test.describe("Categorie (Autore)", () => {
     ]);
   });
 
-  test("crea una nuova categoria radice: compare in tabella con Categoria Padre —", async ({
+  test("crea una nuova categoria radice: compare nell'albero come nodo di primo livello", async ({
     page,
     testUsers,
   }) => {
@@ -34,13 +34,12 @@ test.describe("Categorie (Autore)", () => {
     await expect(page.getByText("Categoria creata con successo.")).toBeVisible();
 
     await page.getByLabel("Cerca categoria").fill(nome);
-    const rows = page.locator("table tbody tr");
-    await expect(rows).toHaveCount(1);
-    await expect(rows.first()).toContainText(nome);
-    await expect(rows.first()).toContainText("—");
+    const nodo = page.getByRole("treeitem").filter({ hasText: nome });
+    await expect(nodo).toHaveCount(1);
+    await expect(nodo).toHaveAttribute("aria-level", "1");
   });
 
-  test("crea una sottocategoria: il drill-down 'Categoria padre' mostra la gerarchia, la riga mostra il nome del padre", async ({
+  test("crea una sottocategoria: il drill-down 'Categoria padre' mostra la gerarchia, la ricerca rivela il nodo annidato sotto il padre auto-espanso", async ({
     page,
     testUsers,
   }) => {
@@ -59,11 +58,25 @@ test.describe("Categorie (Autore)", () => {
     await page.getByRole("button", { name: "Salva categoria" }).click();
     await expect(page.getByText("Categoria creata con successo.")).toBeVisible();
 
+    // La ricerca sulla sola figlia deve comunque rivelare il padre (pruneToMatches
+    // tiene la catena di antenati e la auto-espande) — verifica sia il nesting
+    // (aria-level) sia che il padre sia mostrato in contesto, non solo la figlia.
     await page.getByLabel("Cerca categoria").fill(figliaNome);
-    const rows = page.locator("table tbody tr");
-    await expect(rows).toHaveCount(1);
-    await expect(rows.first()).toContainText(figliaNome);
-    await expect(rows.first()).toContainText(padreNome);
+
+    // Nessuna categoria duplicata con questo nome — controllo sul testo del
+    // nodo, non sul treeitem: essendo annidata, il treeitem del PADRE
+    // "contiene" comunque il testo della figlia (è un suo discendente DOM),
+    // quindi filtrare i treeitem per hasText: figliaNome ne troverebbe due
+    // (padre e figlia). .last() risolve l'ambiguità in modo non fragile: in
+    // ordine di documento un antenato precede sempre i propri discendenti,
+    // quindi l'ultimo match è garantito essere il treeitem più annidato
+    // (la figlia), mai un antenato.
+    await expect(page.getByText(figliaNome, { exact: true })).toHaveCount(1);
+    const figlia = page.getByRole("treeitem").filter({ hasText: figliaNome }).last();
+    const padre = page.getByRole("treeitem").filter({ hasText: padreNome });
+    await expect(figlia).toHaveAttribute("aria-level", "2");
+    await expect(padre).toBeVisible();
+    await expect(padre).toHaveAttribute("aria-level", "1");
   });
 
   test("modifica: Nome e Categoria padre sono disabilitati, solo Descrizione è editabile e persiste", async ({
@@ -96,7 +109,7 @@ test.describe("Categorie (Autore)", () => {
     await expect(page.getByLabel("Descrizione")).toHaveValue("Descrizione aggiornata via e2e.");
   });
 
-  test("responsive: ricerca, tabella e form restano usabili su viewport mobile", async ({
+  test("responsive: ricerca, albero e form restano usabili su viewport mobile", async ({
     page,
     testUsers,
   }) => {
@@ -111,7 +124,7 @@ test.describe("Categorie (Autore)", () => {
 
     await expect(page.getByRole("heading", { name: "Categorie" })).toBeVisible();
     await page.getByLabel("Cerca categoria").fill(nome);
-    await expect(page.locator("table tbody tr")).toHaveCount(1);
+    await expect(page.getByRole("treeitem")).toHaveCount(1);
     await expect(page.getByRole("button", { name: `Modifica ${nome}` })).toBeVisible();
 
     await page.getByRole("button", { name: `Modifica ${nome}` }).click();

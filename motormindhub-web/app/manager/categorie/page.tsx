@@ -2,15 +2,16 @@
 
 import { useState } from "react";
 import { useCategoryTree } from "@/lib/categorie/useCategoryTree";
-import { getCategoryById, type CategoryDetail, type FlatCategoryRow } from "@/lib/categorie/categoryMutations";
-import { CategoryTable } from "@/components/categorie/CategoryTable";
+import { getCategoryById, type CategoryDetail } from "@/lib/categorie/categoryMutations";
+import { CategoryTree } from "@/components/categorie/CategoryTree";
 import { CategoryFormModal } from "@/components/categorie/CategoryFormModal";
 import { ReassignCategoryModal } from "@/components/categorie/ReassignCategoryModal";
+import type { CategoryTreeNode } from "@/lib/categorie/types";
 
 type ModalState = { mode: "create" } | { mode: "edit"; category: CategoryDetail } | null;
 
 /**
- * Gestione Categorie (mockup 34, lato Manager): stesso CategoryTable/
+ * Gestione Categorie (mockup 34, lato Manager): stesso CategoryTree/
  * CategoryFormModal dell'area Autore (creazione/modifica ammesse anche per
  * MANAGER_AUTORI lato backend, vedi CategorieController), più eliminazione
  * con riassegnazione (RF3.5, mockup 35) riservata a questo ruolo.
@@ -18,7 +19,7 @@ type ModalState = { mode: "create" } | { mode: "edit"; category: CategoryDetail 
 export default function ManagerCategoriePage() {
   const categorie = useCategoryTree();
   const [modal, setModal] = useState<ModalState>(null);
-  const [pendingDelete, setPendingDelete] = useState<FlatCategoryRow | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<CategoryTreeNode | null>(null);
 
   const handleEdit = async (categoryId: number) => {
     const detail = await getCategoryById(categoryId);
@@ -58,11 +59,11 @@ export default function ManagerCategoriePage() {
       ) : categorie.status === "error" ? (
         <p className="text-sm text-ember">Non è stato possibile caricare le categorie.</p>
       ) : (
-        <CategoryTable
+        <CategoryTree
           tree={categorie.tree}
           canDelete
           onEdit={(id) => void handleEdit(id)}
-          onDelete={(row) => setPendingDelete(row)}
+          onDelete={(node) => setPendingDelete(node)}
         />
       )}
 
