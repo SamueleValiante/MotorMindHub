@@ -1,5 +1,5 @@
 import { test, expect } from "./fixtures";
-import { loginViaUi } from "./helpers/ui";
+import { loginViaUi, pickCategory } from "./helpers/ui";
 import {
   createCategory,
   createSubcategory,
@@ -42,7 +42,7 @@ test.describe("Gestione Categorie (Manager)", () => {
       await page.getByRole("button", { name: `Elimina ${origineNome}` }).click();
 
       await expect(page.getByRole("heading", { name: `Elimina "${origineNome}"` })).toBeVisible();
-      await page.getByLabel("Riassegna articoli a").selectOption({ label: destinazioneNome });
+      await pickCategory(page, "Riassegna articoli a", destinazioneNome);
       await page.getByRole("button", { name: "Elimina definitivamente" }).click();
       await expect(page.getByText("Categoria eliminata e articoli riassegnati.")).toBeVisible();
 

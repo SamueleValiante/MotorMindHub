@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useCategoryTree, flattenCategoryTree } from "@/lib/categorie/useCategoryTree";
+import { useCategoryTree } from "@/lib/categorie/useCategoryTree";
+import { CategoryPickerField } from "@/components/categorie/CategoryPickerField";
 import { useEditableArticle } from "@/lib/articoli/useEditableArticle";
 import {
   createDraft,
@@ -20,23 +21,20 @@ import { ImageUploadField } from "@/components/shared/ImageUploadField";
 import { ArticleBodyEditor } from "@/components/articoli/ArticleBodyEditor";
 import type { ArticleDetail } from "@/lib/articoli/types";
 
-const inputClassName =
-  "rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent";
 /**
- * Stessa base di inputClassName, ma text-paper invece di text-chrome: per
- * titolo e testo dell'articolo, cioè il contenuto che l'autore sta
- * scrivendo, non un campo di form come categoria/tag. chrome (`#B8BEC7`,
- * DESIGN_SYSTEM.md: "bordi, icone, testo secondario chiaro") supera comunque
- * la soglia WCAG AA qui (8.33:1 su surface-raised), ma è il ruolo
- * semantico sbagliato — paper (`#EDEEF0`, "testo primario su sfondo
- * scuro", 13.41:1) è il colore documentato per questo caso, non chrome.
+ * text-paper invece di text-chrome: per titolo e testo dell'articolo, cioè
+ * il contenuto che l'autore sta scrivendo, non un campo di form come
+ * categoria/tag. chrome (`#B8BEC7`, DESIGN_SYSTEM.md: "bordi, icone, testo
+ * secondario chiaro") supera comunque la soglia WCAG AA qui (8.33:1 su
+ * surface-raised), ma è il ruolo semantico sbagliato — paper (`#EDEEF0`,
+ * "testo primario su sfondo scuro", 13.41:1) è il colore documentato per
+ * questo caso, non chrome.
  *
- * Nessuna classe text-* qui (a differenza di inputClassName sopra, che ha
- * text-sm): titolo e testo vogliono entrambi text-base, aggiunta da ogni
- * chiamante — un text-sm qui e un text-base aggiunto dopo nella stessa
- * stringa di classi sono due utility Tailwind per la stessa proprietà,
- * l'ordine con cui vincono dipende dall'ordine nel CSS generato, non
- * dall'ordine nella stringa: verificato che così si rompeva davvero
+ * Nessuna classe text-* qui: titolo e testo vogliono entrambi text-base,
+ * aggiunta da ogni chiamante — un text-sm qui e un text-base aggiunto dopo
+ * nella stessa stringa di classi sono due utility Tailwind per la stessa
+ * proprietà, l'ordine con cui vincono dipende dall'ordine nel CSS generato,
+ * non dall'ordine nella stringa: verificato che così si rompeva davvero
  * (il textarea restava a 14px, non 16px, nonostante `text-base` in coda).
  */
 const contentInputClassName =
@@ -245,7 +243,6 @@ function TagInput({ tags, onChange }: { tags: string[]; onChange: (next: string[
 function ArticleEditorForm({ articolo }: { articolo: ArticleDetail | null }) {
   const router = useRouter();
   const categoryTree = useCategoryTree();
-  const flatCategorie = categoryTree.status === "ready" ? flattenCategoryTree(categoryTree.tree) : [];
 
   const [titolo, setTitolo] = useState(articolo?.titolo ?? "");
   const [testo, setTesto] = useState(articolo?.testo ?? "");
@@ -372,20 +369,12 @@ function ArticleEditorForm({ articolo }: { articolo: ArticleDetail | null }) {
           <label htmlFor="editor-categoria" className={labelClassName}>
             Categoria
           </label>
-          <select
+          <CategoryPickerField
             id="editor-categoria"
-            value={categoriaId ?? ""}
-            onChange={(event) => setCategoriaId(event.target.value ? Number(event.target.value) : null)}
-            className={inputClassName}
-          >
-            <option value="">Seleziona una categoria…</option>
-            {flatCategorie.map((c) => (
-              <option key={c.id} value={c.id}>
-                {"    ".repeat(c.depth)}
-                {c.nome}
-              </option>
-            ))}
-          </select>
+            tree={categoryTree.status === "ready" ? categoryTree.tree : []}
+            value={categoriaId}
+            onChange={setCategoriaId}
+          />
         </div>
 
         <div className="flex flex-col gap-2">

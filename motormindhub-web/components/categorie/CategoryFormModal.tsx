@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { createCategory, updateCategory } from "@/lib/categorie/categoryMutations";
 import type { CategoryDetail } from "@/lib/categorie/categoryMutations";
-import { flattenCategoryTree } from "@/lib/categorie/useCategoryTree";
+import { CategoryPickerField } from "@/components/categorie/CategoryPickerField";
 import { toast } from "@/lib/toast/toast";
 import { CloseIcon } from "@/components/public/icons";
 import type { CategoryTreeNode } from "@/lib/categorie/types";
@@ -33,8 +33,6 @@ export function CategoryFormModal({ tree, category, onClose, onSaved }: Category
   const [categoriaPadreId, setCategoriaPadreId] = useState<number | null>(category?.categoriaPadreId ?? null);
   const [descrizione, setDescrizione] = useState(category?.descrizione ?? "");
   const [pending, setPending] = useState(false);
-
-  const flatCategorie = flattenCategoryTree(tree).filter((c) => c.id !== category?.id);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -89,23 +87,15 @@ export function CategoryFormModal({ tree, category, onClose, onSaved }: Category
             <label htmlFor="categoria-padre" className={labelClassName}>
               Categoria padre
             </label>
-            <select
+            <CategoryPickerField
               id="categoria-padre"
-              value={categoriaPadreId ?? ""}
-              onChange={(event) =>
-                setCategoriaPadreId(event.target.value ? Number(event.target.value) : null)
-              }
+              tree={tree}
+              value={categoriaPadreId}
+              onChange={setCategoriaPadreId}
+              excludeIds={category ? [category.id] : []}
+              allowNone
               disabled={isEdit}
-              className={inputClassName}
-            >
-              <option value="">Nessuna — categoria radice</option>
-              {flatCategorie.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {"    ".repeat(c.depth)}
-                  {c.nome}
-                </option>
-              ))}
-            </select>
+            />
             {isEdit && <p className="text-xs text-fog">La categoria padre non è modificabile da qui.</p>}
           </div>
 

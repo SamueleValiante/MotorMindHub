@@ -1,5 +1,5 @@
 import { test, expect } from "./fixtures";
-import { loginViaUi } from "./helpers/ui";
+import { loginViaUi, pickCategory } from "./helpers/ui";
 import { createCategory } from "./helpers/test-articles";
 
 test.describe("Categorie (Autore)", () => {
@@ -40,7 +40,7 @@ test.describe("Categorie (Autore)", () => {
     await expect(rows.first()).toContainText("—");
   });
 
-  test("crea una sottocategoria: la select 'Categoria padre' mostra la gerarchia, la riga mostra il nome del padre", async ({
+  test("crea una sottocategoria: il drill-down 'Categoria padre' mostra la gerarchia, la riga mostra il nome del padre", async ({
     page,
     testUsers,
   }) => {
@@ -55,7 +55,7 @@ test.describe("Categorie (Autore)", () => {
 
     await page.getByRole("button", { name: "+ Nuova categoria" }).click();
     await page.getByLabel("Nome categoria").fill(figliaNome);
-    await page.getByLabel("Categoria padre").selectOption({ label: padreNome });
+    await pickCategory(page, "Categoria padre", padreNome);
     await page.getByRole("button", { name: "Salva categoria" }).click();
     await expect(page.getByText("Categoria creata con successo.")).toBeVisible();
 

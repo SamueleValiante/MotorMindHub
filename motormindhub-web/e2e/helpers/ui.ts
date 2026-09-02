@@ -50,3 +50,20 @@ export async function loginViaUi(
 
   return decoded;
 }
+
+/**
+ * Sceglie una categoria tramite CategoryPickerField (drill-down + conferma,
+ * sostituisce il <select> piatto in editor articolo/CategoryFormModal/
+ * ReassignCategoryModal): apre il trigger via label e clicca il nodo con
+ * quel nome. Assume che sia visibile al livello radice del drill-down — vero
+ * per tutte le categorie create nei test via createCategory/test-articles.ts
+ * (nessun categoriaPadreId, quindi sempre nodi radice, sempre foglie): un
+ * click sceglie e chiude subito, senza bisogno di navigare più livelli.
+ */
+export async function pickCategory(page: Page, labelText: string, categoriaNome: string): Promise<void> {
+  await page.getByLabel(labelText).click();
+  await page
+    .getByRole("dialog", { name: "Seleziona categoria" })
+    .getByRole("button", { name: categoriaNome, exact: true })
+    .click();
+}

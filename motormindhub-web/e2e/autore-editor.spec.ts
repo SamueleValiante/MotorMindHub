@@ -1,7 +1,7 @@
 import path from "node:path";
 import { test, expect } from "./fixtures";
 import { AxeBuilder } from "@axe-core/playwright";
-import { loginViaUi } from "./helpers/ui";
+import { loginViaUi, pickCategory } from "./helpers/ui";
 import { createCategory, rejectArticle, approveArticle, deleteArticle } from "./helpers/test-articles";
 
 const INLINE_IMAGE_PATH = path.join(__dirname, "fixtures", "inline-image.png");
@@ -52,7 +52,7 @@ test.describe("Editor articolo", () => {
     // "Testo dell'articolo" in questo file.
     await page.getByLabel("Testo dell'articolo").click();
     await page.getByLabel("Testo dell'articolo").pressSequentially("Testo di prova per il ciclo end-to-end dell'editor.");
-    await page.getByLabel("Categoria").selectOption({ label: categoriaNome });
+    await pickCategory(page, "Categoria", categoriaNome);
     await page.getByRole("button", { name: "+ Aggiungi" }).click();
     await page.getByPlaceholder("Nuovo tag…").fill("prova-e2e");
     await page.getByPlaceholder("Nuovo tag…").press("Enter");
@@ -258,7 +258,7 @@ test.describe("Editor articolo", () => {
     await expect(page.getByRole("heading", { name: "Descrivi l'immagine" })).not.toBeVisible();
     await expect(corpo.getByRole("img", { name: "Schema del sistema frenante ABS" })).toBeVisible();
 
-    await page.getByLabel("Categoria").selectOption({ label: categoriaNome });
+    await pickCategory(page, "Categoria", categoriaNome);
 
     await page.getByRole("button", { name: "Salva bozza" }).click();
     await page.waitForURL(/\/autore\/articoli\/\d+\/modifica$/);

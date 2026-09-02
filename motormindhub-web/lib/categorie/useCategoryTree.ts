@@ -50,24 +50,3 @@ export function useCategoryTree(): State & { refetch: () => void } {
 export function countCategories(tree: CategoryTreeNode[]): number {
   return tree.reduce((total, node) => total + 1 + countCategories(node.figlie), 0);
 }
-
-export interface FlatCategoryOption {
-  id: number;
-  nome: string;
-  depth: number;
-}
-
-/**
- * Appiattisce l'albero in un elenco ordinato (radice, poi figlie, ricorsivo)
- * con la profondità di ciascun nodo: usato dal <select> categoria di Esplora
- * per mostrare l'intera gerarchia (non solo le radici, a differenza della
- * lista di Home) restando comunque un singolo controllo nativo — ogni
- * opzione invia un solo id esatto, l'espansione alle sottocategorie resta
- * lato server (searchArticles).
- */
-export function flattenCategoryTree(tree: CategoryTreeNode[], depth = 0): FlatCategoryOption[] {
-  return tree.flatMap((node) => [
-    { id: node.id, nome: node.nome, depth },
-    ...flattenCategoryTree(node.figlie, depth + 1),
-  ]);
-}

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { deleteCategory } from "@/lib/categorie/categoryMutations";
-import { flattenCategoryTree } from "@/lib/categorie/useCategoryTree";
+import { countCategories } from "@/lib/categorie/useCategoryTree";
+import { CategoryPickerField } from "@/components/categorie/CategoryPickerField";
 import { TrashIcon } from "@/components/account/icons";
 import type { CategoryTreeNode } from "@/lib/categorie/types";
 
@@ -36,8 +37,8 @@ export function ReassignCategoryModal({
   onCancel,
   onDeleted,
 }: ReassignCategoryModalProps) {
-  const opzioni = flattenCategoryTree(tree).filter((c) => c.id !== categoryId);
-  const [destinazioneId, setDestinazioneId] = useState<number | null>(opzioni[0]?.id ?? null);
+  const hasAlternative = countCategories(tree) > 1;
+  const [destinazioneId, setDestinazioneId] = useState<number | null>(null);
   const [pending, setPending] = useState(false);
 
   const handleConfirm = async () => {
@@ -67,21 +68,15 @@ export function ReassignCategoryModal({
           <label htmlFor="riassegna-categoria" className="font-heading text-xs font-semibold uppercase tracking-wide text-fog">
             Riassegna articoli a
           </label>
-          <select
+          <CategoryPickerField
             id="riassegna-categoria"
-            value={destinazioneId ?? ""}
-            onChange={(event) => setDestinazioneId(event.target.value ? Number(event.target.value) : null)}
-            disabled={opzioni.length === 0}
-            className="rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent disabled:opacity-50"
-          >
-            {opzioni.length === 0 && <option value="">Nessuna categoria alternativa disponibile</option>}
-            {opzioni.map((c) => (
-              <option key={c.id} value={c.id}>
-                {"    ".repeat(c.depth)}
-                {c.nome}
-              </option>
-            ))}
-          </select>
+            tree={tree}
+            value={destinazioneId}
+            onChange={setDestinazioneId}
+            excludeIds={[categoryId]}
+            disabled={!hasAlternative}
+            placeholder={hasAlternative ? "Seleziona una categoria…" : "Nessuna categoria alternativa disponibile"}
+          />
         </div>
 
         <div className="mt-6 flex justify-end gap-4">
