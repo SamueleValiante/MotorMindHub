@@ -4,6 +4,7 @@ import { useState } from "react";
 import { deleteCategory } from "@/lib/categorie/categoryMutations";
 import { countCategories } from "@/lib/categorie/useCategoryTree";
 import { CategoryPickerField } from "@/components/categorie/CategoryPickerField";
+import { useFocusTrap } from "@/lib/shared/useFocusTrap";
 import { TrashIcon } from "@/components/account/icons";
 import type { CategoryTreeNode } from "@/lib/categorie/types";
 
@@ -40,6 +41,7 @@ export function ReassignCategoryModal({
   const hasAlternative = countCategories(tree) > 1;
   const [destinazioneId, setDestinazioneId] = useState<number | null>(null);
   const [pending, setPending] = useState(false);
+  const containerRef = useFocusTrap<HTMLDivElement>({ isOpen: true, onClose: onCancel });
 
   const handleConfirm = async () => {
     if (destinazioneId === null) return;
@@ -51,12 +53,23 @@ export function ReassignCategoryModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-asphalt/80 p-4">
-      <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-xl bg-carbon p-8 shadow-xl">
+      <div
+        ref={containerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="reassign-category-title"
+        className="w-full max-w-md rounded-xl bg-carbon p-8 shadow-xl"
+      >
         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-ember/10 text-ember">
           <TrashIcon className="h-5 w-5" />
         </div>
 
-        <h2 className="mt-4 font-heading text-lg font-bold uppercase tracking-wide text-paper">
+        <h2
+          id="reassign-category-title"
+          tabIndex={-1}
+          data-focus-trap-initial
+          className="mt-4 font-heading text-lg font-bold uppercase tracking-wide text-paper outline-none"
+        >
           Elimina &quot;{categoryNome}&quot;
         </h2>
         <p className="mt-2 text-sm text-fog">

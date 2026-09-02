@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { createCategory, updateCategory } from "@/lib/categorie/categoryMutations";
 import type { CategoryDetail } from "@/lib/categorie/categoryMutations";
 import { CategoryPickerField } from "@/components/categorie/CategoryPickerField";
+import { useFocusTrap } from "@/lib/shared/useFocusTrap";
 import { toast } from "@/lib/toast/toast";
 import { CloseIcon } from "@/components/public/icons";
 import type { CategoryTreeNode } from "@/lib/categorie/types";
@@ -33,6 +34,7 @@ export function CategoryFormModal({ tree, category, onClose, onSaved }: Category
   const [categoriaPadreId, setCategoriaPadreId] = useState<number | null>(category?.categoriaPadreId ?? null);
   const [descrizione, setDescrizione] = useState(category?.descrizione ?? "");
   const [pending, setPending] = useState(false);
+  const containerRef = useFocusTrap<HTMLDivElement>({ isOpen: true, onClose });
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -51,9 +53,20 @@ export function CategoryFormModal({ tree, category, onClose, onSaved }: Category
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-asphalt/80 p-4">
-      <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-xl bg-carbon p-8 shadow-xl">
+      <div
+        ref={containerRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="category-form-title"
+        className="w-full max-w-md rounded-xl bg-carbon p-8 shadow-xl"
+      >
         <div className="flex items-start justify-between gap-4">
-          <h2 className="font-heading text-lg font-bold uppercase tracking-wide text-paper">
+          <h2
+            id="category-form-title"
+            tabIndex={-1}
+            data-focus-trap-initial
+            className="font-heading text-lg font-bold uppercase tracking-wide text-paper outline-none"
+          >
             {isEdit ? "Modifica categoria" : "Nuova categoria"}
           </h2>
           <button

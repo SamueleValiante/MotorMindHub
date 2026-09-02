@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -9,9 +9,21 @@ function getFocusable(container: HTMLElement): HTMLElement[] {
   );
 }
 
+/**
+ * Stack condiviso dei trap aperti in questo momento (es. CategoryPickerField
+ * aperto dentro CategoryFormModal, entrambi con useFocusTrap): il markup del
+ * dialog annidato è comunque un discendente DOM del contenitore esterno,
+ * quindi senza questo stack Tab/Escape farebbero scattare ENTRAMBI i
+ * listener (quello esterno vedrebbe anche i controlli del dialog interno
+ * tra i suoi focusable, ed Escape chiuderebbe i due dialog insieme) - solo
+ * il trap in cima allo stack (l'ultimo aperto) reagisce, gli altri restano
+ * inerti finché non torna in cima.
+ */
+const trapStack: symbol[] = [];
+
 interface UseFocusTrapOptions {
   isOpen: boolean;
-  /** Chiamato su Escape. Assente = Escape non fa nulla (nessun modale tra i 5 correnti lo lascia assente, ma un futuro caso non distruttivo potrebbe volerlo). */
+  /** Chiamato su Escape. Assente = Escape non fa nulla (nessun modale tra gli attuali lo lascia assente, ma un futuro caso non distruttivo potrebbe volerlo). */
   onClose?: () => void;
   /**
    * Solo per contenitori con più sotto-viste interne che cambiano senza
@@ -28,9 +40,10 @@ interface UseFocusTrapOptions {
 
 /**
  * Comportamento condiviso da SuspendAccountModal, ConfirmDeleteModal,
- * ConfirmDeletionModal, ReportUserModal, CookieBanner (non un componente
- * wrapper: troppo diversi strutturalmente, CookieBanner in particolare non
- * ha overlay/backdrop ed ha due sotto-viste - solo il comportamento e'
+ * ConfirmDeletionModal, ReportUserModal, CookieBanner, CategoryFormModal,
+ * ReassignCategoryModal, CategoryPickerField (non un componente wrapper:
+ * troppo diversi strutturalmente, CookieBanner in particolare non ha
+ * overlay/backdrop ed ha due sotto-viste - solo il comportamento e'
  * condiviso, non il markup):
  *
  * 1. All'apertura (e ad ogni cambio di focusKey) sposta il focus dentro il
@@ -41,8 +54,13 @@ interface UseFocusTrapOptions {
  * 2. Intrappola Tab/Shift+Tab dentro gli elementi interattivi *visibili*
  *    del container (ricalcolati ad ogni pressione, non uno snapshot -
  *    serve per campi condizionali come le note aggiuntive di
- *    SuspendAccountModal).
- * 3. Chiude su Escape, se onClose e' passato.
+ *    SuspendAccountModal), ma solo se e' il trap piu' interno attualmente
+ *    aperto (trapStack sopra) - altrimenti un trap annidato (es.
+ *    CategoryPickerField dentro CategoryFormModal) lo terrebbe attivo anche
+ *    mentre l'utente e' dentro il dialog piu' interno.
+ * 3. Chiude su Escape, se onClose e' passato - stessa condizione di
+ *    priorita' annidata del punto 2, altrimenti Escape chiuderebbe entrambi
+ *    i dialog invece del solo piu' interno.
  * 4. Ripristina il focus sul trigger (l'elemento a fuoco prima
  *    dell'apertura) alla chiusura, sia via Escape sia via smontaggio.
  */
@@ -53,6 +71,7 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>({
 }: UseFocusTrapOptions): RefObject<T | null> {
   const containerRef = useRef<T>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
+  const [trapId] = useState<symbol>(() => Symbol("focus-trap"));
 
   // I chiamanti (es. SuspendAccountModal in app/gestore/gestione-account/[userId]/page.tsx)
   // passano onCancel come funzione inline, quindi una nuova referenza ad ogni render del
@@ -77,8 +96,11 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>({
     triggerRef.current = document.activeElement as HTMLElement | null;
 
     const container = containerRef.current;
+    trapStack.push(trapId);
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (trapStack[trapStack.length - 1] !== trapId) return;
+
       if (event.key === "Escape") {
         onCloseRef.current?.();
         return;
@@ -108,9 +130,11 @@ export function useFocusTrap<T extends HTMLElement = HTMLElement>({
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
+      const index = trapStack.indexOf(trapId);
+      if (index !== -1) trapStack.splice(index, 1);
       triggerRef.current?.focus();
     };
-  }, [isOpen]);
+  }, [isOpen, trapId]);
 
   // Effect separato (invece che nel blocco sopra): deve rieseguire quando
   // cambia focusKey, ma senza ricatturare triggerRef o riattaccare il

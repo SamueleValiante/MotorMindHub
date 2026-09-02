@@ -8,6 +8,7 @@ import {
   createDraftArticle,
   createPendingArticle,
   deleteDraftArticle,
+  deleteArticle,
 } from "./helpers/test-articles";
 import { getUserId } from "./helpers/test-users";
 import { requestAccountDeletion, reportUser } from "./helpers/test-amministrazione-utenti";
@@ -125,6 +126,11 @@ test.describe("Audit accessibilità (axe-core, WCAG 2.1 A+AA) — sola verifica"
     for (const [area, path] of routes) {
       await auditRoute(page, `Pubblico — ${area}`, path);
     }
+
+    // Stesso motivo di "rotte Manager Autori" sotto: senza questo, il
+    // cleanup dell'utente in fixtures.ts fallisce con una FK violation su
+    // articoli_autore_id_fkey (deleteTestUser non tocca gli articoli).
+    await deleteArticle(manager.email, manager.password, articleId);
   });
 
   test("rotte Iscritto", async ({ page, testUsers }) => {
@@ -194,6 +200,12 @@ test.describe("Audit accessibilità (axe-core, WCAG 2.1 A+AA) — sola verifica"
     for (const [area, path] of routes) {
       await auditRoute(page, `Manager Autori — ${area}`, path);
     }
+
+    // Senza questo, il cleanup dell'utente in fixtures.ts (deleteTestUser, che
+    // non tocca affatto gli articoli dell'autore) fallisce con una FK
+    // violation su articoli_autore_id_fkey — stesso pattern di deleteArticle,
+    // cfr. il commento sul suo warning in test-articles.ts.
+    await deleteArticle(manager.email, manager.password, pendingId);
   });
 
   test("rotte Gestore Utenti", async ({ page, testUsers }) => {
