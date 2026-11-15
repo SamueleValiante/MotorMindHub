@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import TiptapImage from "@tiptap/extension-image";
+import { Table, TableRow, TableHeader, TableCell } from "@tiptap/extension-table";
 import { docToMarkdown, markdownToDoc } from "@/lib/articoli/markdown";
 import { uploadInlineImage } from "@/lib/articoli/uploadInlineImage";
 import { InsertImageAltModal } from "@/components/articoli/InsertImageAltModal";
@@ -21,7 +22,7 @@ const toolbarButtonActiveClassName = "bg-surface-raised text-paper";
 const dividerClassName = "mx-1 h-5 w-px bg-paper/10";
 
 /**
- * Editor Markdown (H2/H3, paragrafo, grassetto, corsivo, immagine inline) —
+ * Editor Markdown (H2/H3, paragrafo, grassetto, corsivo, elenchi, citazione, tabella, immagine inline) —
  * sostituisce il <textarea> di testo semplice. `value`/`onChange` sono
  * Markdown, non lo stato interno di TipTap: al mount il documento viene
  * costruito una volta da markdownToDoc(value) (coerente con come
@@ -55,19 +56,19 @@ export function ArticleBodyEditor({ value, onChange }: ArticleBodyEditorProps) {
     extensions: [
       StarterKit.configure({
         heading: { levels: [2, 3] },
-        blockquote: false,
         code: false,
         codeBlock: false,
         horizontalRule: false,
         strike: false,
         underline: false,
         link: false,
-        bulletList: false,
-        orderedList: false,
-        listItem: false,
-        listKeymap: false,
       }),
       TiptapImage,
+      // Tabelle GFM: prima riga sempre di intestazione (docToMarkdown la serializza cosi'); niente celle unite ne' ridimensionamento colonne.
+      Table.configure({ resizable: false }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
     content: markdownToDoc(value),
     onUpdate: ({ editor: instance }) => onChange(docToMarkdown(instance.getJSON())),
@@ -83,7 +84,7 @@ export function ArticleBodyEditor({ value, onChange }: ArticleBodyEditorProps) {
           // vicini per leggersi come gerarchia distinta) - l'anteprima in
           // scrittura deve rispecchiare come apparirà pubblicato, altrimenti
           // è un terzo punto di rendering pronto a disallinearsi in silenzio.
-          "min-h-64 rounded-b-md bg-surface-raised px-4 py-3 text-base leading-loose text-paper outline-none focus:ring-2 focus:ring-accent [&_h2]:font-heading [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:uppercase [&_h2]:tracking-wide [&_h3]:font-heading [&_h3]:text-xl [&_h3]:font-bold [&_h3]:uppercase [&_h3]:tracking-wide [&_img]:my-2 [&_img]:w-full [&_img]:rounded-md [&_p+p]:mt-4",
+          "min-h-64 rounded-b-md bg-surface-raised px-4 py-3 text-base leading-loose text-paper outline-none focus:ring-2 focus:ring-accent [&_h2]:font-heading [&_h2]:text-2xl [&_h2]:font-bold [&_h2]:uppercase [&_h2]:tracking-wide [&_h3]:font-heading [&_h3]:text-xl [&_h3]:font-bold [&_h3]:uppercase [&_h3]:tracking-wide [&_img]:my-2 [&_img]:w-full [&_img]:rounded-md [&_p+p]:mt-4 [&_ul]:my-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-4 [&_ol]:list-decimal [&_ol]:pl-6 [&_blockquote]:my-6 [&_blockquote]:border-l-4 [&_blockquote]:border-paper/30 [&_blockquote]:bg-paper/5 [&_blockquote]:px-4 [&_blockquote]:py-3 [&_table]:my-6 [&_table]:w-full [&_table]:border-collapse [&_th]:border [&_th]:border-paper/10 [&_th]:bg-paper/5 [&_th]:px-3 [&_th]:py-2 [&_th]:text-left [&_td]:border [&_td]:border-paper/10 [&_td]:px-3 [&_td]:py-2 [&_td]:align-top",
       },
     },
   });
@@ -161,6 +162,64 @@ export function ArticleBodyEditor({ value, onChange }: ArticleBodyEditorProps) {
         >
           I
         </button>
+
+        <span aria-hidden="true" className={dividerClassName} />
+
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          aria-pressed={editor.isActive("bulletList")}
+          aria-label="Elenco puntato"
+          className={`${toolbarButtonClassName} ${editor.isActive("bulletList") ? toolbarButtonActiveClassName : ""}`}
+        >
+          • Elenco
+        </button>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          aria-pressed={editor.isActive("orderedList")}
+          aria-label="Elenco numerato"
+          className={`${toolbarButtonClassName} ${editor.isActive("orderedList") ? toolbarButtonActiveClassName : ""}`}
+        >
+          1. Elenco
+        </button>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleBlockquote().run()}
+          aria-pressed={editor.isActive("blockquote")}
+          aria-label="Citazione"
+          className={`${toolbarButtonClassName} ${editor.isActive("blockquote") ? toolbarButtonActiveClassName : ""}`}
+        >
+          Citazione
+        </button>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+          aria-pressed={editor.isActive("table")}
+          aria-label="Inserisci tabella"
+          className={`${toolbarButtonClassName} ${editor.isActive("table") ? toolbarButtonActiveClassName : ""}`}
+        >
+          Tabella
+        </button>
+        {editor.isActive("table") && (
+          <>
+            <button type="button" onClick={() => editor.chain().focus().addRowAfter().run()} aria-label="Aggiungi riga" className={toolbarButtonClassName}>
+              + Riga
+            </button>
+            <button type="button" onClick={() => editor.chain().focus().addColumnAfter().run()} aria-label="Aggiungi colonna" className={toolbarButtonClassName}>
+              + Colonna
+            </button>
+            <button type="button" onClick={() => editor.chain().focus().deleteRow().run()} aria-label="Elimina riga" className={toolbarButtonClassName}>
+              − Riga
+            </button>
+            <button type="button" onClick={() => editor.chain().focus().deleteColumn().run()} aria-label="Elimina colonna" className={toolbarButtonClassName}>
+              − Colonna
+            </button>
+            <button type="button" onClick={() => editor.chain().focus().deleteTable().run()} aria-label="Elimina tabella" className={toolbarButtonClassName}>
+              Elimina tabella
+            </button>
+          </>
+        )}
 
         <span aria-hidden="true" className={dividerClassName} />
 

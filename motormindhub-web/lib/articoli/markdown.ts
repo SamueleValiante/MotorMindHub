@@ -4,9 +4,10 @@ import type { JSONContent } from "@tiptap/core";
  * Conversione bidirezionale tra il documento TipTap (ProseMirror JSON) e il
  * Markdown persistito in Articolo.testo — solo per il sottoinsieme che
  * ArticleBodyEditor espone davvero (H2/H3, paragrafo, grassetto, corsivo,
- * immagine): niente liste/citazioni/codice/tabelle, quell'estensioni sono
- * disattivate nell'editor (ArticleBodyEditor.tsx) apposta, cosi' questo
- * modulo non deve saperle serializzare. react-markdown lato lettura
+ * immagine, elenchi puntati/numerati a un livello, citazioni, tabelle GFM):
+ * niente codice/liste annidate, quelle estensioni sono disattivate
+ * nell'editor (ArticleBodyEditor.tsx) apposta, cosi' questo modulo non deve
+ * saperle serializzare. react-markdown lato lettura
  * (ArticleDetailContent.tsx) resta un parser CommonMark/GFM completo — se
  * in futuro arrivasse altro Markdown da fuori questo editor (import,
  * modifica diretta nel DB) verrebbe comunque reso correttamente, solo non
@@ -82,10 +83,64 @@ export function docToMarkdown(doc: ContentNode): string {
       const src = (node.attrs?.src as string | null) ?? "";
       return `![${alt}](${src})`;
     }
+    if (node.type === "bulletList" || node.type === "orderedList") {
+      return serializeList(node);
+    }
+    if (node.type === "blockquote") {
+      return serializeBlockquote(node);
+    }
+    if (node.type === "table") {
+      return serializeTable(node);
+    }
     // paragraph (o qualunque altro nodo blocco non gestito: reso come testo semplice)
     return serializeInline(node.content);
   });
   return blocks.join("\n\n");
+}
+
+/** Testo di un blocco contenitore (listItem/blockquote/cella): i suoi paragrafi uniti in uno solo, un hardBreak separa quelli successivi. */
+function serializeContainerInline(children: ContentNode[] | undefined): string {
+  return (children ?? [])
+    .map((child) => serializeInline(child.content))
+    .filter((text) => text.length > 0)
+    .join("\\\n");
+}
+
+function serializeList(list: ContentNode): string {
+  const ordered = list.type === "orderedList";
+  return (list.content ?? [])
+    .map((item, i) => {
+      const marker = ordered ? `${i + 1}. ` : "- ";
+      // Righe di continuazione (hardBreak dentro la voce) indentate come il marcatore.
+      const text = serializeContainerInline(item.content).replace(/\\\n/g, `\\\n${" ".repeat(marker.length)}`);
+      return `${marker}${text}`;
+    })
+    .join("\n");
+}
+
+function serializeBlockquote(quote: ContentNode): string {
+  return (quote.content ?? [])
+    .map((child) => serializeInline(child.content).split("\n").map((line) => `> ${line}`).join("\n"))
+    .join("\n>\n");
+}
+
+function serializeTableCell(cell: ContentNode): string {
+  // Una cella GFM sta su una sola riga: i paragrafi si uniscono con uno spazio e il "|" letterale va protetto.
+  const text = (cell.content ?? [])
+    .map((child) => serializeInline(child.content).replace(/\\\n/g, " "))
+    .filter((t) => t.length > 0)
+    .join(" ");
+  return text.replace(/\|/g, "\\|");
+}
+
+function serializeTable(table: ContentNode): string {
+  const rows = (table.content ?? []).map((row) => (row.content ?? []).map(serializeTableCell));
+  if (rows.length === 0) return "";
+  const columns = Math.max(...rows.map((r) => r.length));
+  const pad = (r: string[]) => Array.from({ length: columns }, (_, i) => r[i] ?? "");
+  const line = (r: string[]) => `| ${pad(r).join(" | ")} |`;
+  // GFM richiede una riga di intestazione: la prima riga lo e' sempre (nell'editor e' una riga di tableHeader).
+  return [line(rows[0]), `|${Array.from({ length: columns }, () => " --- ").join("|")}|`, ...rows.slice(1).map(line)].join("\n");
 }
 
 // ---------------------------------------------------------------------------
@@ -144,6 +199,9 @@ function parseInlineBlock(block: string): ContentNode[] {
 }
 
 const HEADING_RE = /^(#{2,3})\s+(.*)$/;
+const BULLET_RE = /^[-*+] +(.*)$/;
+const ORDERED_RE = /^\d+[.)] +(.*)$/;
+const TABLE_SEPARATOR_RE = /^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)*\|?$/;
 const IMAGE_ONLY_RE = /^!\[([^\]]*)\]\(([^)\s]+)\)$/;
 
 /** markdown persistito -> content iniziale per useEditor({ content: ... }). */
@@ -156,7 +214,9 @@ export function markdownToDoc(markdown: string): ContentNode {
   // Stesso split di paragrafi gia' in uso per il rendering plain-text
   // (ArticleDetailContent.tsx, prima di react-markdown): una riga vuota
   // separa i blocchi, coerente col testo esistente in produzione.
-  const blocks = trimmed.split(/\n{2,}/);
+  // Un titolo H2/H3 e' sempre un blocco a se': Markdown scritto altrove (import, API) puo' avere il
+  // testo attaccato alla riga del titolo; senza questa separazione il titolo si fonderebbe col paragrafo.
+  const blocks = trimmed.replace(/^(#{2,3} [^\n]*)\n(?=[^\n])/gm, "$1\n\n").split(/\n{2,}/);
 
   const content: ContentNode[] = blocks.map((block) => {
     const headingMatch = block.match(HEADING_RE);
@@ -168,8 +228,103 @@ export function markdownToDoc(markdown: string): ContentNode {
     if (imageMatch) {
       return { type: "image", attrs: { src: imageMatch[2], alt: imageMatch[1] || null } };
     }
+    const table = parseTable(block);
+    if (table) return table;
+    const list = parseList(block);
+    if (list) return list;
+    const quote = parseBlockquote(block);
+    if (quote) return quote;
     return { type: "paragraph", content: parseInlineBlock(block) };
   });
 
   return { type: "doc", content };
+}
+
+
+// ---------------------------------------------------------------------------
+// blocchi contenitore: elenchi, citazioni, tabelle
+// ---------------------------------------------------------------------------
+
+/** Elenco a un solo livello: ogni riga e' una voce, le righe indentate continuano la voce precedente. Altrimenti null (resta un paragrafo). */
+function parseList(block: string): ContentNode | null {
+  const lines = block.split("\n");
+  const first = lines[0];
+  const ordered = ORDERED_RE.test(first);
+  if (!ordered && !BULLET_RE.test(first)) return null;
+  const itemRe = ordered ? ORDERED_RE : BULLET_RE;
+
+  const items: string[] = [];
+  for (const line of lines) {
+    const m = line.match(itemRe);
+    if (m) items.push(m[1]);
+    else if (/^\s+\S/.test(line) && items.length > 0) items[items.length - 1] += `\n${line.trim()}`;
+    else return null; // riga non riconosciuta (es. paragrafo attaccato all'elenco): niente trasformazione parziale
+  }
+  return {
+    type: ordered ? "orderedList" : "bulletList",
+    content: items.map((text) => ({
+      type: "listItem",
+      content: [{ type: "paragraph", content: parseInlineBlock(text) }],
+    })),
+  };
+}
+
+function parseBlockquote(block: string): ContentNode | null {
+  const lines = block.split("\n");
+  if (!lines.every((line) => /^>/.test(line))) return null;
+  const stripped = lines.map((line) => line.replace(/^> ?/, ""));
+  const paragraphs: string[] = [];
+  let current: string[] = [];
+  for (const line of stripped) {
+    if (line.trim() === "") {
+      if (current.length > 0) paragraphs.push(current.join("\n"));
+      current = [];
+    } else {
+      current.push(line);
+    }
+  }
+  if (current.length > 0) paragraphs.push(current.join("\n"));
+  if (paragraphs.length === 0) return null;
+  return {
+    type: "blockquote",
+    content: paragraphs.map((p) => ({ type: "paragraph", content: parseInlineBlock(p) })),
+  };
+}
+
+/** Separa le celle di una riga GFM sui "|" non preceduti da "\". */
+function splitTableRow(line: string): string[] {
+  const body = line.trim().replace(/^\|/, "").replace(/\|$/, "");
+  const cells: string[] = [];
+  let current = "";
+  for (let i = 0; i < body.length; i++) {
+    if (body[i] === "\\" && body[i + 1] === "|") {
+      current += "|";
+      i++;
+    } else if (body[i] === "|") {
+      cells.push(current.trim());
+      current = "";
+    } else {
+      current += body[i];
+    }
+  }
+  cells.push(current.trim());
+  return cells;
+}
+
+function parseTable(block: string): ContentNode | null {
+  const lines = block.split("\n");
+  if (lines.length < 2 || !lines[0].includes("|") || !TABLE_SEPARATOR_RE.test(lines[1].trim())) return null;
+  const header = splitTableRow(lines[0]);
+  const columns = header.length;
+  const makeRow = (cells: string[], cellType: "tableHeader" | "tableCell"): ContentNode => ({
+    type: "tableRow",
+    content: Array.from({ length: columns }, (_, i) => ({
+      type: cellType,
+      content: [{ type: "paragraph", content: parseInlineBlock(cells[i] ?? "") }],
+    })),
+  });
+  return {
+    type: "table",
+    content: [makeRow(header, "tableHeader"), ...lines.slice(2).map((line) => makeRow(splitTableRow(line), "tableCell"))],
+  };
 }
