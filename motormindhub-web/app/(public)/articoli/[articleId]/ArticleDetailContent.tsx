@@ -1,28 +1,11 @@
 "use client";
 
-import { Fragment } from "react";
 import Link from "next/link";
 import { useArticle } from "@/lib/articoli/useArticle";
 import { useArticleSearch } from "@/lib/articoli/useArticleSearch";
 import { ArticleCard } from "@/components/public/ArticleCard";
 import { SaveMenu } from "@/components/articoli/SaveMenu";
-import { ArticleMarkdownBody } from "@/components/articoli/ArticleMarkdownBody";
-
-function initials(nomeCompleto: string): string {
-  const parts = nomeCompleto.trim().split(/\s+/);
-  const first = parts[0]?.charAt(0) ?? "";
-  const last = parts.length > 1 ? parts[parts.length - 1].charAt(0) : "";
-  return (first + last).toUpperCase();
-}
-
-function formatAggiornato(iso: string): string {
-  const date = new Date(iso);
-  const oggi = new Date();
-  const giorni = Math.floor((oggi.setHours(0, 0, 0, 0) - date.setHours(0, 0, 0, 0)) / 86_400_000);
-  if (giorni === 0) return "oggi";
-  if (giorni === 1) return "ieri";
-  return `il ${new Date(iso).toLocaleDateString("it-IT")}`;
-}
+import { ArticleView } from "@/components/articoli/ArticleView";
 
 /**
  * Dettaglio Articolo (mockup 03). Il mockup mostra anche un'icona
@@ -78,81 +61,7 @@ export function ArticleDetailContent({ articleId }: { articleId: string }) {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-      <nav className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-wide text-fog">
-        <Link href="/esplora" className="hover:text-accent">
-          Esplora
-        </Link>
-        {articolo.categoriaAntenati.map((categoria) => (
-          <Fragment key={categoria.id}>
-            <span aria-hidden="true">/</span>
-            <Link href={`/esplora?categoriaIds=${categoria.id}`} className="hover:text-accent">
-              {categoria.nome}
-            </Link>
-          </Fragment>
-        ))}
-        {articolo.tag[0] && (
-          <>
-            <span aria-hidden="true">/</span>
-            <span>{articolo.tag[0]}</span>
-          </>
-        )}
-      </nav>
-
-      <span className="mt-4 inline-block rounded bg-accent px-3 py-1 font-heading text-xs font-bold uppercase tracking-wide text-asphalt">
-        {articolo.categoriaNome}
-      </span>
-
-      <h1 className="mt-4 font-heading text-3xl font-bold uppercase leading-tight tracking-wide text-paper sm:text-4xl">
-        {articolo.titolo}
-      </h1>
-
-      <div className="mt-6 flex items-center justify-between gap-4 border-b border-paper/10 pb-6">
-        <div className="flex items-center gap-3">
-          <div
-            aria-hidden="true"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-raised font-heading text-xs font-bold text-accent"
-          >
-            {initials(articolo.autoreNome)}
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-paper">{articolo.autoreNome}</p>
-            <p className="text-xs text-fog">
-              {articolo.tempoLetturaMinuti} min di lettura · Aggiornato {formatAggiornato(articolo.dataUltimoAggiornamento)}
-            </p>
-          </div>
-        </div>
-
-        <SaveMenu articleId={articolo.id} />
-      </div>
-
-      {articolo.immagineCopertina ? (
-        // eslint-disable-next-line @next/next/no-img-element -- URL arbitraria fornita dall'autore, non ottimizzabile da next/image senza un dominio remoto configurato
-        <img
-          src={articolo.immagineCopertina}
-          alt=""
-          className="mt-8 aspect-video w-full rounded-lg object-cover"
-        />
-      ) : (
-        <div className="mt-8 aspect-video w-full rounded-lg bg-surface-raised" />
-      )}
-
-      {/*
-        ArticleMarkdownBody (componente condiviso con la pagina di revisione
-        Manager, app/manager/articoli-in-attesa/[articleId]/page.tsx): stesso
-        Markdown, stesso rendering, il Manager vede esattamente l'articolo
-        come apparirà qui - non un'approssimazione in testo semplice.
-
-        text-paper, non text-chrome, text-base + leading-loose (già dentro
-        il componente condiviso): il corpo dell'articolo è il contenuto
-        principale che il lettore è lì per leggere, non testo secondario —
-        stessa dimensione/interlinea di ArticleBodyEditor.tsx per coerenza
-        tra scrittura e lettura, verificato dal vivo con screenshot. I due
-        articoli di test preesistenti (testo semplice, nessuna sintassi
-        Markdown) restano un unico <p> - nessuna riscrittura necessaria.
-      */}
-      <div className="mt-8">
-        <ArticleMarkdownBody testo={articolo.testo} />
-      </div>
+      <ArticleView articolo={articolo} actions={<SaveMenu articleId={articolo.id} />} />
 
       {altriArticoli.length > 0 && (
         <section className="mt-12 border-t border-paper/10 pt-8">

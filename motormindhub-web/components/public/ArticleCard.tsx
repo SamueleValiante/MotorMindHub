@@ -45,7 +45,7 @@ function ArticleCardContent({ articolo, muted = false }: { articolo: ArticleSumm
         chiamante — l'altezza corretta è già una conseguenza della larghezza
         corretta, non serve imporla due volte.
       */}
-      <div className="aspect-video w-full overflow-hidden rounded-md bg-surface-raised">
+      <div className="aspect-video w-full overflow-hidden rounded-md bg-surface-raised ring-accent/0 transition group-hover:ring-2 group-hover:ring-accent">
         {articolo.immagineCopertina && (
           // eslint-disable-next-line @next/next/no-img-element -- URL arbitraria fornita dall'autore, non ottimizzabile da next/image senza un dominio remoto configurato
           <img
@@ -61,7 +61,7 @@ function ArticleCardContent({ articolo, muted = false }: { articolo: ArticleSumm
       </span>
 
       <div>
-        <h3 className="font-heading text-lg font-bold text-paper">{articolo.titolo}</h3>
+        <h3 className="font-heading text-lg font-bold text-paper transition-colors group-hover:text-accent">{articolo.titolo}</h3>
         {articolo.estratto && (
           <p className={`mt-1 line-clamp-2 text-sm ${muted ? "text-fog-disabled" : "text-fog"}`}>
             {articolo.estratto}
@@ -94,7 +94,7 @@ export function ArticleCard({ articolo, action, badge, linkable = true }: Articl
   return (
     <div className="relative flex flex-col gap-3 border-b border-paper/10 pb-6 last:border-0 last:pb-0">
       {linkable ? (
-        <Link href={`/articoli/${articolo.id}`} className={cardContentClassName}>
+        <Link href={`/articoli/${articolo.id}`} className={`${cardContentClassName} group`}>
           <ArticleCardContent articolo={articolo} />
         </Link>
       ) : (

@@ -37,9 +37,28 @@ const markdownComponents: Components = {
   blockquote: ({ children }) => (
     <blockquote className="my-6 border-l-4 border-paper/30 bg-paper/5 px-4 py-3 [&_p+p]:mt-3">{children}</blockquote>
   ),
+  // Immagini del corpo: su desktop restano contenute e centrate (max-w-xl, altezza limitata) invece di
+  // occupare l'intera colonna; la didascalia è il paragrafo in corsivo che segue (vedi p). <span> e non <figure>: react-markdown le annida in un <p>.
+  // Paragrafo composto solo da testo in corsivo = didascalia della figura precedente: più piccolo, centrato, attenuato.
+  p: ({ children, node }) => {
+    const kids = node?.children ?? [];
+    const isCaption = kids.length === 1 && kids[0].type === "element" && kids[0].tagName === "em";
+    return isCaption ? (
+      <p className="!-mt-5 mx-auto max-w-xl text-center text-xs leading-relaxed text-fog">{children}</p>
+    ) : (
+      <p>{children}</p>
+    );
+  },
   img: ({ src, alt }) => (
-    // eslint-disable-next-line @next/next/no-img-element -- URL Cloudinary arbitraria inserita dall'autore, stesso pattern della copertina
-    <img src={typeof src === "string" ? src : undefined} alt={alt ?? ""} className="my-2 w-full rounded-lg" />
+    <span className="my-8 block text-center">
+      {/* eslint-disable-next-line @next/next/no-img-element -- URL Cloudinary arbitraria inserita dall'autore, stesso pattern della copertina */}
+      <img
+        src={typeof src === "string" ? src : undefined}
+        alt={alt ?? ""}
+        loading="lazy"
+        className="mx-auto max-h-96 w-auto max-w-full rounded-lg border border-paper/10 object-contain sm:max-w-xl"
+      />
+    </span>
   ),
 };
 
@@ -54,7 +73,7 @@ const markdownComponents: Components = {
  */
 export function ArticleMarkdownBody({ testo }: { testo: string }) {
   return (
-    <div data-testid="articolo-corpo" className="text-base leading-loose text-paper [&_p+p]:mt-6">
+    <div data-testid="articolo-corpo" className="text-base leading-8 text-paper [&_p+p]:mt-5 [&>h2:first-child]:mt-0">
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
         {testo}
       </ReactMarkdown>

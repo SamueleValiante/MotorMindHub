@@ -6,11 +6,7 @@ import Link from "next/link";
 import { useArticle } from "@/lib/articoli/useArticle";
 import { approveArticle, rejectArticle } from "@/lib/autori/authorMutations";
 import { toast } from "@/lib/toast/toast";
-import { ArticleMarkdownBody } from "@/components/articoli/ArticleMarkdownBody";
-
-function formatData(iso: string): string {
-  return new Date(iso).toLocaleDateString("it-IT");
-}
+import { ArticleView } from "@/components/articoli/ArticleView";
 
 /**
  * Revisione Articolo (mockup 37, RF3.6, UC_21). PendingArticleDTO (lista
@@ -75,43 +71,9 @@ export default function RevisioneArticoloPage() {
         </h1>
       </div>
 
-      <div className="rounded-lg border border-paper/10 bg-carbon p-6">
-        <span className="inline-block rounded bg-accent px-3 py-1 font-heading text-xs font-bold uppercase tracking-wide text-asphalt">
-          {articolo.categoriaNome}
-        </span>
-
-        <h2 className="mt-4 font-heading text-xl font-bold uppercase tracking-wide text-paper">
-          {articolo.titolo}
-        </h2>
-
-        <p className="mt-2 text-xs text-fog">
-          {articolo.autoreNome} · Inviato il {formatData(articolo.dataUltimoAggiornamento)}
-        </p>
-
-        {articolo.immagineCopertina ? (
-          // eslint-disable-next-line @next/next/no-img-element -- URL arbitraria fornita dall'autore
-          <img
-            src={articolo.immagineCopertina}
-            alt=""
-            className="mt-6 aspect-video w-full rounded-lg object-cover"
-          />
-        ) : (
-          <div className="mt-6 aspect-video w-full rounded-lg bg-surface-raised" />
-        )}
-
-        {/*
-          ArticleMarkdownBody (condiviso con ArticleDetailContent.tsx, il
-          dettaglio pubblico): prima di questo fix la revisione mostrava
-          Markdown grezzo (##, ** ecc. visibili come testo) - un secondo
-          rendering scritto a mano, mai aggiornato quando è stato introdotto
-          l'editor Markdown. Il Manager deve approvare/rifiutare guardando
-          esattamente ciò che verrà pubblicato, non un'approssimazione in
-          testo semplice - niente più text-chrome/text-sm attenuati: stessa
-          resa (text-paper/text-base) della pagina pubblica.
-        */}
-        <div className="mt-6">
-          <ArticleMarkdownBody testo={articolo.testo} />
-        </div>
+      {/* Stessa vista e stessa colonna della pagina pubblica: il Manager giudica ciò che vedrà il lettore. */}
+      <div className="rounded-lg border border-paper/10 bg-asphalt px-4 py-8 sm:px-8">
+        <ArticleView articolo={articolo} />
       </div>
 
       <div className="rounded-lg border border-paper/10 bg-carbon p-6">

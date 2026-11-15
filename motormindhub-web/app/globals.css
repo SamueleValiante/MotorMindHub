@@ -56,3 +56,45 @@
   --font-body: var(--font-inter), sans-serif;
   --font-mono: var(--font-jetbrains-mono), monospace;
 }
+
+/* Feedback hover/active globale per elementi cliccabili. Non-layered apposta: deve battere le utility
+   di colore; gli elementi che definiscono già un proprio hover: (classe) sono esclusi. */
+a[href],
+button:not(:disabled),
+[role="button"],
+summary,
+select {
+  cursor: pointer;
+}
+a[href],
+button {
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, filter 0.15s ease,
+    opacity 0.15s ease;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+/* Pulsanti pieni (accent / ember) */
+:is(a[href], button:not(:disabled)):is([class*="bg-accent"], [class*="bg-ember"]):not([class*="hover:"]):hover {
+  filter: brightness(1.15);
+}
+:is(a[href], button:not(:disabled)):is([class*="bg-accent"], [class*="bg-ember"]):not([class*="hover:"]):active {
+  filter: brightness(0.92);
+}
+/* Pulsanti con contorno */
+:is(a[href], button:not(:disabled)):is([class*="border-chrome"], [class*="border-paper/20"], [class*="border-ember"], [class*="border-accent"]):not([class*="bg-"]):not([class*="hover:"]):hover {
+  background-color: color-mix(in srgb, var(--color-paper) 10%, transparent);
+  border-color: currentColor;
+}
+/* Link/pulsanti solo testo */
+:is(a[href], button:not(:disabled)):is([class*="text-chrome"], [class*="text-fog"]):not([class*="bg-"]):not([class*="border"]):not([class*="hover:"]):hover {
+  color: var(--color-paper);
+}
+:is(a[href], button:not(:disabled))[class*="text-accent"]:not([class*="bg-"]):not([class*="border"]):not([class*="hover:"]):hover {
+  filter: brightness(1.25);
+  text-decoration: underline;
+}
+/* Righe-lista cliccabili (elenchi con bordo inferiore) */
+a[href][class*="border-b"][class*="border-paper/10"]:not([class*="hover:"]):hover {
+  background-color: color-mix(in srgb, var(--color-paper) 5%, transparent);
+}
