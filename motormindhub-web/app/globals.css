@@ -100,24 +100,26 @@ a[href][class*="border-b"][class*="border-paper/10"]:not([class*="hover:"]):hove
 }
 
 /* Animazioni hero home */
-@keyframes mmh-drift {
-  from { transform: scale(1.02); }
-  to { transform: scale(1.1) translate3d(-1.5%, -1%, 0); }
+@keyframes mmh-drift-a {
+  from { transform: scale(1.04) translate3d(0, 0, 0); }
+  to { transform: scale(1.14) translate3d(-2%, -1%, 0); }
 }
-@keyframes mmh-spin { to { transform: rotate(360deg); } }
-@keyframes mmh-needle-sweep {
-  0%, 100% { transform: rotate(-18deg); }
-  50% { transform: rotate(8deg); }
+@keyframes mmh-drift-b {
+  from { transform: scale(1.14) translate3d(-2%, 1%, 0); }
+  to { transform: scale(1.04) translate3d(1%, 0, 0); }
+}
+@keyframes mmh-drift-c {
+  from { transform: scale(1.06) translate3d(1.5%, 1%, 0); }
+  to { transform: scale(1.14) translate3d(-1.5%, -1.5%, 0); }
 }
 @keyframes mmh-float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(8px); }
 }
-.mmh-drift { animation: mmh-drift 14s ease-in-out infinite alternate; }
-.mmh-spin { animation: mmh-spin 60s linear infinite; }
-.mmh-spin-rev { animation: mmh-spin 45s linear infinite reverse; }
-.mmh-needle { transform-origin: 1100px 450px; animation: mmh-needle-sweep 6s ease-in-out infinite; }
+.mmh-drift-a { animation: mmh-drift-a 18s ease-in-out infinite alternate; will-change: transform, opacity; }
+.mmh-drift-b { animation: mmh-drift-b 20s ease-in-out infinite alternate; will-change: transform, opacity; }
+.mmh-drift-c { animation: mmh-drift-c 22s ease-in-out infinite alternate; will-change: transform, opacity; }
 .mmh-float { animation: mmh-float 2s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) {
-  .mmh-drift, .mmh-spin, .mmh-spin-rev, .mmh-needle, .mmh-float { animation: none; }
+  .mmh-drift-a, .mmh-drift-b, .mmh-drift-c, .mmh-float { animation: none; }
 }

@@ -31,6 +31,29 @@ import { ClockIcon, SearchIcon } from "@/components/public/icons";
  *   OrdinamentoArticoli lato backend) — semplificazione loro, non nostra,
  *   qui riusata cosi' com'e'.
  */
+/** Scorrimento fluido (ease-in-out) verso un'ancora della pagina; con reduced-motion salta direttamente. */
+function smoothScrollTo(event: React.MouseEvent, id: string) {
+  const target = document.getElementById(id);
+  if (!target) return;
+  event.preventDefault();
+  const end = target.getBoundingClientRect().top + window.scrollY - 16;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    window.scrollTo(0, end);
+    return;
+  }
+  const start = window.scrollY;
+  const distance = end - start;
+  const duration = Math.min(1400, 700 + Math.abs(distance) * 0.4);
+  const t0 = performance.now();
+  const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  const step = (now: number) => {
+    const t = Math.min(1, (now - t0) / duration);
+    window.scrollTo(0, start + distance * ease(t));
+    if (t < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
 export default function HomePage() {
   const router = useRouter();
   const [searchValue, setSearchValue] = useState("");
@@ -88,9 +111,9 @@ export default function HomePage() {
 
         <div
           ref={heroContentRef}
-          className="relative mx-auto grid w-full max-w-6xl items-center gap-10 px-4 py-16 will-change-transform sm:px-6 md:grid-cols-[1.4fr_1fr]"
+          className="relative mx-auto grid w-full max-w-6xl items-center gap-10 px-4 py-16 will-change-transform sm:px-6 "
         >
-          <div className="flex flex-col gap-6">
+          <div className="flex max-w-2xl flex-col gap-6">
             <p className="font-heading text-xs font-bold uppercase tracking-[0.2em] text-accent">
               Il tuo hub tecnico automotive
             </p>
@@ -132,34 +155,35 @@ export default function HomePage() {
               </Link>
               <a
                 href="#categorie"
+                onClick={(e) => smoothScrollTo(e, "categorie")}
                 className="font-heading text-sm font-bold uppercase tracking-wide text-chrome"
               >
                 Scopri le categorie ↓
               </a>
             </div>
+
+            {(articoliPubblicatiCount !== null || categorieCount !== null) && (
+              <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs uppercase tracking-wide text-fog">
+                {articoliPubblicatiCount !== null && (
+                  <span>
+                    <span className="font-heading text-lg font-bold text-accent">{articoliPubblicatiCount}</span> guide tecniche
+                  </span>
+                )}
+                {categorieCount !== null && (
+                  <span>
+                    <span className="font-heading text-lg font-bold text-paper">{categorieCount}</span> categorie
+                  </span>
+                )}
+              </p>
+            )}
           </div>
 
-          <div className="hidden flex-col items-center gap-6 md:flex">
-            <div className="grid w-full max-w-xs grid-cols-2 gap-4 rounded-lg border border-paper/10 bg-carbon/70 p-4 text-center backdrop-blur">
-              {articoliPubblicatiCount !== null && (
-                <div>
-                  <p className="font-heading text-3xl font-bold text-accent">{articoliPubblicatiCount}</p>
-                  <p className="text-xs uppercase tracking-wide text-fog">Guide tecniche</p>
-                </div>
-              )}
-              {categorieCount !== null && (
-                <div>
-                  <p className="font-heading text-3xl font-bold text-paper">{categorieCount}</p>
-                  <p className="text-xs uppercase tracking-wide text-fog">Categorie</p>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
 
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-asphalt to-transparent" />
         <a
           href="#categorie"
+          onClick={(e) => smoothScrollTo(e, "categorie")}
           aria-label="Scorri verso le categorie"
           className="mmh-float absolute bottom-6 z-10 left-1/2 -translate-x-1/2 text-chrome"
         >
