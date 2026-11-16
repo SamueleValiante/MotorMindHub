@@ -79,7 +79,7 @@ export default function RevisioneArticoloPage() {
       <div className="rounded-lg border border-paper/10 bg-carbon p-6">
         <p className="font-heading text-xs font-semibold uppercase tracking-wide text-fog">Decisione</p>
 
-        <div className="mt-4 flex flex-col gap-3">
+        <div className="mt-4 flex flex-wrap gap-3">
           <button
             type="button"
             onClick={() => void handleApprove()}

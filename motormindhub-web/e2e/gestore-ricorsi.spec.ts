@@ -3,7 +3,7 @@ import { loginViaUi } from "./helpers/ui";
 import { suspendAccountApi } from "./helpers/test-amministrazione-utenti";
 import { getUserId } from "./helpers/test-users";
 
-test.describe("Ricorsi (Gestore Utenti)", () => {
+test.describe("Account sospesi (Gestore Utenti)", () => {
   // Stesso motivo di manager-articoli-in-attesa.spec.ts: il cookie banner
   // intercetta i click sui pulsanti senza un consenso già deciso.
   test.beforeEach(async ({ page }) => {
@@ -16,7 +16,7 @@ test.describe("Ricorsi (Gestore Utenti)", () => {
     ]);
   });
 
-  test("un account sospeso compare in Ricorsi con motivazione, Valuta Ricorso porta alla scheda utente (RF4.3, UC_24)", async ({
+  test("un account sospeso compare in Account sospesi con motivazione, Apri scheda porta alla scheda utente (RF4.3, UC_24)", async ({
     page,
     testUsers,
   }) => {
@@ -32,12 +32,12 @@ test.describe("Ricorsi (Gestore Utenti)", () => {
     await expect(row).toBeVisible();
     await expect(row.getByText("Violazione dei Termini di Servizio - spam ripetuto")).toBeVisible();
 
-    await row.getByRole("link", { name: "Valuta Ricorso" }).click();
+    await row.getByRole("link", { name: "Apri scheda" }).click();
     await expect(page.getByRole("heading", { name: "Scheda Utente" })).toBeVisible();
     await expect(page.getByText("SOSPESO")).toBeVisible();
 
     // Chiude il ciclo con la riattivazione già verificata in dettaglio in
-    // gestore-gestione-account.spec.ts: qui basta confermare che sparisca da Ricorsi.
+    // gestore-gestione-account.spec.ts: qui basta confermare che sparisca da Account sospesi.
     await page.getByRole("button", { name: "Riattiva account" }).click();
     await page.getByRole("button", { name: "Conferma riattivazione" }).click();
     await expect(page.getByText("ATTIVO")).toBeVisible();
@@ -57,7 +57,7 @@ test.describe("Ricorsi (Gestore Utenti)", () => {
     // garantito vuoto — stesso trattamento di gestore-richieste-cancellazione.spec.ts.
     const hasRows = await page.locator("table tbody tr").count();
     if (hasRows === 0) {
-      await expect(page.getByRole("heading", { name: "Nessun ricorso in attesa" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Nessun account sospeso" })).toBeVisible();
     }
   });
 
@@ -70,9 +70,9 @@ test.describe("Ricorsi (Gestore Utenti)", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await loginViaUi(page, gestore.email, gestore.password);
     await page.goto("/gestore/ricorsi");
-    await expect(page.getByRole("heading", { name: "Ricorsi" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Account sospesi" })).toBeVisible();
 
     const row = page.locator("tr", { hasText: target.email });
-    await expect(row.getByRole("link", { name: "Valuta Ricorso" })).toBeVisible();
+    await expect(row.getByRole("link", { name: "Apri scheda" })).toBeVisible();
   });
 });

@@ -242,7 +242,7 @@ test.describe("Audit accessibilità (axe-core, WCAG 2.1 A+AA) — sola verifica"
       ["Gestione Account", "/gestore/gestione-account"],
       ["Scheda Utente", `/gestore/gestione-account/${targetSchedaId}`],
       ["Richieste di Cancellazione", "/gestore/richieste-cancellazione"],
-      ["Ricorsi", "/gestore/ricorsi"],
+      ["Account sospesi", "/gestore/ricorsi"],
       ["Coda Segnalazioni", "/gestore/segnalazioni"],
     ];
 

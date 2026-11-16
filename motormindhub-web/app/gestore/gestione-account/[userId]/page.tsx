@@ -142,7 +142,7 @@ export default function SchedaUtentePage() {
           </div>
         </dl>
 
-        <div className="mt-6 flex flex-col gap-3">
+        <div className="mt-6 flex flex-wrap gap-3">
           {utente.stato === "ATTIVO" && (
             <button
               type="button"

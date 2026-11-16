@@ -14,10 +14,16 @@ const NAV_ITEMS = [
   { href: "/gestore", label: "Dashboard", Icon: HouseIcon },
   { href: "/gestore/gestione-account", label: "Gestione Account", Icon: PeopleIcon },
   { href: "/gestore/segnalazioni", label: "Coda Segnalazioni", Icon: FlagIcon },
-  { href: "/gestore/ricorsi", label: "Ricorsi", Icon: ShieldDataIcon },
+  { href: "/gestore/ricorsi", label: "Account Sospesi", Icon: ShieldDataIcon },
   { href: "/gestore/richieste-cancellazione", label: "Richieste Cancellazione", Icon: TrashIcon },
   { href: "/gestore/cronologia", label: "Cronologia Azioni", Icon: ClockIcon },
 ];
+
+/** "/gestore" (Dashboard) è prefisso di tutte le altre rotte: per lei vale solo la corrispondenza esatta. */
+function isActivePath(pathname: string, href: string): boolean {
+  if (href === "/gestore") return pathname === href;
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
 
 /**
  * Sidebar condivisa dell'area Gestore Utenti (mockup 44/45/48), stesso
@@ -50,7 +56,7 @@ export function GestoreSidebar() {
 
         <nav className="flex flex-1 flex-col gap-1 px-3">
           {NAV_ITEMS.map(({ href, label, Icon }) => {
-            const isActive = pathname === href || pathname.startsWith(`${href}/`);
+            const isActive = isActivePath(pathname, href);
             return (
               <Link
                 key={href}
@@ -90,7 +96,7 @@ export function GestoreSidebar() {
         </Link>
         <nav className="flex items-center gap-1">
           {NAV_ITEMS.map(({ href, label, Icon }) => {
-            const isActive = pathname === href || pathname.startsWith(`${href}/`);
+            const isActive = isActivePath(pathname, href);
             return (
               <Link
                 key={href}

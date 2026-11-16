@@ -218,7 +218,7 @@ export function EsploraContent() {
         </p>
       </div>
 
-      <form onSubmit={handleApplyFilters} className="flex flex-col gap-6 rounded-lg bg-carbon p-6">
+      <form onSubmit={handleApplyFilters} className="flex w-full max-w-2xl flex-col gap-6 rounded-lg bg-carbon p-6">
         <h2 className="font-heading text-sm font-bold uppercase tracking-wide text-paper">
           Filtri di ricerca
         </h2>
@@ -242,13 +242,13 @@ export function EsploraContent() {
 
         <button
           type="submit"
-          className="rounded-md bg-accent px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
+          className="self-start rounded-md bg-accent px-8 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
         >
           Applica filtri
         </button>
       </form>
 
-      <div className="flex flex-col gap-4 rounded-lg bg-carbon p-6">
+      <div className="flex w-full max-w-2xl flex-col gap-4 rounded-lg bg-carbon p-6">
         <h2 className="font-heading text-sm font-bold uppercase tracking-wide text-paper">
           Categoria
         </h2>

@@ -25,7 +25,14 @@ function ultimaSospensione(azioni: ReturnType<typeof useAdministrativeActionLog>
     .sort((a, b) => new Date(b.dataAzione).getTime() - new Date(a.dataAzione).getTime())[0] ?? null;
 }
 
-/** Ricorsi (mockup 42, RF4.3, UC_24) — solo GESTORE_UTENTI. */
+/**
+ * Account sospesi (ex "Ricorsi", mockup 42, RF4.3, UC_24) — solo GESTORE_UTENTI.
+ * Elenca TUTTI gli account sospesi, non solo quelli che hanno fatto ricorso:
+ * il ricorso arriva via email fuori piattaforma e il sistema non ne tiene
+ * traccia, quindi presentarli come "ricorsi" affermava un fatto non vero
+ * (ogni sospensione appariva come già contestata). Il Gestore apre la scheda
+ * quando riceve un ricorso e può riattivare l'account da lì.
+ */
 export default function RicorsiPage() {
   const users = useUsers();
   const log = useAdministrativeActionLog();
@@ -39,18 +46,21 @@ export default function RicorsiPage() {
     <div className="flex flex-col gap-6">
       <div>
         <p className="font-heading text-xs uppercase tracking-wide text-fog">Gestore Utenti</p>
-        <h1 className="font-heading text-2xl font-bold uppercase tracking-wide text-paper sm:text-3xl">Ricorsi</h1>
+        <h1 className="font-heading text-2xl font-bold uppercase tracking-wide text-paper sm:text-3xl">Account sospesi</h1>
+        <p className="mt-2 max-w-xl text-sm text-fog">
+          Account attualmente sospesi. Se ricevi un ricorso via email, apri la scheda per valutarlo e, se serve, riattivare l&apos;account.
+        </p>
       </div>
 
       {loading ? (
         <p className="text-sm text-fog">Caricamento…</p>
       ) : error ? (
-        <p className="text-sm text-ember">Non è stato possibile caricare i ricorsi.</p>
+        <p className="text-sm text-ember">Non è stato possibile caricare gli account sospesi.</p>
       ) : sospesi.length === 0 ? (
         <EmptyState
           icon={<ShieldDataIcon className="h-6 w-6" />}
-          title="Nessun ricorso in attesa"
-          description="Gli account sospesi che possono presentare ricorso compariranno qui."
+          title="Nessun account sospeso"
+          description="Gli account sospesi compariranno qui."
         />
       ) : (
         <div className="overflow-x-auto rounded-lg border border-paper/10 bg-carbon">
@@ -84,7 +94,7 @@ export default function RicorsiPage() {
                           href={`/gestore/gestione-account/${utente.id}`}
                           className="rounded-md border border-paper/20 px-4 py-2 font-heading text-xs font-bold uppercase tracking-wide text-paper"
                         >
-                          Valuta Ricorso
+                          Apri scheda
                         </Link>
                       </div>
                     </td>

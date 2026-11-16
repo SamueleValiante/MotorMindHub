@@ -119,7 +119,7 @@ export default function GestoreDashboardPage() {
               </div>
             )}
 
-            <Link href="/gestore/segnalazioni" className="font-heading text-sm font-bold uppercase text-accent">
+            <Link href="/gestore/segnalazioni" className="self-start font-heading text-sm font-bold uppercase text-accent">
               Vai alla coda →
             </Link>
           </section>
@@ -152,7 +152,7 @@ export default function GestoreDashboardPage() {
 
             <Link
               href="/gestore/richieste-cancellazione"
-              className="font-heading text-sm font-bold uppercase text-accent"
+              className="self-start font-heading text-sm font-bold uppercase text-accent"
             >
               Vai alla coda →
             </Link>
