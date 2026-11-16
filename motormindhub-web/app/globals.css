@@ -101,16 +101,16 @@ a[href][class*="border-b"][class*="border-paper/10"]:not([class*="hover:"]):hove
 
 /* Animazioni hero home */
 @keyframes mmh-drift-a {
-  from { transform: scale(1.04) translate3d(0, 0, 0); }
-  to { transform: scale(1.14) translate3d(-2%, -1%, 0); }
+  from { transform: scale(1) translate3d(0, 0, 0); }
+  to { transform: scale(1.05) translate3d(-0.8%, -0.5%, 0); }
 }
 @keyframes mmh-drift-b {
-  from { transform: scale(1.14) translate3d(-2%, 1%, 0); }
-  to { transform: scale(1.04) translate3d(1%, 0, 0); }
+  from { transform: scale(1.05) translate3d(-0.8%, 0.5%, 0); }
+  to { transform: scale(1) translate3d(0.5%, 0, 0); }
 }
 @keyframes mmh-drift-c {
-  from { transform: scale(1.06) translate3d(1.5%, 1%, 0); }
-  to { transform: scale(1.14) translate3d(-1.5%, -1.5%, 0); }
+  from { transform: scale(1.01) translate3d(0.8%, 0.5%, 0); }
+  to { transform: scale(1.05) translate3d(-0.8%, -0.8%, 0); }
 }
 @keyframes mmh-float {
   0%, 100% { transform: translateY(0); }

@@ -105,7 +105,7 @@ export default function HomePage() {
     <div className="flex flex-col">
       {/* Hero a schermo intero: header + hero riempiono il primo viewport */}
       <section className="relative flex min-h-[calc(100svh-97px)] items-center overflow-hidden">
-        <div ref={heroBgRef} className="absolute -inset-x-0 -top-0 bottom-[-30%] will-change-transform">
+        <div ref={heroBgRef} className="absolute -inset-x-0 -top-0 bottom-[-12%] will-change-transform">
           <HeroBackdrop />
         </div>
 
