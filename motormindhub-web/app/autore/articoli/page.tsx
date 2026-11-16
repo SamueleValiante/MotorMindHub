@@ -8,11 +8,14 @@ import { toast } from "@/lib/toast/toast";
 import { ArticleCard } from "@/components/public/ArticleCard";
 import { StatoBadge } from "@/components/articoli/StatoBadge";
 import { ConfirmDeleteModal } from "@/components/articoli/ConfirmDeleteModal";
+import { Pagination } from "@/components/public/Pagination";
 import { EmptyState } from "@/components/empty-state/EmptyState";
 import { DocumentIcon, PencilIcon, EyeIcon } from "@/components/autore/icons";
 import { TrashIcon, BookmarkIcon } from "@/components/account/icons";
 import { SearchIcon } from "@/components/public/icons";
 import type { MyArticle } from "@/lib/articoli/types";
+
+const PER_PAGINA = 28;
 
 type Tab = "TUTTI" | "PUBBLICATO" | "IN_ATTESA_APPROVAZIONE" | "RIFIUTATO";
 
@@ -57,6 +60,7 @@ export default function IMieiArticoliPage() {
   const [tab, setTab] = useState<Tab>("TUTTI");
   const [pendingDelete, setPendingDelete] = useState<MyArticle | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [pagina, setPagina] = useState(0);
   const [removedIds, setRemovedIds] = useState<Set<number>>(new Set());
 
   const nonBozza =
@@ -69,6 +73,10 @@ export default function IMieiArticoliPage() {
     const matchSearch = a.titolo.toLowerCase().includes(search.trim().toLowerCase());
     return matchTab && matchSearch;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filtrati.length / PER_PAGINA));
+  const paginaCorrente = Math.min(pagina, totalPages - 1);
+  const visibili = filtrati.slice(paginaCorrente * PER_PAGINA, (paginaCorrente + 1) * PER_PAGINA);
 
   const counts: Record<Tab, number> = {
     TUTTI: nonBozza.length,
@@ -130,7 +138,10 @@ export default function IMieiArticoliPage() {
               id="cerca-articoli"
               type="search"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPagina(0);
+              }}
               placeholder="Cerca tra i tuoi articoli…"
               className="w-full max-w-sm rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent"
             />
@@ -140,7 +151,10 @@ export default function IMieiArticoliPage() {
                 <button
                   key={t}
                   type="button"
-                  onClick={() => setTab(t)}
+                  onClick={() => {
+                    setTab(t);
+                    setPagina(0);
+                  }}
                   aria-pressed={tab === t}
                   className={`rounded-md px-4 py-2 font-heading text-xs font-bold uppercase tracking-wide ${
                     tab === t ? "bg-accent text-asphalt" : "text-chrome"
@@ -159,8 +173,8 @@ export default function IMieiArticoliPage() {
               description="Nessun articolo corrisponde alla ricerca o al filtro applicato."
             />
           ) : (
-            <div className="grid gap-6 rounded-lg border border-paper/10 bg-carbon p-6 md:grid-cols-2">
-              {filtrati.map((articolo) => (
+            <div className="grid gap-6 rounded-lg border border-paper/10 bg-carbon p-6 sm:grid-cols-2 lg:grid-cols-4">
+              {visibili.map((articolo) => (
                 <ArticleCard
                   key={articolo.id}
                   articolo={articolo}
@@ -217,6 +231,8 @@ export default function IMieiArticoliPage() {
               ))}
             </div>
           )}
+
+          <Pagination pagina={paginaCorrente} totalPages={totalPages} onChange={setPagina} />
         </>
       )}
 

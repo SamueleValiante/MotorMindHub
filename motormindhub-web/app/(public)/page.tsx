@@ -8,6 +8,7 @@ import { useCategoryTree, countCategories } from "@/lib/categorie/useCategoryTre
 import { HeroBackdrop } from "@/components/public/HeroBackdrop";
 import { ScrollArrow } from "@/components/public/ScrollArrow";
 import { smoothScrollTo } from "@/lib/ui/smoothScroll";
+import { CategoryTile } from "@/components/public/CategoryTile";
 import { ArticleCard } from "@/components/public/ArticleCard";
 import { Reveal } from "@/components/shared/Reveal";
 import type { ArticleSummary } from "@/lib/articoli/types";
@@ -210,31 +211,7 @@ export default function HomePage() {
                 {visibleRoots.map((nodo, i) => (
                   <li key={nodo.id}>
                     <Reveal delay={(i % 4) * 70} className="h-full">
-                      <Link
-                        href={`/esplora?categoriaIds=${nodo.id}`}
-                        className="group relative flex h-full min-h-32 flex-col justify-between overflow-hidden rounded-xl border border-paper/10 bg-carbon p-4 transition duration-300 hover:-translate-y-1 hover:border-accent/60 hover:shadow-[0_12px_32px_-12px_rgba(61,169,252,0.45)] sm:min-h-36 sm:p-5"
-                      >
-                        <span
-                          aria-hidden="true"
-                          className="pointer-events-none absolute -right-2 -top-4 font-heading text-7xl font-bold text-paper/[0.04] transition duration-500 group-hover:-translate-x-1 group-hover:text-accent/15"
-                        >
-                          {String(i + 1).padStart(2, "0")}
-                        </span>
-                        <span className="absolute inset-x-0 bottom-0 h-0.5 origin-left scale-x-0 bg-accent transition-transform duration-500 group-hover:scale-x-100" />
-                        <span className="font-heading text-lg font-bold uppercase leading-tight tracking-wide text-paper transition-colors group-hover:text-accent sm:text-xl">
-                          {nodo.nome}
-                        </span>
-                        <span className="mt-4 flex items-center justify-between text-xs uppercase tracking-wide text-fog">
-                          <span>
-                            {nodo.figlie.length > 0
-                              ? `${nodo.figlie.length} ${nodo.figlie.length === 1 ? "sezione" : "sezioni"}`
-                              : "Esplora"}
-                          </span>
-                          <span aria-hidden="true" className="text-base transition-transform duration-300 group-hover:translate-x-1 group-hover:text-accent">
-                            →
-                          </span>
-                        </span>
-                      </Link>
+                      <CategoryTile node={nodo} index={i} href={`/esplora?categoriaIds=${nodo.id}`} />
                     </Reveal>
                   </li>
                 ))}

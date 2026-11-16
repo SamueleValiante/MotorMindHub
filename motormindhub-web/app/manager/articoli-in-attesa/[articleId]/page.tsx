@@ -71,35 +71,11 @@ export default function RevisioneArticoloPage() {
         </h1>
       </div>
 
-      {/* Stessa vista e stessa colonna della pagina pubblica: il Manager giudica ciò che vedrà il lettore. */}
-      <div className="rounded-lg border border-paper/10 bg-asphalt px-4 py-8 sm:px-8">
-        <ArticleView articolo={articolo} />
-      </div>
+      {/* Stessa vista e stessa colonna della pagina pubblica, senza riquadro: il Manager giudica ciò che vedrà il lettore. */}
+      <ArticleView articolo={articolo} />
 
-      <div className="rounded-lg border border-paper/10 bg-carbon p-6">
-        <p className="font-heading text-xs font-semibold uppercase tracking-wide text-fog">Decisione</p>
-
-        <div className="mt-4 flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={() => void handleApprove()}
-            disabled={pending !== null}
-            className="rounded-md bg-accent px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-50"
-          >
-            {pending === "approve" ? "Approvazione…" : "✓ Approva e pubblica"}
-          </button>
-          <button
-            type="button"
-            onClick={() => void handleReject()}
-            disabled={pending !== null}
-            className="rounded-md border border-ember px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-ember disabled:opacity-50"
-          >
-            {pending === "reject" ? "Rifiuto…" : "✕ Rifiuta"}
-          </button>
-        </div>
-      </div>
-
-      <div className="rounded-lg border border-paper/10 bg-carbon p-6">
+      {/* Decisione: un unico box, stessa larghezza del testo dell'articolo (max-w-3xl). */}
+      <div className="mx-auto w-full max-w-3xl rounded-lg border border-paper/10 bg-carbon p-6">
         <label htmlFor="motivazione-rifiuto" className="font-heading text-xs font-semibold uppercase tracking-wide text-fog">
           Motivazione (se rifiuto)
         </label>
@@ -111,6 +87,25 @@ export default function RevisioneArticoloPage() {
           placeholder="Facoltativo se approvato…"
           className="mt-2 w-full rounded-md bg-surface-raised px-4 py-3 text-sm text-chrome outline-none focus:ring-2 focus:ring-accent"
         />
+
+        <div className="mt-4 flex flex-wrap justify-end gap-3">
+          <button
+            type="button"
+            onClick={() => void handleReject()}
+            disabled={pending !== null}
+            className="rounded-md border border-ember px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-ember disabled:opacity-50"
+          >
+            {pending === "reject" ? "Rifiuto…" : "✕ Rifiuta"}
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleApprove()}
+            disabled={pending !== null}
+            className="rounded-md bg-accent px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt disabled:opacity-50"
+          >
+            {pending === "approve" ? "Approvazione…" : "✓ Approva e pubblica"}
+          </button>
+        </div>
       </div>
     </div>
   );

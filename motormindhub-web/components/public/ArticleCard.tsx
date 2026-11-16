@@ -92,7 +92,7 @@ const NON_LINKABLE_REASON = "Anteprima non disponibile prima della pubblicazione
 
 export function ArticleCard({ articolo, action, badge, linkable = true }: ArticleCardProps) {
   return (
-    <div className="relative flex flex-col gap-3 border-b border-paper/10 pb-6 last:border-0 last:pb-0">
+    <div className="relative flex flex-col gap-3">
       {linkable ? (
         <Link href={`/articoli/${articolo.id}`} className={`${cardContentClassName} group`}>
           <ArticleCardContent articolo={articolo} />

@@ -8,7 +8,7 @@ import { EmptyState } from "@/components/empty-state/EmptyState";
 import { StatCard } from "@/components/shared/StatCard";
 import { DocumentIcon } from "@/components/autore/icons";
 
-const ULTIMI_ARTICOLI_COUNT = 4;
+const ULTIMI_ARTICOLI_COUNT = 8;
 const PIU_LETTI_COUNT = 5;
 
 /**
@@ -92,7 +92,7 @@ export default function DashboardAutorePage() {
                 action={{ label: "Nuovo articolo", href: "/autore/articoli/nuovo" }}
               />
             ) : (
-              <div className="grid gap-6 md:grid-cols-2">
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 {ultimiArticoli.map((articolo) => (
                   <ArticleCard
                     key={articolo.id}
@@ -102,6 +102,15 @@ export default function DashboardAutorePage() {
                   />
                 ))}
               </div>
+            )}
+
+            {articoli.length > 0 && (
+              <Link
+                href="/autore/articoli"
+                className="self-start rounded-md border border-chrome/40 px-5 py-3 font-heading text-sm font-bold uppercase tracking-wide text-chrome"
+              >
+                Vedi tutti i miei articoli →
+              </Link>
             )}
           </section>
 

@@ -18,7 +18,7 @@ const SORT_OPTIONS: { value: OrdinamentoArticoli; label: string }[] = [
   { value: "IN_EVIDENZA", label: "In evidenza" },
 ];
 
-const DIMENSIONE_PAGINA = 6;
+const DIMENSIONE_PAGINA = 28;
 
 // Debounce della ricerca testuale live: il conteggio di fetch che genera
 // dipende dal numero di pause >= 350ms tra un tasto e l'altro, non dal
@@ -248,7 +248,7 @@ export function EsploraContent() {
         </button>
       </form>
 
-      <div className="flex w-full max-w-2xl flex-col gap-4 rounded-lg bg-carbon p-6">
+      <div className="flex w-full flex-col gap-4 rounded-lg bg-carbon p-6">
         <h2 className="font-heading text-sm font-bold uppercase tracking-wide text-paper">
           Categoria
         </h2>
@@ -311,7 +311,7 @@ export function EsploraContent() {
             }
           />
         ) : results.status === "ready" ? (
-          <div className="grid gap-6 rounded-lg border border-paper/10 bg-carbon p-6 md:grid-cols-2">
+          <div className="grid gap-6 rounded-lg border border-paper/10 bg-carbon p-6 sm:grid-cols-2 lg:grid-cols-4">
             {results.result.articoli.map((articolo) => (
               <ArticleCard key={articolo.id} articolo={articolo} />
             ))}

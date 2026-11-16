@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { CategoryTile } from "@/components/public/CategoryTile";
 import { findCategoryPath } from "@/lib/categorie/categoryDrilldown";
 import type { CategoryTreeNode } from "@/lib/categorie/types";
 
@@ -25,6 +27,11 @@ export function CategoryDrilldownNav({ tree, currentId, onNavigate }: CategoryDr
   const path = findCategoryPath(tree, currentId);
   const currentNode = path.at(-1) ?? null;
   const figli = currentNode?.figlie ?? tree;
+  // Liste lunghe (le 60 marche alla radice): prime 12, il resto dietro "Mostra tutte". Si richiude a ogni cambio di livello.
+  const [espansoPer, setEspansoPer] = useState<number | null | undefined>(undefined);
+  const espanso = espansoPer === currentId;
+  const VISIBILI = 12;
+  const figliVisibili = espanso ? figli : figli.slice(0, VISIBILI);
 
   return (
     <div className="flex flex-col gap-3">
@@ -62,24 +69,29 @@ export function CategoryDrilldownNav({ tree, currentId, onNavigate }: CategoryDr
       </nav>
 
       {figli.length > 0 ? (
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Sottocategorie">
-          {figli.map((figlio) => (
-            <button
-              key={figlio.id}
-              type="button"
-              onClick={() => onNavigate(figlio.id)}
-              className="rounded-md border border-chrome/40 px-4 py-2 text-left text-sm text-chrome hover:border-accent hover:text-accent focus-visible:border-accent focus-visible:text-accent"
-            >
-              {figlio.nome}
-            </button>
+        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4" aria-label="Sottocategorie">
+          {figliVisibili.map((figlio) => (
+            <li key={figlio.id}>
+              <CategoryTile node={figlio} compact onClick={() => onNavigate(figlio.id)} />
+            </li>
           ))}
-        </div>
+        </ul>
       ) : (
         currentNode && (
           <p className="text-xs text-fog">
             Nessuna sotto-categoria: i risultati sotto mostrano gli articoli di &ldquo;{currentNode.nome}&rdquo;.
           </p>
         )
+      )}
+
+      {figli.length > VISIBILI && (
+        <button
+          type="button"
+          onClick={() => setEspansoPer(espanso ? undefined : currentId)}
+          className="self-start rounded-md border border-chrome/40 px-4 py-2 font-heading text-xs font-bold uppercase tracking-wide text-chrome"
+        >
+          {espanso ? "Mostra meno" : `Mostra tutte le ${figli.length} categorie`}
+        </button>
       )}
     </div>
   );

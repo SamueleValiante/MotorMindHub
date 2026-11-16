@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CategoryTile } from "@/components/public/CategoryTile";
 import { useFocusTrap } from "@/lib/shared/useFocusTrap";
 import { useCategoryDrilldown } from "@/lib/categorie/useCategoryDrilldown";
 import { findCategoryPath } from "@/lib/categorie/categoryDrilldown";
@@ -131,7 +132,7 @@ function CategoryPickerModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="category-picker-title"
-        className="flex max-h-[90vh] w-full max-w-md flex-col gap-4 overflow-y-auto rounded-xl bg-carbon p-8 shadow-xl"
+        className="flex max-h-[90vh] w-full max-w-md flex-col gap-4 lg:max-w-3xl overflow-y-auto rounded-xl bg-carbon p-8 shadow-xl"
       >
         <div className="flex items-start justify-between gap-4">
           <h2
@@ -201,24 +202,22 @@ function CategoryPickerModal({
         )}
 
         {visibleNodes.length > 0 ? (
-          <div className="flex max-h-[50vh] flex-col gap-1 overflow-y-auto" role="group" aria-label="Sottocategorie">
+          <ul className="grid max-h-[55vh] grid-cols-2 gap-3 overflow-y-auto p-1 sm:grid-cols-3" aria-label="Sottocategorie">
             {visibleNodes.map((node) => {
               const isLeaf = node.figlie.length === 0;
               const selectable = isSelectable(node);
               return (
-                <button
-                  key={node.id}
-                  type="button"
-                  disabled={isLeaf && !selectable}
-                  onClick={() => (isLeaf ? onChoose(node.id) : navigate(node.id))}
-                  className="flex items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-sm text-chrome hover:bg-surface-raised hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-chrome"
-                >
-                  {node.nome}
-                  {!isLeaf && <ChevronDownIcon className="h-4 w-4 shrink-0 -rotate-90 text-fog" />}
-                </button>
+                <li key={node.id} className={isLeaf && !selectable ? "pointer-events-none opacity-40" : ""}>
+                  <CategoryTile
+                    node={node}
+                    compact
+                    active={node.id === value}
+                    onClick={() => (isLeaf ? onChoose(node.id) : navigate(node.id))}
+                  />
+                </li>
               );
             })}
-          </div>
+          </ul>
         ) : (
           currentNode && <p className="text-xs text-fog">Nessuna sotto-categoria.</p>
         )}
