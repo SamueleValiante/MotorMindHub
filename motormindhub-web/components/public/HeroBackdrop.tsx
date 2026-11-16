@@ -29,8 +29,8 @@ export function HeroBackdrop() {
   return (
     <div aria-hidden="true" className="absolute inset-0 overflow-hidden bg-asphalt">
       {/* Su desktop le immagini occupano il 72% di destra (proporzione quasi nativa: nessun ingrandimento
-          forzato) e sfumano verso sinistra sotto il testo; su mobile coprono tutto lo sfondo. */}
-      <div className="absolute inset-y-0 right-0 w-full [mask-image:linear-gradient(to_right,transparent,black_38%)] lg:w-[72%]">
+          forzato) e sfumano verso sinistra sotto il testo; su mobile occupano la parte alta (48% dell'altezza, proporzione quasi nativa) e sfumano verso il testo. */}
+      <div className="absolute inset-x-0 -top-[10svh] h-[52svh] [mask-image:linear-gradient(to_bottom,black_55%,transparent)] lg:inset-y-0 lg:top-0 lg:left-auto lg:right-0 lg:h-auto lg:w-[72%] lg:[mask-image:linear-gradient(to_right,transparent,black_38%)]">
         {SLIDES.map((slide, i) => (
           // eslint-disable-next-line @next/next/no-img-element -- immagini statiche già ottimizzate (webp) in public/
           <img
@@ -46,7 +46,7 @@ export function HeroBackdrop() {
           />
         ))}
       </div>
-      <div className="absolute inset-0 bg-gradient-to-r from-asphalt/90 via-asphalt/40 to-asphalt/20" />
+      <div className="absolute inset-0 bg-gradient-to-t from-asphalt/80 via-transparent to-transparent lg:bg-gradient-to-r lg:from-asphalt/90 lg:via-asphalt/40 lg:to-asphalt/20" />
       <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-asphalt/60 to-transparent" />
     </div>
   );

@@ -103,14 +103,14 @@ export default function HomePage() {
   return (
     <div className="flex flex-col">
       {/* Hero a schermo intero: header + hero riempiono il primo viewport */}
-      <section className="relative flex min-h-[calc(100svh-97px)] items-center overflow-hidden">
+      <section className="relative flex min-h-[calc(100svh-73px)] items-end overflow-hidden lg:items-center">
         <div ref={heroBgRef} className="absolute -inset-x-0 -top-0 bottom-[-12%] will-change-transform">
           <HeroBackdrop />
         </div>
 
         <div
           ref={heroContentRef}
-          className="relative mx-auto grid w-full max-w-6xl items-center gap-10 px-4 py-16 will-change-transform sm:px-6 "
+          className="relative mx-auto grid w-full max-w-6xl items-center gap-10 px-4 pb-20 pt-[26svh] will-change-transform sm:px-6 lg:py-16"
         >
           <div className="flex max-w-2xl flex-col gap-6">
             <p className="font-heading text-xs font-bold uppercase tracking-[0.2em] text-accent">

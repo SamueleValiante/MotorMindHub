@@ -43,9 +43,9 @@ export function PublicHeader() {
 
   return (
     <header className="border-b border-paper/10 bg-asphalt">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2 sm:px-6">
         <Link href={homeHref}>
-          <Logo className="h-16 w-16" />
+          <Logo className="h-14 w-14" />
         </Link>
 
         <nav className="hidden items-center gap-6 md:flex">
