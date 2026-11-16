@@ -6,6 +6,9 @@ import Link from "next/link";
 import { useArticleSearch } from "@/lib/articoli/useArticleSearch";
 import { useCategoryTree, countCategories } from "@/lib/categorie/useCategoryTree";
 import { HeroBackdrop } from "@/components/public/HeroBackdrop";
+import { ScrollArrow } from "@/components/public/ScrollArrow";
+import { smoothScrollTo } from "@/lib/ui/smoothScroll";
+import { ArticleCard } from "@/components/public/ArticleCard";
 import { Reveal } from "@/components/shared/Reveal";
 import type { ArticleSummary } from "@/lib/articoli/types";
 import { EmptyState } from "@/components/empty-state/EmptyState";
@@ -31,34 +34,30 @@ import { ClockIcon, SearchIcon } from "@/components/public/icons";
  *   OrdinamentoArticoli lato backend) — semplificazione loro, non nostra,
  *   qui riusata cosi' com'e'.
  */
-/** Scorrimento fluido (ease-in-out) verso un'ancora della pagina; con reduced-motion salta direttamente. */
-function smoothScrollTo(event: React.MouseEvent, id: string) {
-  const target = document.getElementById(id);
-  if (!target) return;
-  event.preventDefault();
-  const end = target.getBoundingClientRect().top + window.scrollY - 16;
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    window.scrollTo(0, end);
-    return;
-  }
-  const start = window.scrollY;
-  const distance = end - start;
-  const duration = Math.min(1400, 700 + Math.abs(distance) * 0.4);
-  const t0 = performance.now();
-  const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
-  const step = (now: number) => {
-    const t = Math.min(1, (now - t0) / duration);
-    window.scrollTo(0, start + distance * ease(t));
-    if (t < 1) requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
-}
+const TRUST_POINTS = [
+  {
+    title: "Contenuti verificati",
+    text: "Ogni articolo viene letto e approvato da un Manager Autori prima della pubblicazione: niente testo che va online senza revisione.",
+    icon: <path d="M9 12l2 2 4-4M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z" strokeLinecap="round" strokeLinejoin="round" />,
+  },
+  {
+    title: "Fonti citate",
+    text: "Dati, prezzi e specifiche riportano la fonte e l'anno di riferimento, così puoi controllare tu stesso da dove arriva ogni numero.",
+    icon: <path d="M4 5h11a3 3 0 013 3v11H7a3 3 0 01-3-3V5zM8 9h6M8 13h6" strokeLinecap="round" strokeLinejoin="round" />,
+  },
+  {
+    title: "Autori qualificati",
+    text: "Scrivono solo autori invitati dalla redazione, con nome e cognome in chiaro su ogni articolo e un profilo pubblico.",
+    icon: <path d="M12 12a4 4 0 100-8 4 4 0 000 8zM4 20c0-4 3.6-6 8-6s8 2 8 6" strokeLinecap="round" strokeLinejoin="round" />,
+  },
+];
 
 export default function HomePage() {
   const router = useRouter();
   const [searchValue, setSearchValue] = useState("");
 
   const featured = useArticleSearch({ ordinamento: "IN_EVIDENZA", dimensionePagina: 4 });
+  const latest = useArticleSearch({ ordinamento: "PIU_RECENTI", dimensionePagina: 6 });
   const categorie = useCategoryTree();
 
   const handleSearch = (event: React.FormEvent) => {
@@ -254,10 +253,11 @@ export default function HomePage() {
               )}
             </>
           )}
+          <ScrollArrow to="evidenza" label="Vai agli articoli in evidenza" />
         </section>
 
         {/* In evidenza */}
-        <section className="mx-auto w-full max-w-6xl">
+        <section id="evidenza" className="mx-auto w-full max-w-6xl scroll-mt-24">
           <Reveal>
             <p className="font-heading text-xs font-bold uppercase tracking-[0.2em] text-accent">Più letti</p>
             <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
@@ -296,6 +296,84 @@ export default function HomePage() {
           ) : (
             <p className="mt-8 text-sm text-fog">Caricamento…</p>
           )}
+          <ScrollArrow to="ultimi" label="Vai agli ultimi articoli" />
+        </section>
+
+        {/* Ultimi articoli */}
+        <section id="ultimi" className="mx-auto w-full max-w-6xl scroll-mt-24">
+          <Reveal>
+            <p className="font-heading text-xs font-bold uppercase tracking-[0.2em] text-accent">Appena pubblicati</p>
+            <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
+              <h2 className="font-heading text-3xl font-bold uppercase leading-tight tracking-wide text-paper sm:text-4xl">
+                Ultimi articoli.
+              </h2>
+              <Link href="/esplora" className="font-heading text-sm font-bold uppercase tracking-wide text-accent">
+                Esplora tutto →
+              </Link>
+            </div>
+          </Reveal>
+
+          {latest.status === "ready" && latest.result.articoli.length > 0 ? (
+            <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {latest.result.articoli.map((articolo, i) => (
+                <li key={articolo.id}>
+                  <Reveal delay={(i % 3) * 90} className="h-full">
+                    <div className="h-full rounded-xl border border-paper/10 bg-carbon p-4 transition duration-300 hover:-translate-y-1 hover:border-accent/60 hover:shadow-[0_12px_32px_-12px_rgba(61,169,252,0.35)]">
+                      <ArticleCard articolo={articolo} />
+                    </div>
+                  </Reveal>
+                </li>
+              ))}
+            </ul>
+          ) : latest.status === "ready" ? (
+            <p className="mt-8 text-sm text-fog">Nessun articolo pubblicato ancora.</p>
+          ) : (
+            <p className="mt-8 text-sm text-fog">Caricamento…</p>
+          )}
+          <ScrollArrow to="fiducia" label="Vai a come lavoriamo" />
+        </section>
+
+        {/* Fiducia ed editoria */}
+        <section id="fiducia" className="mx-auto w-full max-w-6xl scroll-mt-24">
+          <div className="relative overflow-hidden rounded-2xl border border-paper/10 bg-carbon px-6 py-12 sm:px-12 sm:py-16">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-accent/10 blur-3xl"
+            />
+            <Reveal>
+              <p className="font-heading text-xs font-bold uppercase tracking-[0.2em] text-accent">Come lavoriamo</p>
+              <h2 className="mt-2 max-w-2xl font-heading text-3xl font-bold uppercase leading-tight tracking-wide text-paper sm:text-4xl">
+                Informazione tecnica di cui puoi fidarti.
+              </h2>
+            </Reveal>
+
+            <ul className="mt-10 grid gap-6 md:grid-cols-3">
+              {TRUST_POINTS.map((point, i) => (
+                <li key={point.title}>
+                  <Reveal delay={i * 110} className="h-full">
+                    <div className="h-full rounded-xl border border-paper/10 bg-asphalt/60 p-6">
+                      <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-accent/15 text-accent">
+                        <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                          {point.icon}
+                        </svg>
+                      </span>
+                      <h3 className="mt-4 font-heading text-lg font-bold uppercase tracking-wide text-paper">{point.title}</h3>
+                      <p className="mt-2 text-sm leading-relaxed text-chrome">{point.text}</p>
+                    </div>
+                  </Reveal>
+                </li>
+              ))}
+            </ul>
+
+            <Reveal delay={300}>
+              <Link
+                href="/linee-guida-editoriali"
+                className="mt-10 inline-block rounded-md border border-chrome/40 px-6 py-3 font-heading text-sm font-bold uppercase tracking-wide text-chrome"
+              >
+                Leggi le linee guida editoriali →
+              </Link>
+            </Reveal>
+          </div>
         </section>
       </div>
     </div>

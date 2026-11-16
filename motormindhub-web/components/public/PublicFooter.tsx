@@ -24,9 +24,8 @@ const SUPPORTO_EMAIL = "supporto@motormindhub.com";
  * "Segnala un problema" e "Contatti" vanno a un mailto: nessun endpoint di
  * contatto/bug-report esiste nel backend, un link che apre il client di
  * posta e' l'unica cosa che questa voce puo' onestamente fare oggi.
- * "Linee guida editoriali" del mockup e' stata omessa: non corrisponde a
- * nessun contenuto ne' previsto dal RAD, un link a una pagina che non e'
- * nemmeno in programma sarebbe diverso da un "non ancora costruito".
+ * "Linee guida editoriali": ora esiste la pagina /linee-guida-editoriali
+ * (linkata anche dalla fascia "Come lavoriamo" della Home).
  *
  * "Preferenze cookie": la Cookie Policy promette questo link, e
  * useCookieConsentStore.openPreferences() esiste gia' apposta (commento
@@ -56,6 +55,9 @@ export function PublicFooter() {
           </Link>
           <Link href="/chi-siamo" className="text-sm text-chrome hover:text-accent">
             Chi siamo
+          </Link>
+          <Link href="/linee-guida-editoriali" className="text-sm text-chrome hover:text-accent">
+            Linee guida editoriali
           </Link>
         </div>
 
