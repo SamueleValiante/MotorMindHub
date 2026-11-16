@@ -25,7 +25,7 @@ const AREA_PERSONALE: Record<Ruolo, { label: string; href: string }> = {
 
 /**
  * Chip utente autenticato dell'header pubblico (mockup 03/03b, "MARCO V. ⌄"):
- * il menu a tendina ha solo due voci reali (Area personale, Esci), non
+ * il menu a tendina ha voci reali (Area personale, I miei salvataggi solo per l'Iscritto, Esci), non
  * un menu notifiche/impostazioni inventato — GestioneNotifiche non espone
  * una lista in-app (solo email, SDD 4.6), niente da mostrare li' dentro.
  */
@@ -111,6 +111,15 @@ export function UserMenu() {
             >
               {AREA_PERSONALE[ruolo].label}
             </Link>
+            {ruolo === "ISCRITTO" && (
+              <Link
+                href="/account/salvataggi"
+                onClick={() => setOpen(false)}
+                className="block px-4 py-2 text-sm text-paper hover:bg-paper/5"
+              >
+                I miei salvataggi
+              </Link>
+            )}
             <button
               type="button"
               onClick={() => void logout()}

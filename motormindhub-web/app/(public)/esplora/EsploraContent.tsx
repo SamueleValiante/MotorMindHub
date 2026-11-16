@@ -218,7 +218,7 @@ export function EsploraContent() {
         </p>
       </div>
 
-      <form onSubmit={handleApplyFilters} className="flex w-full max-w-2xl flex-col gap-6 rounded-lg bg-carbon p-6">
+      <form onSubmit={handleApplyFilters} className="flex w-full flex-col gap-6 rounded-lg bg-carbon p-6">
         <h2 className="font-heading text-sm font-bold uppercase tracking-wide text-paper">
           Filtri di ricerca
         </h2>
