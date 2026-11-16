@@ -23,7 +23,7 @@ export function Logo({ className }: LogoProps) {
       alt="MotorMindHub"
       width={322}
       height={322}
-      className={className ?? "h-10 w-10"}
+      className={className ?? "h-14 w-14"}
     />
   );
 }

@@ -98,3 +98,26 @@ button:disabled {
 a[href][class*="border-b"][class*="border-paper/10"]:not([class*="hover:"]):hover {
   background-color: color-mix(in srgb, var(--color-paper) 5%, transparent);
 }
+
+/* Animazioni hero home */
+@keyframes mmh-drift {
+  from { transform: scale(1.02); }
+  to { transform: scale(1.1) translate3d(-1.5%, -1%, 0); }
+}
+@keyframes mmh-spin { to { transform: rotate(360deg); } }
+@keyframes mmh-needle-sweep {
+  0%, 100% { transform: rotate(-18deg); }
+  50% { transform: rotate(8deg); }
+}
+@keyframes mmh-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(8px); }
+}
+.mmh-drift { animation: mmh-drift 14s ease-in-out infinite alternate; }
+.mmh-spin { animation: mmh-spin 60s linear infinite; }
+.mmh-spin-rev { animation: mmh-spin 45s linear infinite reverse; }
+.mmh-needle { transform-origin: 1100px 450px; animation: mmh-needle-sweep 6s ease-in-out infinite; }
+.mmh-float { animation: mmh-float 2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .mmh-drift, .mmh-spin, .mmh-spin-rev, .mmh-needle, .mmh-float { animation: none; }
+}
