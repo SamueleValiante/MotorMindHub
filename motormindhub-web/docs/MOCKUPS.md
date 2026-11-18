@@ -106,7 +106,7 @@ Copre NP5 (Gestore Utenti) — moderazione community, segnalazioni, GDPR assisti
 | `39_gestore_gestione_account.png` | Gestione Account | RF4.2, UC_22 |
 | `40_gestore_scheda_utente.png` | Scheda Profilo Utente | RF4.2 |
 | `41_gestore_popup_sospendi.png` | Popup — Sospendi Account | RF4.3, UC_23 |
-| `42_gestore_ricorsi.png` | Ricorsi | RF4.3 (gestione ricorso a sospensione) |
+| `42_gestore_ricorsi.png` | Account sospesi | RF4.3, RF4.4 (elenco account sospesi; i ricorsi arrivano via email) |
 | `43_gestore_popup_riattiva.png` | Popup — Riattiva Account | RF4.4, UC_24 |
 | `44_gestore_coda_segnalazioni.png` | Coda Segnalazioni | RF4.5, UC_26 |
 | `45_gestore_dettaglio_segnalazione.png` | Dettaglio Segnalazione | RF4.5, UC_26 |

@@ -1,4 +1,4 @@
-# MotorMindHub — Problem Statement (v1.5)
+# MotorMindHub — Problem Statement (v1.7)
 
 > Riferimento tecnico: dominio del problema, scenari, requisiti funzionali/non funzionali, ambiente di destinazione.
 
@@ -215,7 +215,7 @@ del provvedimento e le modalità per presentare ricorso.
 2.23 Riattivazione di un utente sospeso
 Paolo, ricevuta la comunicazione, rimuove l'immagine incriminata e scrive a MotorMindHub per chiedere la
 riattivazione anticipata del proprio account, allegando le proprie scuse.
-Elena riceve la richiesta nella sezione “Ricorsi” della Dashboard, apre la scheda dell'utente e verifica che il 
+Elena riceve la richiesta (via email, fuori dalla piattaforma) e dalla sezione “Account sospesi” della Dashboard apre la scheda dell'utente e verifica che il 
 profilo sia stato effettivamente corretto. Fa click su “Riattiva account”, il sistema le chiede conferma tramite
 un pop-up e Elena conferma cliccando su “Conferma riattivazione”.
 L'accesso di Paolo viene ripristinato immediatamente e una email automatica lo informa dell'avvenuta 

@@ -1,6 +1,10 @@
 interface LegalSection {
   heading: string;
   body: string;
+  /** Paragrafi aggiuntivi dopo `body`. */
+  more?: string[];
+  /** Elenco puntato mostrato dopo i paragrafi. */
+  bullets?: string[];
 }
 
 interface LegalPageLayoutProps {
@@ -36,6 +40,18 @@ export function LegalPageLayout({ title, ultimoAggiornamento, sections }: LegalP
           <section key={section.heading}>
             <h2 className="font-heading text-lg font-bold text-paper">{section.heading}</h2>
             <p className="mt-2 text-sm leading-relaxed text-fog">{section.body}</p>
+            {section.more?.map((paragraph) => (
+              <p key={paragraph} className="mt-3 text-sm leading-relaxed text-fog">
+                {paragraph}
+              </p>
+            ))}
+            {section.bullets && (
+              <ul className="mt-3 list-disc space-y-2 pl-5 text-sm leading-relaxed text-fog marker:text-accent">
+                {section.bullets.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            )}
           </section>
         ))}
       </div>

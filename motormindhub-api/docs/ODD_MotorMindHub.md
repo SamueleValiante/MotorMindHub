@@ -1,4 +1,4 @@
-# MotorMindHub — Object Design Document (v1.0)
+# MotorMindHub — Object Design Document (v1.2)
 
 > Riferimento tecnico per lo sviluppo. Trade-off, convenzioni di naming, struttura dei pacchetti, contratti OCL (pre/post-condizioni) per ciascun sottosistema.
 

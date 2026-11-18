@@ -2,8 +2,10 @@ import { NextResponse } from "next/server";
 
 export const REFRESH_COOKIE_NAME = "mmh_rt";
 
-// Allineato a security.refresh-token.expiration-days (14) in application.properties.
-const REFRESH_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 14;
+// Allineato a security.refresh-token.expiration-hours (3) in application.properties.
+// Finestra scorrevole: ogni refresh riemette il cookie (route /api/auth/refresh),
+// quindi scade solo dopo 3 ore di inattività.
+const REFRESH_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 3;
 
 const baseCookieOptions = {
   httpOnly: true,

@@ -4,6 +4,7 @@ import { AuthProvider } from "@/lib/auth/AuthProvider";
 import { ToastViewport } from "@/components/toast/ToastViewport";
 import { CookieBanner } from "@/components/cookie-consent/CookieBanner";
 import { PageViewTracker } from "@/components/analytics/PageViewTracker";
+import { SentryConsentGate } from "@/components/analytics/SentryConsentGate";
 import { ReportUserModal } from "@/components/report/ReportUserModal";
 import "./globals.css";
 
@@ -66,6 +67,7 @@ export default function RootLayout({
         <ToastViewport />
         <CookieBanner />
         <PageViewTracker />
+        <SentryConsentGate />
         <ReportUserModal />
       </body>
     </html>

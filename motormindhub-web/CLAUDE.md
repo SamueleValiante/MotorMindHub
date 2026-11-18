@@ -18,7 +18,7 @@ di dominio, non il contratto JSON esatto (nomi campi, formati data, ecc.).
 
 ## Stack
 Next.js, TypeScript, Tailwind CSS. Auth: access token JWT (30 min) +
-refresh token opaco (14 giorni, rotation con reuse detection — se una
+refresh token opaco (3 ore a finestra scorrevole, rotation con reuse detection — se una
 richiesta di refresh fallisce con "famiglia revocata", forza logout
 completo e richiedi nuovo login, non ritentare).
 

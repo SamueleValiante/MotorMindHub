@@ -1,4 +1,4 @@
-# MotorMindHub — System Design Document (v1.0)
+# MotorMindHub — System Design Document (v1.1)
 
 > Riferimento tecnico per lo sviluppo. Architettura, decomposizione in sottosistemi, mapping hardware/software, gestione dati, access control, servizi.
 

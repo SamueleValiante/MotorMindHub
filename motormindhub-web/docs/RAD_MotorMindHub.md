@@ -1,4 +1,4 @@
-# MotorMindHub — Requirement Analysis Document (v1.4)
+# MotorMindHub — Requirement Analysis Document (v1.6)
 
 > Riferimento tecnico: requisiti funzionali (RF), requisiti non funzionali (RNF), scenari, gerarchia utenti, use case (UC_1-UC_28), object model, ambiente di destinazione. Nota: i diagrammi UML del documento originale (immagini) non sono inclusi in questa versione testuale — fare riferimento al PDF originale se serve consultarli visivamente.
 
@@ -181,7 +181,9 @@ RF3.7); le letture da parte di un Autore, di un Manager degli Autori o di un Ges
 conteggio, anche quando l'articolo letto è di loro proprietà, per non gonfiare il dato con l'attività di 
 editing, revisione o moderazione. (cfr. UC_5)
 RF1.2: Il sistema deve fornire un motore di ricerca e filtri combinati (es. per “Categoria” e relative 
-sottocategorie come “Componentistica”) per individuare articoli specifici. (cfr. UC_5)
+sottocategorie come “Componentistica”) per individuare articoli specifici. I risultati sono presentati in griglia a quattro colonne su desktop, 
+con paginazione di 28 articoli per pagina; la selezione della categoria avviene tramite riquadri (tile) navigabili per livelli: durante la navigazione ogni nodo mostra i soli articoli ad esso direttamente associati, 
+mentre un link diretto a una categoria mantiene l’aggregazione con le sottocategorie. La ricerca testuale agisce su titolo e tag, con aggiornamento live dei risultati. (cfr. UC_5)
 RF1.3: Il sistema deve permettere ai visitatori di creare un account fornendo nome, cognome, email, 
 password sicura, e opzionalmente una foto profilo e una biografia. La registrazione richiede la verifica 
 dell’indirizzo email prima dell’attivazione dell’account. (cfr. UC_1)
@@ -194,7 +196,8 @@ una foto profilo e la modifica della biografia. (cfr. UC_4)
 RF1.7: Il sistema deve permettere all’utente di salvare gli articoli in liste personali (“Preferiti” o “Leggi 
 più tardi”) e di rimuoverli quando non più necessari. (cfr. UC_6, UC_7)
 RF1.8: Il sistema deve fornire una sezione dedicata (“I miei salvataggi”) dove l’utente può visualizzare e 
-accedere rapidamente alle card di tutti gli articoli salvati. (cfr. UC_7)
+accedere rapidamente alle card di tutti gli articoli salvati, presentate in griglia a quattro colonne su desktop con paginazione (28 per pagina). 
+La sezione deve offrire una ricerca testuale (titolo, estratto, categoria, autore) applicabile alla sola lista “Preferiti”, alla sola lista “Leggi più tardi” o a entrambe. (cfr. UC_7)
 
 RF1.9: Il sistema deve permettere a un utente registrato di segnalare un profilo di un altro utente ritenuto 
 non conforme ai Termini di Servizio, indicando una motivazione. La segnalazione deve essere inoltrata 
@@ -202,6 +205,11 @@ alla coda di lavorazione del Gestore Utenti. (cfr. UC_26)
 RF1.10: Il sistema deve permettere all’utente registrato di richiedere, dalla propria area personale, 
 l’esportazione dei propri dati personali in formato strutturato (es. JSON) e la cancellazione definitiva del 
 proprio account. (cfr. UC_25)
+RF1.11: Ogni articolo pubblicato deve riportare in calce il blocco “Riferimenti e note legali”, contenente: autore e date di 
+pubblicazione/aggiornamento, indicazione sulle fonti di riferimento, avviso sui marchi citati, avvertenze sull’uso delle informazioni 
+e indicazione dei diritti sui contenuti. (cfr. UC_5)
+RF1.12: Il sistema deve rendere pubblica la pagina “Linee guida editoriali” (processo di verifica degli articoli, fonti, correzioni, 
+immagini e marchi), raggiungibile dalla home page (sezione “Come lavoriamo”) e dal footer. (cfr. UC_5)
 3.2.2 Funzionalità autore
 L’Autore è un content creator con accesso a un’area riservata per la gestione dei propri contenuti 
 editoriali.
@@ -240,7 +248,9 @@ RF3.5: Il sistema deve permettere al Manager di eliminare categorie obsolete o d
 l’eliminazione, il sistema deve obbligare il Manager a selezionare una nuova categoria a cui riassegnare 
 eventuali articoli “orfani”. (cfr. UC_13)
 RF3.6: Dopo che un autore ha scritto un articolo, questo deve essere accettato dal Manager se ritenuto 
-idoneo alla pubblicazione, oppure rifiutato, con possibilità di indicare una motivazione all’autore. (cfr. 
+idoneo alla pubblicazione, oppure rifiutato, con possibilità di indicare una motivazione all’autore. L’anteprima di revisione deve mostrare l’articolo 
+esattamente come lo vedrà il lettore (stessa vista, stessa larghezza di testo, riferimenti legali inclusi), con motivazione e 
+decisione raccolte in un unico riquadro. (cfr. 
 UC_21)
 RF3.7: Il sistema deve fornire al Manager degli Autori strumenti di monitoraggio nel tempo dell’attività 
 editoriale, oltre alle statistiche di base di RF3.1: andamento giornaliero delle pubblicazioni, delle nuove 
@@ -270,6 +280,8 @@ deve notificare via email l’utente coinvolto, indicando la motivazione e le mo
 UC_23)
 RF4.4: Il sistema deve permettere al Gestore Utenti di riattivare un account precedentemente sospeso, 
 previa verifica delle condizioni di riammissione, con conferma esplicita e notifica automatica all’utente. 
+Le richieste di riattivazione pervengono al di fuori della piattaforma (email): la sezione “Account sospesi” elenca tutti gli 
+account attualmente sospesi, senza tracciare uno stato di “ricorso”. 
 (cfr. UC_24)
 RF4.5: Il sistema deve fornire al Gestore Utenti una coda di lavorazione delle segnalazioni ricevute dagli 
 utenti (su profili o comportamenti scorretti), permettendo di visionarle, contattare l’utente segnalato, 
@@ -629,7 +641,7 @@ la motivazione del provvedimento e le modalità per presentare ricorso.
 3.4.1.23 Riattivazione di un utente sospeso (nuovo)
 Paolo, ricevuta la comunicazione, rimuove l’immagine incriminata e scrive a MotorMindHub per 
 chiedere la riattivazione anticipata del proprio account, allegando le proprie scuse.
-Elena riceve la richiesta nella sezione “Ricorsi” della Dashboard, apre la scheda dell’utente e verifica che 
+Elena riceve la richiesta (via email, fuori dalla piattaforma) e dalla sezione “Account sospesi” della Dashboard apre la scheda dell’utente e verifica che 
 il profilo sia stato effettivamente corretto. Fa click su “Riattiva account”, il sistema le chiede conferma 
 tramite un pop-up e Elena conferma cliccando su “Conferma riattivazione”.
 L’accesso di Paolo viene ripristinato immediatamente e una email automatica lo informa dell’avvenuta 
@@ -1362,8 +1374,8 @@ Sequence Diagram – UC_23 Sospensione Account
 UC_24 Riattivazione Account Sospeso
 Campo Contenuto
 Attori Gestore Utenti
-Condizione di Entrata Un utente sospeso ha presentato ricorso; il Gestore 
-Utenti accede alla sezione “Ricorsi” della 
+Condizione di Entrata Un utente sospeso ha chiesto la riattivazione (via email, fuori dalla piattaforma); il Gestore 
+Utenti accede alla sezione “Account sospesi” della 
 Dashboard e apre la scheda dell’utente.
 Flusso degli eventi:
 # Attore Sistema
@@ -1666,7 +1678,7 @@ Gestione Account
 Scheda Profilo Utente
 
 Popup — Sospendi Account
-Ricorsi
+Account sospesi
 
 Popup — Riattiva Account
 Coda Segnalazioni
@@ -1741,7 +1753,7 @@ contenuti/profili.
 • Log Azione Amministrativa: registrazione tracciata di un’azione compiuta da Manager degli 
 Autori o Gestore Utenti (sospensione, riattivazione, cancellazione, esportazione, rimozione 
 autore, ecc.), ai fini di accountability.
-• Ricorso: richiesta presentata da un utente sospeso al Gestore Utenti per ottenere la riattivazione 
+• Ricorso: richiesta presentata (via email, fuori dalla piattaforma: il sistema non ne traccia lo stato) da un utente sospeso al Gestore Utenti per ottenere la riattivazione 
 anticipata del proprio account.
 • Segnalazione: notifica inviata da un utente riguardo a un profilo o comportamento ritenuto non 
 conforme ai Termini di Servizio, gestita dal Gestore Utenti.
