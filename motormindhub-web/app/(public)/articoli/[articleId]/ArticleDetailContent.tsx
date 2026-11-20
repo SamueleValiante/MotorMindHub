@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { useArticle } from "@/lib/articoli/useArticle";
 import { useArticleSearch } from "@/lib/articoli/useArticleSearch";
@@ -64,7 +65,9 @@ export function ArticleDetailContent({ articleId }: { articleId: string }) {
       <ArticleView articolo={articolo} actions={<SaveMenu articleId={articolo.id} />} />
 
       {altriArticoli.length > 0 && (
-        <section className="mt-12 border-t border-paper/10 pt-8">
+        <section
+          style={{ "--mmh-delay": "800ms" } as CSSProperties}
+          className="mmh-reveal mt-12 border-t border-paper/10 pt-8">
           <h2 className="mb-6 font-heading text-lg font-bold uppercase tracking-wide text-paper">
             Altri articoli in {articolo.categoriaNome}
           </h2>
