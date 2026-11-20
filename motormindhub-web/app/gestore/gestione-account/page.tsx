@@ -60,7 +60,7 @@ export default function GestioneAccountPage() {
   const [search, setSearch] = useState("");
 
   if (users.status === "loading" || deletionQueue.status === "loading") {
-    return <p className="text-sm text-fog">Caricamento…</p>;
+    return <p className="mmh-loading text-sm text-fog">Caricamento…</p>;
   }
 
   if (users.status === "error" || deletionQueue.status === "error") {

@@ -42,7 +42,7 @@ export default function CronologiaPage() {
   const [search, setSearch] = useState("");
 
   if (log.status === "loading") {
-    return <p className="text-sm text-fog">Caricamento…</p>;
+    return <p className="mmh-loading text-sm text-fog">Caricamento…</p>;
   }
 
   if (log.status === "error") {

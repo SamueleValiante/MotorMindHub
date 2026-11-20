@@ -44,7 +44,7 @@ export default function RevisioneArticoloPage() {
   };
 
   if (state.status === "loading") {
-    return <p className="text-sm text-fog">Caricamento…</p>;
+    return <p className="mmh-loading text-sm text-fog">Caricamento…</p>;
   }
 
   if (state.status === "not-found") {

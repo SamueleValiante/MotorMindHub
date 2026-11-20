@@ -16,7 +16,7 @@ export default function ImpostazioniProfiloPage() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-fog">Caricamento…</p>
+        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
       ) : user ? (
         <ProfileSettingsForm user={user} redirectTo="/account" />
       ) : (

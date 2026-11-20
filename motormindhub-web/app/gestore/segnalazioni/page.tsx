@@ -38,7 +38,7 @@ export default function CodaSegnalazioniPage() {
       </div>
 
       {queue.status === "loading" ? (
-        <p className="text-sm text-fog">Caricamento…</p>
+        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
       ) : queue.status === "error" ? (
         <p className="text-sm text-ember">Non è stato possibile caricare la coda delle segnalazioni.</p>
       ) : (

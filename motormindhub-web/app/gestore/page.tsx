@@ -58,7 +58,7 @@ export default function GestoreDashboardPage() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-fog">Caricamento…</p>
+        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
       ) : error ||
         dashboard.status !== "ready" ||
         users.status !== "ready" ||

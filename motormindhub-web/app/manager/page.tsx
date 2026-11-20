@@ -48,7 +48,7 @@ export default function ManagerDashboardPage() {
       </div>
 
       {state.status === "loading" ? (
-        <p className="text-sm text-fog">Caricamento…</p>
+        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
       ) : state.status === "error" ? (
         <p className="text-sm text-ember">Non è stato possibile caricare le statistiche.</p>
       ) : (
@@ -95,7 +95,7 @@ export default function ManagerDashboardPage() {
             </h2>
 
             {letture.status === "loading" ? (
-              <p className="text-sm text-fog">Caricamento…</p>
+              <p className="mmh-loading text-sm text-fog">Caricamento…</p>
             ) : letture.status === "error" ? (
               <p className="text-sm text-ember">Non è stato possibile caricare le statistiche di lettura.</p>
             ) : (
@@ -124,7 +124,7 @@ export default function ManagerDashboardPage() {
             </h2>
 
             {piuLettiState.status === "loading" ? (
-              <p className="text-sm text-fog">Caricamento…</p>
+              <p className="mmh-loading text-sm text-fog">Caricamento…</p>
             ) : piuLettiState.status === "error" ? (
               <p className="text-sm text-ember">Non è stato possibile caricare gli articoli più letti.</p>
             ) : piuLettiState.result.articoli.length === 0 ? (
@@ -164,7 +164,7 @@ export default function ManagerDashboardPage() {
             </h2>
 
             {categoriePiuLetteState.status === "loading" ? (
-              <p className="text-sm text-fog">Caricamento…</p>
+              <p className="mmh-loading text-sm text-fog">Caricamento…</p>
             ) : categoriePiuLetteState.status === "error" ? (
               <p className="text-sm text-ember">Non è stato possibile caricare le categorie più lette.</p>
             ) : categoriePiuLetteState.categorie.length === 0 ? (

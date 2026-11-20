@@ -32,7 +32,7 @@ export default function GestioneAutoriPage() {
       </div>
 
       {autori.status === "loading" ? (
-        <p className="text-sm text-fog">Caricamento…</p>
+        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
       ) : autori.status === "error" ? (
         <p className="text-sm text-ember">Non è stato possibile caricare gli autori.</p>
       ) : (

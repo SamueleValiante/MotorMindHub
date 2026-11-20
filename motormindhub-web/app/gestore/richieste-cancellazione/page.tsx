@@ -45,7 +45,7 @@ export default function RichiesteCancellazionePage() {
       </div>
 
       {queue.status === "loading" ? (
-        <p className="text-sm text-fog">Caricamento…</p>
+        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
       ) : queue.status === "error" ? (
         <p className="text-sm text-ember">Non è stato possibile caricare le richieste di cancellazione.</p>
       ) : queue.richieste.length === 0 ? (

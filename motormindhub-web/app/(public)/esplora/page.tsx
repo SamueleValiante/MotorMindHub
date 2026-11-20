@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 export default function EsploraPage() {
   return (
-    <Suspense fallback={<p className="p-12 text-center text-sm text-fog">Caricamento…</p>}>
+    <Suspense fallback={<p className="mmh-loading p-12 text-center text-sm text-fog">Caricamento…</p>}>
       <EsploraContent />
     </Suspense>
   );

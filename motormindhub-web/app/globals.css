@@ -131,11 +131,44 @@ a[href][class*="border-b"][class*="border-paper/10"]:not([class*="hover:"]):hove
   60% { filter: blur(0); }
   to { opacity: 1; transform: translate3d(0, 0, 0); filter: blur(0); }
 }
+/* fill-mode "backwards": nessun transform/filter resta applicato a fine
+   animazione, altrimenti i discendenti fixed/sticky perderebbero il riferimento. */
 .mmh-reveal {
-  opacity: 0;
-  animation: mmh-reveal 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: mmh-reveal 1.4s cubic-bezier(0.16, 1, 0.3, 1) backwards;
   animation-delay: var(--mmh-delay, 0ms);
 }
 @media (prefers-reduced-motion: reduce) {
-  .mmh-reveal { opacity: 1; animation: none; filter: none; }
+  .mmh-reveal { animation: none; }
+}
+
+/* Transizione di pagina: template.tsx rimonta il wrapper a ogni navigazione;
+   i figli diretti (e quelli inseriti dopo il caricamento dei dati, che
+   sostituiscono il segnaposto) emergono con una dissolvenza morbida. */
+@keyframes mmh-page-in {
+  from { opacity: 0; transform: translate3d(0, 8px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+.mmh-page { display: contents; }
+.mmh-page > :not(.mmh-loading) {
+  animation: mmh-page-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+/* Segnaposto di caricamento: invisibile per i primi 350ms (i caricamenti
+   rapidi non mostrano nulla), poi appare piano con un respiro lento. */
+@keyframes mmh-loading-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes mmh-breathe {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+.mmh-loading {
+  opacity: 0;
+  animation:
+    mmh-loading-in 0.6s ease-out 350ms forwards,
+    mmh-breathe 2.4s ease-in-out 950ms infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mmh-page > :not(.mmh-loading) { animation: none; }
+  .mmh-loading { opacity: 1; animation: none; }
 }

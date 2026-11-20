@@ -53,7 +53,7 @@ export default function RicorsiPage() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-fog">Caricamento…</p>
+        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
       ) : error ? (
         <p className="text-sm text-ember">Non è stato possibile caricare gli account sospesi.</p>
       ) : sospesi.length === 0 ? (

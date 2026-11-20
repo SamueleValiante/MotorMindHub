@@ -28,7 +28,7 @@ export default function PanoramicaPage() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-fog">Caricamento…</p>
+        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
       ) : !user ? (
         <p className="text-sm text-ember">Non è stato possibile caricare i tuoi dati.</p>
       ) : (

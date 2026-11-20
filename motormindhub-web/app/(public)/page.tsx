@@ -271,7 +271,7 @@ export default function HomePage() {
               </div>
             </div>
           ) : (
-            <p className="mt-8 text-sm text-fog">Caricamento…</p>
+            <p className="mmh-loading mt-8 text-sm text-fog">Caricamento…</p>
           )}
           <ScrollArrow to="ultimi" label="Vai agli ultimi articoli" />
         </section>
@@ -305,7 +305,7 @@ export default function HomePage() {
           ) : latest.status === "ready" ? (
             <p className="mt-8 text-sm text-fog">Nessun articolo pubblicato ancora.</p>
           ) : (
-            <p className="mt-8 text-sm text-fog">Caricamento…</p>
+            <p className="mmh-loading mt-8 text-sm text-fog">Caricamento…</p>
           )}
           <ScrollArrow to="fiducia" label="Vai a come lavoriamo" />
         </section>

@@ -46,7 +46,7 @@ export default function AutoreCategoriePage() {
       </div>
 
       {categorie.status === "loading" ? (
-        <p className="text-sm text-fog">Caricamento…</p>
+        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
       ) : categorie.status === "error" ? (
         <p className="text-sm text-ember">Non è stato possibile caricare le categorie.</p>
       ) : (

@@ -24,7 +24,7 @@ export default function DettaglioSegnalazionePage() {
   const [suspendModalOpen, setSuspendModalOpen] = useState(false);
 
   if (queue.status === "loading") {
-    return <p className="text-sm text-fog">Caricamento…</p>;
+    return <p className="mmh-loading text-sm text-fog">Caricamento…</p>;
   }
 
   if (queue.status === "error" || parsedId === null) {

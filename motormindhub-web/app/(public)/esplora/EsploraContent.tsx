@@ -317,7 +317,7 @@ export function EsploraContent() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-fog">Caricamento…</p>
+          <p className="mmh-loading text-sm text-fog">Caricamento…</p>
         )}
       </div>
 

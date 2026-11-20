@@ -41,7 +41,7 @@ export function ArticleDetailContent({ articleId }: { articleId: string }) {
       : [];
 
   if (state.status === "loading") {
-    return <p className="mx-auto max-w-3xl px-4 py-12 text-sm text-fog sm:px-6">Caricamento…</p>;
+    return <p className="mmh-loading mx-auto max-w-3xl px-4 py-12 text-sm text-fog sm:px-6">Caricamento…</p>;
   }
 
   if (state.status === "not-found" || !articolo) {

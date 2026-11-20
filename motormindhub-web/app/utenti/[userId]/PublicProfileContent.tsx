@@ -30,7 +30,7 @@ export function PublicProfileContent({ userId }: { userId: string }) {
       <Logo />
 
       {state.status === "loading" ? (
-        <p className="text-sm text-fog">Caricamento…</p>
+        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
       ) : state.status === "not-found" ? (
         <div className="rounded-lg bg-carbon p-6">
           <h1 className="font-heading text-xl font-bold uppercase tracking-wide text-paper">

@@ -23,7 +23,7 @@ export default function ArticoliInAttesaPage() {
       </div>
 
       {pending.status === "loading" ? (
-        <p className="text-sm text-fog">Caricamento…</p>
+        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
       ) : pending.status === "error" ? (
         <p className="text-sm text-ember">Non è stato possibile caricare la coda di approvazione.</p>
       ) : pending.articoli.length === 0 ? (

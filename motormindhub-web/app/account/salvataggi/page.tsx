@@ -142,7 +142,7 @@ export default function SalvataggiPage() {
       </div>
 
       {state.status === "loading" ? (
-        <p className="text-sm text-fog">Caricamento…</p>
+        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
       ) : state.status === "error" ? (
         <p className="text-sm text-ember">
           Non è stato possibile caricare i tuoi salvataggi.

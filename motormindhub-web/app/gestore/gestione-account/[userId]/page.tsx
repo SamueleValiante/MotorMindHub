@@ -51,7 +51,7 @@ export default function SchedaUtentePage() {
   const [exportEmail, setExportEmail] = useState("");
 
   if (users.status === "loading" || reports.status === "loading" || log.status === "loading") {
-    return <p className="text-sm text-fog">Caricamento…</p>;
+    return <p className="mmh-loading text-sm text-fog">Caricamento…</p>;
   }
 
   if (users.status === "error" || reports.status === "error" || log.status === "error" || parsedId === null) {
