@@ -43,11 +43,11 @@ export function ArticleView({ articolo, actions }: { articolo: ArticleDetail; ac
         ))}
       </nav>
 
-      <h1 style={{ "--mmh-delay": "100ms" } as CSSProperties} className="mmh-reveal mt-4 font-heading text-3xl font-bold uppercase leading-tight tracking-wide text-paper sm:text-4xl">
+      <h1 style={{ "--mmh-delay": "150ms" } as CSSProperties} className="mmh-reveal mt-4 font-heading text-3xl font-bold uppercase leading-tight tracking-wide text-paper sm:text-4xl">
         {articolo.titolo}
       </h1>
 
-      <div style={{ "--mmh-delay": "200ms" } as CSSProperties} className="mmh-reveal mt-5 flex flex-wrap items-center gap-x-3 gap-y-2">
+      <div style={{ "--mmh-delay": "300ms" } as CSSProperties} className="mmh-reveal mt-5 flex flex-wrap items-center gap-x-3 gap-y-2">
         <span className="rounded bg-accent px-3 py-1 font-heading text-xs font-bold uppercase tracking-wide text-asphalt">
           {articolo.categoriaNome}
         </span>
@@ -58,7 +58,7 @@ export function ArticleView({ articolo, actions }: { articolo: ArticleDetail; ac
         ))}
       </div>
 
-      <div style={{ "--mmh-delay": "300ms" } as CSSProperties} className="mmh-reveal mt-6 flex items-center justify-between gap-4 border-y border-paper/10 py-4">
+      <div style={{ "--mmh-delay": "450ms" } as CSSProperties} className="mmh-reveal mt-6 flex items-center justify-between gap-4 border-y border-paper/10 py-4">
         <div className="flex items-center gap-3">
           <div
             aria-hidden="true"
@@ -81,12 +81,12 @@ export function ArticleView({ articolo, actions }: { articolo: ArticleDetail; ac
         <img
           src={articolo.immagineCopertina}
           alt=""
-          style={{ "--mmh-delay": "400ms" } as CSSProperties}
+          style={{ "--mmh-delay": "600ms" } as CSSProperties}
           className="mmh-reveal mt-8 aspect-[2/1] w-full rounded-lg border border-paper/10 object-cover"
         />
       )}
 
-      <div style={{ "--mmh-delay": "550ms" } as CSSProperties} className="mmh-reveal mt-8">
+      <div style={{ "--mmh-delay": "800ms" } as CSSProperties} className="mmh-reveal mt-8">
         <ArticleMarkdownBody testo={articolo.testo} />
       </div>
 
