@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 export default function EsploraPage() {
   return (
-    <Suspense fallback={<LoadingDots className="p-12 justify-center" />}>
+    <Suspense fallback={<LoadingDots />}>
       <EsploraContent />
     </Suspense>
   );

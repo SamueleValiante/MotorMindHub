@@ -43,7 +43,7 @@ export default function DatiPage() {
         </p>
 
         {loading ? (
-          <LoadingDots className="mt-6" />
+          <LoadingDots variant="section" className="mt-6" />
         ) : user ? (
           <dl className="mt-6 divide-y divide-paper/10">
             <div className="flex flex-col gap-1 py-3 sm:flex-row sm:justify-between">

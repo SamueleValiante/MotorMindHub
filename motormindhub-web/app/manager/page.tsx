@@ -96,7 +96,7 @@ export default function ManagerDashboardPage() {
             </h2>
 
             {letture.status === "loading" ? (
-              <LoadingDots />
+              <LoadingDots variant="section" />
             ) : letture.status === "error" ? (
               <p className="text-sm text-ember">Non è stato possibile caricare le statistiche di lettura.</p>
             ) : (
@@ -125,7 +125,7 @@ export default function ManagerDashboardPage() {
             </h2>
 
             {piuLettiState.status === "loading" ? (
-              <LoadingDots />
+              <LoadingDots variant="section" />
             ) : piuLettiState.status === "error" ? (
               <p className="text-sm text-ember">Non è stato possibile caricare gli articoli più letti.</p>
             ) : piuLettiState.result.articoli.length === 0 ? (
@@ -165,7 +165,7 @@ export default function ManagerDashboardPage() {
             </h2>
 
             {categoriePiuLetteState.status === "loading" ? (
-              <LoadingDots />
+              <LoadingDots variant="section" />
             ) : categoriePiuLetteState.status === "error" ? (
               <p className="text-sm text-ember">Non è stato possibile caricare le categorie più lette.</p>
             ) : categoriePiuLetteState.categorie.length === 0 ? (

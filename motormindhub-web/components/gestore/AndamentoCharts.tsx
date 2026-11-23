@@ -83,7 +83,7 @@ export function AndamentoCharts() {
       <DateRangeSelector value={giorni} onChange={setGiorni} />
 
       {primoCaricamento ? (
-        <LoadingDots label="Caricamento andamento…" />
+        <LoadingDots variant="section" label="Caricamento andamento…" />
       ) : errore ? (
         <p className="text-sm text-ember">Non è stato possibile caricare l&apos;andamento.</p>
       ) : (

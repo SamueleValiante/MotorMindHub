@@ -137,7 +137,7 @@ export function ImageUploadField({
             <span className={uploading ? "invisible" : undefined}>{label}</span>
             {uploading && (
               <span className="absolute inset-0 flex items-center justify-center">
-                <LoadingDots inline />
+                <LoadingDots variant="inline" />
               </span>
             )}
           </span>

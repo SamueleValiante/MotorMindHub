@@ -41,7 +41,7 @@ export function ArticleDetailContent({ articleId }: { articleId: string }) {
       : [];
 
   if (state.status === "loading") {
-    return <LoadingDots className="mx-auto max-w-3xl px-4 py-12 sm:px-6" />;
+    return <LoadingDots />;
   }
 
   if (state.status === "not-found" || !articolo) {

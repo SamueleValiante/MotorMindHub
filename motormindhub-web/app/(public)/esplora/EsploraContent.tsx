@@ -260,7 +260,7 @@ export function EsploraContent() {
             onNavigate={handleCategoryNavigate}
           />
         ) : categorie.status === "loading" ? (
-          <LoadingDots />
+          <LoadingDots variant="section" />
         ) : (
           <p className="text-sm text-ember">Non è stato possibile caricare le categorie.</p>
         )}
@@ -322,7 +322,7 @@ export function EsploraContent() {
             ))}
           </div>
         ) : (
-          <LoadingDots />
+          <LoadingDots variant="section" />
         )}
       </div>
 

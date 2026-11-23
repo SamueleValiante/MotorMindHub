@@ -4,7 +4,7 @@ import { LoadingDots } from "@/components/ui/LoadingDots";
 
 export default function ReimpostaPasswordPage() {
   return (
-    <Suspense fallback={<LoadingDots className="justify-center" />}>
+    <Suspense fallback={<LoadingDots variant="section" />}>
       <ResetPasswordForm />
     </Suspense>
   );
