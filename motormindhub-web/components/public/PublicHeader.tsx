@@ -42,7 +42,7 @@ export function PublicHeader() {
   const navItems = homeHref === "/" ? NAV_ITEMS : NAV_ITEMS.filter((item) => item.href !== "/");
 
   return (
-    <header className="border-b border-paper/10 bg-asphalt">
+    <header className="mmh-fade border-b border-paper/10 bg-asphalt">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2 sm:px-6">
         <Link href={homeHref}>
           <Logo className="h-14 w-14" />
@@ -61,16 +61,19 @@ export function PublicHeader() {
         </nav>
 
         <div className="hidden items-center gap-4 md:flex">
+          {/* Questi controlli compaiono solo a sessione verificata: si dissolvono al loro arrivo invece di apparire di colpo. */}
           {status === "authenticated" ? (
-            <UserMenu />
+            <div className="mmh-fade">
+              <UserMenu />
+            </div>
           ) : status === "anonymous" ? (
             <>
-              <Link href="/login" className="font-heading text-sm font-bold uppercase tracking-wide text-paper">
+              <Link href="/login" className="mmh-fade font-heading text-sm font-bold uppercase tracking-wide text-paper">
                 Accedi
               </Link>
               <Link
                 href="/registrazione"
-                className="rounded-md bg-accent px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
+                className="mmh-fade rounded-md bg-accent px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
               >
                 Registrati
               </Link>
@@ -108,12 +111,12 @@ export function PublicHeader() {
               <UserMenu />
             ) : status === "anonymous" ? (
               <>
-                <Link href="/login" className="font-heading text-sm font-bold uppercase tracking-wide text-paper">
+                <Link href="/login" className="mmh-fade font-heading text-sm font-bold uppercase tracking-wide text-paper">
                   Accedi
                 </Link>
                 <Link
                   href="/registrazione"
-                  className="rounded-md bg-accent px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
+                  className="mmh-fade rounded-md bg-accent px-5 py-2.5 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
                 >
                   Registrati
                 </Link>

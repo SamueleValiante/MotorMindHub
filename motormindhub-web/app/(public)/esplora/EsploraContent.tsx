@@ -311,7 +311,7 @@ export function EsploraContent() {
             }
           />
         ) : results.status === "ready" ? (
-          <div className="grid gap-6 rounded-lg border border-paper/10 bg-carbon p-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mmh-stagger grid gap-6 rounded-lg border border-paper/10 bg-carbon p-6 sm:grid-cols-2 lg:grid-cols-4">
             {results.result.articoli.map((articolo) => (
               <ArticleCard key={articolo.id} articolo={articolo} />
             ))}

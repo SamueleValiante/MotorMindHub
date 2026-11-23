@@ -97,7 +97,11 @@ export function CookieBanner() {
         role="dialog"
         aria-modal="true"
         aria-label="Preferenze cookie"
-        className="pointer-events-auto w-full max-w-4xl rounded-xl bg-carbon p-6 shadow-xl"
+        // Ingresso: alla prima visita (status "pending") arriva per ultimo (1.4s), dopo
+        // sfondo e testi; riaperto dal link "Preferenze cookie" (già "decided") compare subito.
+        className={`mmh-rise pointer-events-auto w-full max-w-4xl rounded-xl bg-carbon p-6 shadow-xl ${
+          status === "decided" ? "[--mmh-start:0ms]" : "[--mmh-start:1400ms]"
+        }`}
       >
         {!showCustomize ? (
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

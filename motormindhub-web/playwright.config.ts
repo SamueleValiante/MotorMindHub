@@ -24,6 +24,12 @@ export default defineConfig({
   reporter: process.env.CI ? [["html", { open: "never" }]] : "list",
   use: {
     baseURL: "http://localhost:3000",
+    // Le animazioni d'ingresso (globals.css, sezione MOVIMENTO) partono da opacity 0 e
+    // traslazione: axe, letto a metà dissolvenza, segnalerebbe un contrasto falsamente
+    // basso, e le misure di boundingBox cambierebbero a seconda dell'istante. Con
+    // prefers-reduced-motion il sito mostra tutto subito (stesso ramo degli utenti
+    // che lo richiedono dal sistema), quindi i test verificano lo stato finale.
+    contextOptions: { reducedMotion: "reduce" },
   },
   webServer: {
     command: "npm run dev",

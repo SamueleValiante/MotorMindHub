@@ -36,7 +36,7 @@ export function PublicFooter() {
   const openPreferences = useCookieConsentStore((s) => s.openPreferences);
 
   return (
-    <footer className="border-t border-paper/10 bg-asphalt">
+    <footer className="mmh-fade border-t border-paper/10 bg-asphalt [--mmh-start:400ms]">
       <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:px-6 md:grid-cols-[2fr_1fr_1fr_1fr]">
         <div className="flex flex-col gap-3">
           <Logo />

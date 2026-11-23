@@ -30,7 +30,9 @@ export function HeroBackdrop() {
     <div aria-hidden="true" className="absolute inset-0 overflow-hidden bg-asphalt">
       {/* Su desktop le immagini occupano il 72% di destra (proporzione quasi nativa: nessun ingrandimento
           forzato) e sfumano verso sinistra sotto il testo; su mobile occupano la parte alta (48% dell'altezza, proporzione quasi nativa) e sfumano verso il testo. */}
-      <div className="absolute inset-x-0 -top-[10svh] h-[52svh] [mask-image:linear-gradient(to_bottom,black_55%,transparent)] lg:inset-y-0 lg:top-0 lg:left-auto lg:right-0 lg:h-auto lg:w-[72%] lg:[mask-image:linear-gradient(to_right,transparent,black_38%)]">
+      {/* mmh-bg: all'apertura del sito le immagini si dissolvono per prime (2.4s, con un lieve
+          assestamento dello zoom), prima che i testi della hero inizino a emergere. */}
+      <div className="mmh-bg absolute inset-x-0 -top-[10svh] h-[52svh] [mask-image:linear-gradient(to_bottom,black_55%,transparent)] lg:inset-y-0 lg:top-0 lg:left-auto lg:right-0 lg:h-auto lg:w-[72%] lg:[mask-image:linear-gradient(to_right,transparent,black_38%)]">
         {SLIDES.map((slide, i) => (
           // eslint-disable-next-line @next/next/no-img-element -- immagini statiche già ottimizzate (webp) in public/
           <img
@@ -39,6 +41,7 @@ export function HeroBackdrop() {
             alt=""
             loading="eager"
             decoding="async"
+            fetchPriority={i === 0 ? "high" : "low"}
             style={{ objectPosition: slide.position }}
             className={`absolute inset-0 h-full w-full object-cover brightness-[0.6] saturate-90 transition-opacity duration-[1600ms] ease-in-out ${slide.drift} ${
               i === active ? "opacity-100" : "opacity-0"

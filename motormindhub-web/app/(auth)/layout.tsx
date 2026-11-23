@@ -30,8 +30,10 @@ export default function AuthLayout({
 }) {
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md rounded-xl bg-carbon p-8 shadow-xl">
-        <div className="mb-4 flex flex-col items-center gap-3">
+      {/* Ingresso: prima la card (superficie), poi il logo, poi il contenuto della pagina
+          (cascata di PageTransition, spostata più avanti con --mmh-content-start). */}
+      <div className="mmh-fade w-full max-w-md rounded-xl bg-carbon p-8 shadow-xl [--mmh-content-start:360ms]">
+        <div className="mmh-rise mb-4 flex flex-col items-center gap-3 [--mmh-start:160ms]">
           <Link href="/">
             <Logo className="h-16 w-16" />
           </Link>

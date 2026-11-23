@@ -102,8 +102,11 @@ export default function HomePage() {
   const visibleRoots = showAllCategories ? roots : roots.slice(0, VISIBLE_CATEGORIES);
 
   return (
-    <div className="flex flex-col">
-      {/* Hero a schermo intero: header + hero riempiono il primo viewport */}
+    // mmh-own-motion: la home ha una coreografia propria (sfondo → testi), non la cascata generica di pagina.
+    <div className="mmh-own-motion flex flex-col">
+      {/* Hero a schermo intero: header + hero riempiono il primo viewport.
+          Ingresso: lo sfondo si dissolve per primo (HeroBackdrop, .mmh-bg), poi a 600ms
+          i testi emergono uno dopo l'altro, sempre con lo stesso passo (--mmh-step). */}
       <section className="relative flex min-h-[calc(100svh-73px)] items-end overflow-hidden lg:items-center">
         <div ref={heroBgRef} className="absolute -inset-x-0 -top-0 bottom-[-12%] will-change-transform">
           <HeroBackdrop />
@@ -111,22 +114,22 @@ export default function HomePage() {
 
         <div
           ref={heroContentRef}
-          className="relative mx-auto grid w-full max-w-6xl items-center gap-10 px-4 pb-20 pt-[26svh] will-change-transform sm:px-6 lg:py-16"
+          className="relative mx-auto grid w-full max-w-6xl items-center gap-10 px-4 pb-20 pt-[26svh] will-change-transform [--mmh-start:600ms] sm:px-6 lg:py-16"
         >
           <div className="flex max-w-2xl flex-col gap-6">
-            <p className="font-heading text-xs font-bold uppercase tracking-[0.2em] text-accent">
+            <p className="mmh-rise font-heading text-xs font-bold uppercase tracking-[0.2em] text-accent [--mmh-i:0]">
               Il tuo hub tecnico automotive
             </p>
-            <h1 className="font-heading text-4xl font-bold uppercase leading-[1.05] text-paper sm:text-5xl lg:text-6xl">
+            <h1 className="mmh-rise font-heading text-4xl font-bold uppercase leading-[1.05] text-paper sm:text-5xl lg:text-6xl [--mmh-i:1]">
               Dal minimo al <span className="text-accent">redline</span> della conoscenza{" "}
               <span className="text-ember">automotive</span>.
             </h1>
-            <p className="max-w-lg text-base text-chrome">
+            <p className="mmh-rise max-w-lg text-base text-chrome [--mmh-i:2]">
               Guide, schede tecniche e approfondimenti verificati per chi guida, ripara, modifica o
               studia l&apos;auto — dal primo tagliando alla specifica del singolo componente.
             </p>
 
-            <form onSubmit={handleSearch} className="flex max-w-xl gap-2">
+            <form onSubmit={handleSearch} className="mmh-rise flex max-w-xl gap-2 [--mmh-i:3]">
               <label htmlFor="home-search" className="sr-only">
                 Cerca articoli
               </label>
@@ -146,7 +149,7 @@ export default function HomePage() {
               </button>
             </form>
 
-            <div className="flex flex-wrap items-center gap-6">
+            <div className="mmh-rise flex flex-wrap items-center gap-6 [--mmh-i:4]">
               <Link
                 href="/esplora"
                 className="rounded-md bg-accent px-6 py-3 font-heading text-sm font-bold uppercase tracking-wide text-asphalt"
@@ -162,20 +165,20 @@ export default function HomePage() {
               </a>
             </div>
 
-            {(articoliPubblicatiCount !== null || categorieCount !== null) && (
-              <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs uppercase tracking-wide text-fog">
-                {articoliPubblicatiCount !== null && (
-                  <span>
-                    <span className="font-heading text-lg font-bold text-accent">{articoliPubblicatiCount}</span> guide tecniche
-                  </span>
-                )}
-                {categorieCount !== null && (
-                  <span>
-                    <span className="font-heading text-lg font-bold text-paper">{categorieCount}</span> categorie
-                  </span>
-                )}
-              </p>
-            )}
+            {/* Sempre presente (altezza riservata): i numeri arrivano dopo la fetch e si
+                dissolvono al loro posto, senza spostare il resto della hero. */}
+            <p className="mmh-rise flex min-h-7 flex-wrap items-center gap-x-4 gap-y-1 text-xs uppercase tracking-wide text-fog [--mmh-i:5]">
+              {articoliPubblicatiCount !== null && (
+                <span className="mmh-fade [--mmh-start:0ms] [--mmh-i:0]">
+                  <span className="font-heading text-lg font-bold text-accent">{articoliPubblicatiCount}</span> guide tecniche
+                </span>
+              )}
+              {categorieCount !== null && (
+                <span className="mmh-fade [--mmh-start:0ms] [--mmh-i:1]">
+                  <span className="font-heading text-lg font-bold text-paper">{categorieCount}</span> categorie
+                </span>
+              )}
+            </p>
           </div>
 
         </div>
@@ -187,7 +190,14 @@ export default function HomePage() {
           aria-label="Scorri verso le categorie"
           className="mmh-float absolute bottom-6 z-10 left-1/2 -translate-x-1/2 text-chrome"
         >
-          <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            className="mmh-fade h-7 w-7 [--mmh-start:1500ms]"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            aria-hidden="true"
+          >
             <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </a>

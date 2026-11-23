@@ -33,7 +33,7 @@ export function ManagerSidebar() {
   return (
     <>
       {/* sticky top-0: senza, l'aside scorre via col resto della pagina su liste lunghe — stesso fix/motivo di AccountSidebar. */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-paper/10 bg-carbon md:flex">
+      <aside className="mmh-fade sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-paper/10 bg-carbon md:flex">
         <div className="px-6 py-6">
           <Link href="/manager">
             <Logo className="h-14 w-14" />

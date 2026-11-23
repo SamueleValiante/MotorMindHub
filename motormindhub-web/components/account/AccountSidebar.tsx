@@ -47,7 +47,7 @@ export function AccountSidebar() {
         di altezza lo trattiene a 100vh — mancava solo la posizione sticky
         sull'aside stesso.
       */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-paper/10 bg-carbon md:flex">
+      <aside className="mmh-fade sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-paper/10 bg-carbon md:flex">
         <div className="px-6 py-6">
           <Link href="/">
             <Logo className="h-14 w-14" />

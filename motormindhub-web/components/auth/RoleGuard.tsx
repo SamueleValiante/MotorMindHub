@@ -48,7 +48,7 @@ export function RoleGuard({ allowedRoles, children }: RoleGuardProps) {
     // implementeremo Toast/empty state/loading (punto 3 del piano).
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <span className="text-sm text-fog">Caricamento…</span>
+        <span className="mmh-loading text-sm text-fog">Caricamento…</span>
       </div>
     );
   }
