@@ -9,6 +9,7 @@ import { SearchIcon } from "@/components/public/icons";
 import { EmptyState } from "@/components/empty-state/EmptyState";
 import { BookmarkIcon } from "@/components/account/icons";
 import type { SavedArticle, TipoLista } from "@/lib/articoli/types";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 const PER_PAGINA = 28;
 
@@ -142,7 +143,7 @@ export default function SalvataggiPage() {
       </div>
 
       {state.status === "loading" ? (
-        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
+        <LoadingDots />
       ) : state.status === "error" ? (
         <p className="text-sm text-ember">
           Non è stato possibile caricare i tuoi salvataggi.

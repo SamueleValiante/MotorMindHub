@@ -9,6 +9,7 @@ import { SearchIcon } from "@/components/public/icons";
 import { PeopleIcon } from "@/components/manager/icons";
 import type { StatoUtente } from "@/lib/amministrazioneUtenti/types";
 import type { Ruolo } from "@/lib/auth/jwt";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 function formatData(iso: string): string {
   return new Date(iso).toLocaleDateString("it-IT");
@@ -60,7 +61,7 @@ export default function GestioneAccountPage() {
   const [search, setSearch] = useState("");
 
   if (users.status === "loading" || deletionQueue.status === "loading") {
-    return <p className="mmh-loading text-sm text-fog">Caricamento…</p>;
+    return <LoadingDots />;
   }
 
   if (users.status === "error" || deletionQueue.status === "error") {

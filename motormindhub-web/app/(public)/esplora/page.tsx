@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { EsploraContent } from "./EsploraContent";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 // force-dynamic: EsploraContent filtra/pagina via router.push su searchParams (query, pagina,
 // categoriaIds, ordinamento) senza cambiare pathname. Statica di default, questa route ha lo
@@ -13,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 export default function EsploraPage() {
   return (
-    <Suspense fallback={<p className="mmh-loading p-12 text-center text-sm text-fog">Caricamento…</p>}>
+    <Suspense fallback={<LoadingDots className="p-12 justify-center" />}>
       <EsploraContent />
     </Suspense>
   );

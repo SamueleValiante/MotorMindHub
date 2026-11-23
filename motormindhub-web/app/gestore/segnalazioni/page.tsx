@@ -6,6 +6,7 @@ import { useReportsQueue } from "@/lib/amministrazioneUtenti/useReportsQueue";
 import type { StatoSegnalazione } from "@/lib/amministrazioneUtenti/types";
 import { EmptyState } from "@/components/empty-state/EmptyState";
 import { FlagIcon } from "@/components/report/icons";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 function formatData(iso: string): string {
   return new Date(iso).toLocaleDateString("it-IT");
@@ -38,7 +39,7 @@ export default function CodaSegnalazioniPage() {
       </div>
 
       {queue.status === "loading" ? (
-        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
+        <LoadingDots />
       ) : queue.status === "error" ? (
         <p className="text-sm text-ember">Non è stato possibile caricare la coda delle segnalazioni.</p>
       ) : (

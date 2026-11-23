@@ -7,6 +7,7 @@ import { useArticle } from "@/lib/articoli/useArticle";
 import { approveArticle, rejectArticle } from "@/lib/autori/authorMutations";
 import { toast } from "@/lib/toast/toast";
 import { ArticleView } from "@/components/articoli/ArticleView";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 /**
  * Revisione Articolo (mockup 37, RF3.6, UC_21). PendingArticleDTO (lista
@@ -44,7 +45,7 @@ export default function RevisioneArticoloPage() {
   };
 
   if (state.status === "loading") {
-    return <p className="mmh-loading text-sm text-fog">Caricamento…</p>;
+    return <LoadingDots />;
   }
 
   if (state.status === "not-found") {

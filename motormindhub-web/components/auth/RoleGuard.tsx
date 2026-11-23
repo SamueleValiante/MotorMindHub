@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/auth/store";
 import { ROLE_HOME_PATH } from "@/lib/auth/roleRedirect";
 import type { Ruolo } from "@/lib/auth/jwt";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 interface RoleGuardProps {
   /** Ruoli ammessi a vedere il contenuto di questo gruppo di route. */
@@ -48,7 +49,7 @@ export function RoleGuard({ allowedRoles, children }: RoleGuardProps) {
     // implementeremo Toast/empty state/loading (punto 3 del piano).
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <span className="mmh-loading text-sm text-fog">Caricamento…</span>
+        <LoadingDots />
       </div>
     );
   }

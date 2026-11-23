@@ -7,6 +7,7 @@ import { useAndamentoPubblicazioni } from "@/lib/autori/useAndamentoPubblicazion
 import { useAndamentoCategorie } from "@/lib/autori/useAndamentoCategorie";
 import { useAndamentoApprovazioni } from "@/lib/autori/useAndamentoApprovazioni";
 import { useAndamentoLetture } from "@/lib/autori/useAndamentoLetture";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 /**
  * Quattro grafici andamento sotto le statistiche di riepilogo (Dashboard Manageriale), un solo
@@ -105,7 +106,7 @@ export function AndamentoChartsAutori() {
       <DateRangeSelector value={giorni} onChange={setGiorni} />
 
       {primoCaricamento ? (
-        <p className="text-sm text-fog">Caricamento andamento…</p>
+        <LoadingDots label="Caricamento andamento…" />
       ) : errore ? (
         <p className="text-sm text-ember">Non è stato possibile caricare l&apos;andamento.</p>
       ) : (

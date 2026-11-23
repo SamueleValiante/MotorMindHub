@@ -6,6 +6,7 @@ import { AuthorTable } from "@/components/autori/AuthorTable";
 import { InviteAuthorModal } from "@/components/autori/InviteAuthorModal";
 import { RemoveAuthorModal } from "@/components/autori/RemoveAuthorModal";
 import type { AuthorSummary } from "@/lib/autori/types";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 /** Gestione Autori (mockup 30, RF3.2). */
 export default function GestioneAutoriPage() {
@@ -32,7 +33,7 @@ export default function GestioneAutoriPage() {
       </div>
 
       {autori.status === "loading" ? (
-        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
+        <LoadingDots />
       ) : autori.status === "error" ? (
         <p className="text-sm text-ember">Non è stato possibile caricare gli autori.</p>
       ) : (

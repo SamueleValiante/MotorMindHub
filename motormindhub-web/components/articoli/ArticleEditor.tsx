@@ -20,6 +20,7 @@ import { CloseIcon } from "@/components/public/icons";
 import { ImageUploadField } from "@/components/shared/ImageUploadField";
 import { ArticleBodyEditor } from "@/components/articoli/ArticleBodyEditor";
 import type { ArticleDetail } from "@/lib/articoli/types";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 /**
  * text-paper invece di text-chrome: per titolo e testo dell'articolo, cioè
@@ -68,7 +69,7 @@ function ExistingArticleEditor({ articleId }: { articleId: number }) {
   const editable = useEditableArticle(articleId);
 
   if (editable.status === "loading") {
-    return <p className="text-sm text-fog">Caricamento…</p>;
+    return <LoadingDots />;
   }
   if (editable.status === "not-found") {
     return <p className="text-sm text-ember">Articolo non trovato.</p>;

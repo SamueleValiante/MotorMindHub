@@ -2,6 +2,7 @@
 
 import { useCurrentUser } from "@/lib/auth/useCurrentUser";
 import { ProfileSettingsForm } from "@/components/shared/ProfileSettingsForm";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 export default function ImpostazioniProfiloPage() {
   const { user, loading } = useCurrentUser();
@@ -16,7 +17,7 @@ export default function ImpostazioniProfiloPage() {
       </div>
 
       {loading ? (
-        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
+        <LoadingDots />
       ) : user ? (
         <ProfileSettingsForm user={user} redirectTo="/account" />
       ) : (

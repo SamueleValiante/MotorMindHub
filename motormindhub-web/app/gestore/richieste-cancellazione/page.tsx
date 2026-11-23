@@ -7,6 +7,7 @@ import { ConfirmDeletionModal } from "@/components/gestore/ConfirmDeletionModal"
 import { EmptyState } from "@/components/empty-state/EmptyState";
 import { TrashIcon } from "@/components/account/icons";
 import type { DeletionRequestQueueItem, StatoRichiestaCancellazione } from "@/lib/amministrazioneUtenti/types";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 function formatData(iso: string): string {
   return new Date(iso).toLocaleDateString("it-IT");
@@ -45,7 +46,7 @@ export default function RichiesteCancellazionePage() {
       </div>
 
       {queue.status === "loading" ? (
-        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
+        <LoadingDots />
       ) : queue.status === "error" ? (
         <p className="text-sm text-ember">Non è stato possibile caricare le richieste di cancellazione.</p>
       ) : queue.richieste.length === 0 ? (

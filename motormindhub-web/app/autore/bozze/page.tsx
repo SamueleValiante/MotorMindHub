@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/empty-state/EmptyState";
 import { PencilIcon } from "@/components/autore/icons";
 import { TrashIcon } from "@/components/account/icons";
 import type { ArticleSummary } from "@/lib/articoli/types";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 function formatUltimaModifica(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -85,7 +86,7 @@ export default function LeMieBozzePage() {
       </div>
 
       {state.status === "loading" ? (
-        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
+        <LoadingDots />
       ) : state.status === "error" ? (
         <p className="text-sm text-ember">Non è stato possibile caricare le tue bozze.</p>
       ) : bozze.length === 0 ? (

@@ -7,6 +7,7 @@ import { ReportButton } from "@/components/report/ReportButton";
 import { FlagIcon } from "@/components/report/icons";
 import { usePublicProfile } from "@/lib/utenti/usePublicProfile";
 import { useAuthStore } from "@/lib/auth/store";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 /**
  * Nessun mockup dedicato (i 51 mockup non coprono un profilo pubblico):
@@ -30,7 +31,7 @@ export function PublicProfileContent({ userId }: { userId: string }) {
       <Logo />
 
       {state.status === "loading" ? (
-        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
+        <LoadingDots />
       ) : state.status === "not-found" ? (
         <div className="rounded-lg bg-carbon p-6">
           <h1 className="font-heading text-xl font-bold uppercase tracking-wide text-paper">

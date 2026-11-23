@@ -14,6 +14,7 @@ import { Reveal } from "@/components/shared/Reveal";
 import type { ArticleSummary } from "@/lib/articoli/types";
 import { EmptyState } from "@/components/empty-state/EmptyState";
 import { ClockIcon, SearchIcon } from "@/components/public/icons";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 /**
  * Home (mockup 01). Numeri reali, non finti:
@@ -281,7 +282,7 @@ export default function HomePage() {
               </div>
             </div>
           ) : (
-            <p className="mmh-loading mt-8 text-sm text-fog">Caricamento…</p>
+            <LoadingDots className="mt-8" />
           )}
           <ScrollArrow to="ultimi" label="Vai agli ultimi articoli" />
         </section>
@@ -315,7 +316,7 @@ export default function HomePage() {
           ) : latest.status === "ready" ? (
             <p className="mt-8 text-sm text-fog">Nessun articolo pubblicato ancora.</p>
           ) : (
-            <p className="mmh-loading mt-8 text-sm text-fog">Caricamento…</p>
+            <LoadingDots className="mt-8" />
           )}
           <ScrollArrow to="fiducia" label="Vai a come lavoriamo" />
         </section>

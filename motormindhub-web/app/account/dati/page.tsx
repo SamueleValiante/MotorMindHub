@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useCurrentUser } from "@/lib/auth/useCurrentUser";
 import { requestDataExport } from "@/lib/auth/dataExport";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("it-IT");
@@ -42,7 +43,7 @@ export default function DatiPage() {
         </p>
 
         {loading ? (
-          <p className="mmh-loading mt-6 text-sm text-fog">Caricamento…</p>
+          <LoadingDots className="mt-6" />
         ) : user ? (
           <dl className="mt-6 divide-y divide-paper/10">
             <div className="flex flex-col gap-1 py-3 sm:flex-row sm:justify-between">

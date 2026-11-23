@@ -2,6 +2,7 @@
 
 import { useCurrentUser } from "@/lib/auth/useCurrentUser";
 import { ProfileSettingsForm } from "@/components/shared/ProfileSettingsForm";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 /**
  * Stessa pagina/form di /account/impostazioni (ISCRITTO), montata dentro
@@ -22,7 +23,7 @@ export default function ImpostazioniProfiloAutorePage() {
       </div>
 
       {loading ? (
-        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
+        <LoadingDots />
       ) : user ? (
         <ProfileSettingsForm user={user} redirectTo="/autore" />
       ) : (

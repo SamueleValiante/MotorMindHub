@@ -7,6 +7,7 @@ import { StatoBadge } from "@/components/articoli/StatoBadge";
 import { EmptyState } from "@/components/empty-state/EmptyState";
 import { StatCard } from "@/components/shared/StatCard";
 import { DocumentIcon } from "@/components/autore/icons";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 const ULTIMI_ARTICOLI_COUNT = 8;
 const PIU_LETTI_COUNT = 5;
@@ -59,7 +60,7 @@ export default function DashboardAutorePage() {
       </div>
 
       {state.status === "loading" ? (
-        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
+        <LoadingDots />
       ) : state.status === "error" ? (
         <p className="text-sm text-ember">Non è stato possibile caricare i tuoi articoli.</p>
       ) : (

@@ -8,6 +8,7 @@ import { resolveReport, escalateReportToSuspension } from "@/lib/amministrazione
 import { SuspendAccountModal } from "@/components/gestore/SuspendAccountModal";
 import { toast } from "@/lib/toast/toast";
 import type { SuspensionInput } from "@/lib/amministrazioneUtenti/types";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 /** Sostituisce il messaggio generico di successo quando solo la seconda chiamata dell'orchestrazione fallisce. */
 const RESOLVE_FAILED_MESSAGE =
@@ -24,7 +25,7 @@ export default function DettaglioSegnalazionePage() {
   const [suspendModalOpen, setSuspendModalOpen] = useState(false);
 
   if (queue.status === "loading") {
-    return <p className="mmh-loading text-sm text-fog">Caricamento…</p>;
+    return <LoadingDots />;
   }
 
   if (queue.status === "error" || parsedId === null) {

@@ -7,6 +7,7 @@ import { CategoryTree } from "@/components/categorie/CategoryTree";
 import { CategoryFormModal } from "@/components/categorie/CategoryFormModal";
 import { ReassignCategoryModal } from "@/components/categorie/ReassignCategoryModal";
 import type { CategoryTreeNode } from "@/lib/categorie/types";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 type ModalState = { mode: "create" } | { mode: "edit"; category: CategoryDetail } | null;
 
@@ -55,7 +56,7 @@ export default function ManagerCategoriePage() {
       </div>
 
       {categorie.status === "loading" ? (
-        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
+        <LoadingDots />
       ) : categorie.status === "error" ? (
         <p className="text-sm text-ember">Non è stato possibile caricare le categorie.</p>
       ) : (

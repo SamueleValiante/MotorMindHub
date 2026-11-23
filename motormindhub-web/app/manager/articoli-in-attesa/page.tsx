@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePendingArticles } from "@/lib/autori/usePendingArticles";
 import { EmptyState } from "@/components/empty-state/EmptyState";
 import { DocumentIcon } from "@/components/autore/icons";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 function formatData(iso: string): string {
   return new Date(iso).toLocaleDateString("it-IT");
@@ -23,7 +24,7 @@ export default function ArticoliInAttesaPage() {
       </div>
 
       {pending.status === "loading" ? (
-        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
+        <LoadingDots />
       ) : pending.status === "error" ? (
         <p className="text-sm text-ember">Non è stato possibile caricare la coda di approvazione.</p>
       ) : pending.articoli.length === 0 ? (

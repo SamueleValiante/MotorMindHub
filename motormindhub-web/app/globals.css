@@ -173,7 +173,26 @@ a[href][class*="border-b"][class*="border-paper/10"]:not([class*="hover:"]):hove
 /* Liste che cambiano senza cambio pagina (es. risultati di Esplora al
    cambio filtro): ogni elemento NUOVO emerge a cascata, quelli già
    presenti restano fermi. */
-.mmh-stagger > * {
+.mmh-stagger > :not(.mmh-fade, .mmh-rise, .mmh-own-motion, [data-mmh-loader]) {
+  animation: mmh-rise var(--mmh-dur) var(--mmh-ease) backwards;
+  animation-delay: calc(var(--mmh-i, 8) * 70ms);
+}
+
+/* Contenuto che sostituisce un indicatore di caricamento (LoadingDots), a
+   qualunque profondità della pagina: classi applicate da MotionObserver.
+   - più blocchi insieme → ognuno emerge, a cascata (--mmh-i);
+   - un solo contenitore griglia/flex → si dissolve e i suoi elementi
+     emergono uno dopo l'altro (mmh-appear-soft + mmh-appear-kids); a fine
+     corsa data-mmh-done spegne la cascata, così ciò che viene aggiunto dopo
+     non è ritardato. */
+.mmh-appear {
+  animation: mmh-rise var(--mmh-dur) var(--mmh-ease) backwards;
+  animation-delay: calc(var(--mmh-i, 0) * var(--mmh-step));
+}
+.mmh-appear-soft {
+  animation: mmh-fade 0.6s var(--mmh-ease-surface) backwards;
+}
+.mmh-appear-kids:not([data-mmh-done]) > :not(.mmh-fade, .mmh-rise, .mmh-own-motion, [data-mmh-loader]) {
   animation: mmh-rise var(--mmh-dur) var(--mmh-ease) backwards;
   animation-delay: calc(var(--mmh-i, 8) * 70ms);
 }
@@ -188,43 +207,60 @@ a[href][class*="border-b"][class*="border-paper/10"]:not([class*="hover:"]):hove
    errore, righe aggiunte) non viene più ritardato. Esclusi: segnaposto,
    modali (fixed / role=dialog) ed elementi con coreografia propria. */
 .mmh-page { display: contents; }
-.mmh-page > :not(.mmh-loading, .mmh-own-motion, .mmh-fade, .mmh-rise, [class*="fixed"], [role="dialog"]) {
+.mmh-page > :not(.mmh-loading, [data-mmh-loader], .mmh-own-motion, .mmh-fade, .mmh-rise, [class*="fixed"], [role="dialog"]) {
   animation: mmh-fade 0.8s var(--mmh-ease-surface) backwards;
 }
 .mmh-page > :not(.mmh-loading, .mmh-own-motion, [data-mmh-settled])
-  > :not(.mmh-loading, .mmh-own-motion, .mmh-fade, .mmh-rise, .mmh-bg, [class*="fixed"], [role="dialog"]) {
+  > :not(.mmh-loading, [data-mmh-loader], .mmh-own-motion, .mmh-fade, .mmh-rise, .mmh-bg, .mmh-appear, .mmh-appear-soft, [class*="fixed"], [role="dialog"]) {
   animation: mmh-rise var(--mmh-dur) var(--mmh-ease) backwards;
   animation-delay: calc(var(--mmh-content-start) + var(--mmh-i, 8) * var(--mmh-step));
 }
 /* Indice di cascata: in un layer, così le utility [--mmh-i:N] scritte a mano
    sui singoli elementi (layer utilities) restano prioritarie. */
 @layer components {
-  :is(.mmh-page > * , .mmh-stagger) > :nth-child(1) { --mmh-i: 0; }
-  :is(.mmh-page > * , .mmh-stagger) > :nth-child(2) { --mmh-i: 1; }
-  :is(.mmh-page > * , .mmh-stagger) > :nth-child(3) { --mmh-i: 2; }
-  :is(.mmh-page > * , .mmh-stagger) > :nth-child(4) { --mmh-i: 3; }
-  :is(.mmh-page > * , .mmh-stagger) > :nth-child(5) { --mmh-i: 4; }
-  :is(.mmh-page > * , .mmh-stagger) > :nth-child(6) { --mmh-i: 5; }
-  :is(.mmh-page > * , .mmh-stagger) > :nth-child(7) { --mmh-i: 6; }
-  :is(.mmh-page > * , .mmh-stagger) > :nth-child(8) { --mmh-i: 7; }
-  :is(.mmh-page > * , .mmh-stagger) > :nth-child(n + 9) { --mmh-i: 8; }
+  :is(.mmh-page > *, .mmh-stagger, .mmh-appear-kids) > :nth-child(1) { --mmh-i: 0; }
+  :is(.mmh-page > *, .mmh-stagger, .mmh-appear-kids) > :nth-child(2) { --mmh-i: 1; }
+  :is(.mmh-page > *, .mmh-stagger, .mmh-appear-kids) > :nth-child(3) { --mmh-i: 2; }
+  :is(.mmh-page > *, .mmh-stagger, .mmh-appear-kids) > :nth-child(4) { --mmh-i: 3; }
+  :is(.mmh-page > *, .mmh-stagger, .mmh-appear-kids) > :nth-child(5) { --mmh-i: 4; }
+  :is(.mmh-page > *, .mmh-stagger, .mmh-appear-kids) > :nth-child(6) { --mmh-i: 5; }
+  :is(.mmh-page > *, .mmh-stagger, .mmh-appear-kids) > :nth-child(7) { --mmh-i: 6; }
+  :is(.mmh-page > *, .mmh-stagger, .mmh-appear-kids) > :nth-child(8) { --mmh-i: 7; }
+  :is(.mmh-page > *, .mmh-stagger, .mmh-appear-kids) > :nth-child(n + 9) { --mmh-i: 8; }
 }
 
-/* Segnaposto di caricamento: invisibile per i primi 350ms (i caricamenti
-   rapidi non mostrano nulla), poi appare piano con un respiro lento. */
-@keyframes mmh-breathe {
-  0%, 100% { opacity: 0.45; }
-  50% { opacity: 1; }
-}
+/* Indicatore di caricamento (components/ui/LoadingDots.tsx): invisibile per
+   i primi 350ms (i caricamenti rapidi non mostrano nulla), poi compare in
+   dissolvenza; i tre pallini saltellano in sequenza. */
 .mmh-loading {
   opacity: 0;
-  animation:
-    mmh-fade 0.6s ease-out 350ms forwards,
-    mmh-breathe 2.4s ease-in-out 950ms infinite;
+  animation: mmh-fade 0.6s ease-out 350ms forwards;
 }
+@keyframes mmh-dot {
+  0%, 70%, 100% { transform: translate3d(0, 0, 0); opacity: 0.35; }
+  35% { transform: translate3d(0, -5px, 0); opacity: 1; }
+}
+@keyframes mmh-dot-pulse {
+  0%, 70%, 100% { opacity: 0.35; }
+  35% { opacity: 1; }
+}
+.mmh-dot {
+  display: inline-block;
+  width: 0.45em;
+  height: 0.45em;
+  min-width: 6px;
+  min-height: 6px;
+  border-radius: 9999px;
+  background-color: currentColor;
+  animation: mmh-dot 1.2s ease-in-out infinite;
+}
+.mmh-dot:nth-child(2) { animation-delay: 0.15s; }
+.mmh-dot:nth-child(3) { animation-delay: 0.3s; }
 
 @media (prefers-reduced-motion: reduce) {
-  .mmh-fade, .mmh-rise, .mmh-bg, .mmh-stagger > *,
+  .mmh-fade, .mmh-rise, .mmh-bg, .mmh-stagger > *, .mmh-appear, .mmh-appear-soft, .mmh-appear-kids > *,
   .mmh-page > *, .mmh-page > * > * { animation: none !important; }
   .mmh-loading { opacity: 1; animation: none; }
+  /* Niente movimento: i pallini restano fermi e pulsano solo di intensità. */
+  .mmh-dot { animation-name: mmh-dot-pulse; }
 }

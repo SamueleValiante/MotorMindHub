@@ -69,7 +69,7 @@ export function CategoryDrilldownNav({ tree, currentId, onNavigate }: CategoryDr
       </nav>
 
       {figli.length > 0 ? (
-        <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4" aria-label="Sottocategorie">
+        <ul className="mmh-stagger grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4" aria-label="Sottocategorie">
           {figliVisibili.map((figlio) => (
             <li key={figlio.id}>
               <CategoryTile node={figlio} compact onClick={() => onNavigate(figlio.id)} />

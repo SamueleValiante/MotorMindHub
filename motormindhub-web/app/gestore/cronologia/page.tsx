@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/empty-state/EmptyState";
 import { SearchIcon } from "@/components/public/icons";
 import { ClockIcon } from "@/components/gestore/icons";
 import type { TipoAzioneAmministrativa } from "@/lib/amministrazioneUtenti/types";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 function formatDataOra(iso: string): string {
   const data = new Date(iso);
@@ -42,7 +43,7 @@ export default function CronologiaPage() {
   const [search, setSearch] = useState("");
 
   if (log.status === "loading") {
-    return <p className="mmh-loading text-sm text-fog">Caricamento…</p>;
+    return <LoadingDots />;
   }
 
   if (log.status === "error") {

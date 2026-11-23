@@ -11,6 +11,7 @@ import { SuspendAccountModal } from "@/components/gestore/SuspendAccountModal";
 import { ReactivateAccountModal } from "@/components/gestore/ReactivateAccountModal";
 import { ExportSuccessModal } from "@/components/gestore/ExportSuccessModal";
 import type { StatoSegnalazione, SuspensionInput, TipoAzioneAmministrativa } from "@/lib/amministrazioneUtenti/types";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 function formatData(iso: string): string {
   return new Date(iso).toLocaleDateString("it-IT");
@@ -51,7 +52,7 @@ export default function SchedaUtentePage() {
   const [exportEmail, setExportEmail] = useState("");
 
   if (users.status === "loading" || reports.status === "loading" || log.status === "loading") {
-    return <p className="mmh-loading text-sm text-fog">Caricamento…</p>;
+    return <LoadingDots />;
   }
 
   if (users.status === "error" || reports.status === "error" || log.status === "error" || parsedId === null) {

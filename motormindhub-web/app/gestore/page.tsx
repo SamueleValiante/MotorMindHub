@@ -8,6 +8,7 @@ import { useDeletionRequestsQueue } from "@/lib/amministrazioneUtenti/useDeletio
 import { useVisiteStatistiche } from "@/lib/amministrazioneUtenti/useVisiteStatistiche";
 import { StatCard } from "@/components/shared/StatCard";
 import { AndamentoCharts } from "@/components/gestore/AndamentoCharts";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 function formatData(iso: string): string {
   return new Date(iso).toLocaleDateString("it-IT");
@@ -58,7 +59,7 @@ export default function GestoreDashboardPage() {
       </div>
 
       {loading ? (
-        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
+        <LoadingDots />
       ) : error ||
         dashboard.status !== "ready" ||
         users.status !== "ready" ||

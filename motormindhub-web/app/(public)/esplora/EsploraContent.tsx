@@ -11,6 +11,7 @@ import { Pagination } from "@/components/public/Pagination";
 import { EmptyState } from "@/components/empty-state/EmptyState";
 import { SearchIcon } from "@/components/public/icons";
 import type { OrdinamentoArticoli } from "@/lib/articoli/types";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 const SORT_OPTIONS: { value: OrdinamentoArticoli; label: string }[] = [
   { value: "PIU_RECENTI", label: "Più recenti" },
@@ -252,12 +253,16 @@ export function EsploraContent() {
         <h2 className="font-heading text-sm font-bold uppercase tracking-wide text-paper">
           Categoria
         </h2>
-        {categorie.status === "ready" && (
+        {categorie.status === "ready" ? (
           <CategoryDrilldownNav
             tree={categorie.tree}
             currentId={categoriaId ? Number(categoriaId) : null}
             onNavigate={handleCategoryNavigate}
           />
+        ) : categorie.status === "loading" ? (
+          <LoadingDots />
+        ) : (
+          <p className="text-sm text-ember">Non è stato possibile caricare le categorie.</p>
         )}
       </div>
 
@@ -317,7 +322,7 @@ export function EsploraContent() {
             ))}
           </div>
         ) : (
-          <p className="mmh-loading text-sm text-fog">Caricamento…</p>
+          <LoadingDots />
         )}
       </div>
 

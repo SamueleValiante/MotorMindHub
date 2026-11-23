@@ -6,6 +6,7 @@ import { useAdministrativeActionLog } from "@/lib/amministrazioneUtenti/useAdmin
 import { EmptyState } from "@/components/empty-state/EmptyState";
 import { ShieldDataIcon } from "@/components/account/icons";
 import type { UserSummary } from "@/lib/amministrazioneUtenti/types";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 function formatData(iso: string): string {
   return new Date(iso).toLocaleDateString("it-IT");
@@ -53,7 +54,7 @@ export default function RicorsiPage() {
       </div>
 
       {loading ? (
-        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
+        <LoadingDots />
       ) : error ? (
         <p className="text-sm text-ember">Non è stato possibile caricare gli account sospesi.</p>
       ) : sospesi.length === 0 ? (

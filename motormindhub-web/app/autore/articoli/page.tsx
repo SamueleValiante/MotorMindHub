@@ -14,6 +14,7 @@ import { DocumentIcon, PencilIcon, EyeIcon } from "@/components/autore/icons";
 import { TrashIcon, BookmarkIcon } from "@/components/account/icons";
 import { SearchIcon } from "@/components/public/icons";
 import type { MyArticle } from "@/lib/articoli/types";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 const PER_PAGINA = 28;
 
@@ -118,7 +119,7 @@ export default function IMieiArticoliPage() {
       </div>
 
       {state.status === "loading" ? (
-        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
+        <LoadingDots />
       ) : state.status === "error" ? (
         <p className="text-sm text-ember">Non è stato possibile caricare i tuoi articoli.</p>
       ) : nonBozza.length === 0 ? (

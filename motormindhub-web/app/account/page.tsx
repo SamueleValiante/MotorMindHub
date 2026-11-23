@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCurrentUser } from "@/lib/auth/useCurrentUser";
 import { Avatar } from "@/components/shared/Avatar";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 function formatMonthYear(iso: string): string {
   const date = new Date(iso);
@@ -28,7 +29,7 @@ export default function PanoramicaPage() {
       </div>
 
       {loading ? (
-        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
+        <LoadingDots />
       ) : !user ? (
         <p className="text-sm text-ember">Non è stato possibile caricare i tuoi dati.</p>
       ) : (

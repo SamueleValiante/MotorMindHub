@@ -1,9 +1,10 @@
 import { Suspense } from "react";
 import { ResetPasswordForm } from "./ResetPasswordForm";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 export default function ReimpostaPasswordPage() {
   return (
-    <Suspense fallback={<p className="mmh-loading text-center text-sm text-fog">Caricamento…</p>}>
+    <Suspense fallback={<LoadingDots className="justify-center" />}>
       <ResetPasswordForm />
     </Suspense>
   );

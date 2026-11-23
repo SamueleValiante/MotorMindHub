@@ -6,6 +6,7 @@ import { CookieBanner } from "@/components/cookie-consent/CookieBanner";
 import { PageViewTracker } from "@/components/analytics/PageViewTracker";
 import { SentryConsentGate } from "@/components/analytics/SentryConsentGate";
 import { ReportUserModal } from "@/components/report/ReportUserModal";
+import { MotionObserver } from "@/components/ui/MotionObserver";
 import "./globals.css";
 
 /**
@@ -69,6 +70,7 @@ export default function RootLayout({
         <PageViewTracker />
         <SentryConsentGate />
         <ReportUserModal />
+        <MotionObserver />
       </body>
     </html>
   );

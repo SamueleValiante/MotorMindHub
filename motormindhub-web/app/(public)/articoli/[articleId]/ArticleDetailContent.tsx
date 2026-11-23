@@ -6,6 +6,7 @@ import { useArticleSearch } from "@/lib/articoli/useArticleSearch";
 import { ArticleCard } from "@/components/public/ArticleCard";
 import { SaveMenu } from "@/components/articoli/SaveMenu";
 import { ArticleView } from "@/components/articoli/ArticleView";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 /**
  * Dettaglio Articolo (mockup 03). Il mockup mostra anche un'icona
@@ -40,7 +41,7 @@ export function ArticleDetailContent({ articleId }: { articleId: string }) {
       : [];
 
   if (state.status === "loading") {
-    return <p className="mmh-loading mx-auto max-w-3xl px-4 py-12 text-sm text-fog sm:px-6">Caricamento…</p>;
+    return <LoadingDots className="mx-auto max-w-3xl px-4 py-12 sm:px-6" />;
   }
 
   if (state.status === "not-found" || !articolo) {

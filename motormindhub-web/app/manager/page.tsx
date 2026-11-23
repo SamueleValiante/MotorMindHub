@@ -7,6 +7,7 @@ import { useCategoriePiuLette } from "@/lib/autori/useCategoriePiuLette";
 import { useStatisticheLetture } from "@/lib/autori/useStatisticheLetture";
 import { StatCard } from "@/components/shared/StatCard";
 import { AndamentoChartsAutori } from "@/components/manager/AndamentoChartsAutori";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 const PIU_LETTI_COUNT = 5;
 
@@ -48,7 +49,7 @@ export default function ManagerDashboardPage() {
       </div>
 
       {state.status === "loading" ? (
-        <p className="mmh-loading text-sm text-fog">Caricamento…</p>
+        <LoadingDots />
       ) : state.status === "error" ? (
         <p className="text-sm text-ember">Non è stato possibile caricare le statistiche.</p>
       ) : (
@@ -95,7 +96,7 @@ export default function ManagerDashboardPage() {
             </h2>
 
             {letture.status === "loading" ? (
-              <p className="mmh-loading text-sm text-fog">Caricamento…</p>
+              <LoadingDots />
             ) : letture.status === "error" ? (
               <p className="text-sm text-ember">Non è stato possibile caricare le statistiche di lettura.</p>
             ) : (
@@ -124,7 +125,7 @@ export default function ManagerDashboardPage() {
             </h2>
 
             {piuLettiState.status === "loading" ? (
-              <p className="mmh-loading text-sm text-fog">Caricamento…</p>
+              <LoadingDots />
             ) : piuLettiState.status === "error" ? (
               <p className="text-sm text-ember">Non è stato possibile caricare gli articoli più letti.</p>
             ) : piuLettiState.result.articoli.length === 0 ? (
@@ -164,7 +165,7 @@ export default function ManagerDashboardPage() {
             </h2>
 
             {categoriePiuLetteState.status === "loading" ? (
-              <p className="mmh-loading text-sm text-fog">Caricamento…</p>
+              <LoadingDots />
             ) : categoriePiuLetteState.status === "error" ? (
               <p className="text-sm text-ember">Non è stato possibile caricare le categorie più lette.</p>
             ) : categoriePiuLetteState.categorie.length === 0 ? (

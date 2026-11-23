@@ -5,6 +5,7 @@ import { LineChart } from "@/components/charts/LineChart";
 import { DateRangeSelector, type IntervalloGiorni } from "@/components/charts/DateRangeSelector";
 import { useAndamentoVisite } from "@/lib/amministrazioneUtenti/useAndamentoVisite";
 import { useAndamentoRegistrazioni } from "@/lib/amministrazioneUtenti/useAndamentoRegistrazioni";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 /**
  * Tre grafici sotto "Visite al sito" (Dashboard Gestore Utenti), un solo
@@ -82,7 +83,7 @@ export function AndamentoCharts() {
       <DateRangeSelector value={giorni} onChange={setGiorni} />
 
       {primoCaricamento ? (
-        <p className="text-sm text-fog">Caricamento andamento…</p>
+        <LoadingDots label="Caricamento andamento…" />
       ) : errore ? (
         <p className="text-sm text-ember">Non è stato possibile caricare l&apos;andamento.</p>
       ) : (

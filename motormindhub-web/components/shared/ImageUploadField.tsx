@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/http/client";
 import { toast } from "@/lib/toast/toast";
 import { Avatar } from "@/components/shared/Avatar";
 import { ImageIcon } from "@/components/autore/icons";
+import { LoadingDots } from "@/components/ui/LoadingDots";
 
 interface ErrorBody {
   messages?: string[];
@@ -130,7 +131,16 @@ export function ImageUploadField({
           disabled={uploading}
           className={buttonClassName}
         >
-          {uploading ? "Caricamento…" : label}
+          {/* Etichetta resa invisibile (non rimossa) durante l'upload: il pulsante mantiene la
+              sua larghezza e i tre pallini compaiono al suo posto, senza far saltare il layout. */}
+          <span className="relative inline-flex items-center justify-center">
+            <span className={uploading ? "invisible" : undefined}>{label}</span>
+            {uploading && (
+              <span className="absolute inset-0 flex items-center justify-center">
+                <LoadingDots inline />
+              </span>
+            )}
+          </span>
         </button>
         <p className="text-xs text-fog">
           JPEG, PNG o WEBP, max {Math.round(maxSizeBytes / (1024 * 1024))} MB
